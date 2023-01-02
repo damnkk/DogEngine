@@ -24,6 +24,7 @@
 #include <array>
 #include <optional>
 #include <set>
+#include <ctime>
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
@@ -133,6 +134,18 @@ struct UniformBufferObject
   alignas(16) glm::mat4 view;
   alignas(16) glm::mat4 proj;
 };
+
+float lastX = 300, lastY = 300;
+void mouseCallback(GLFWwindow* window, double xPos,double yPos)
+{
+  std::cout<<"xPos: "<< xPos<<"   yPos: "<< yPos<<"\r";
+}
+
+void keycallback(GLFWwindow* window, int key, int scancode, int action, int mods){
+  if(key==GLFW_KEY_ESCAPE&&action == GLFW_PRESS){
+    glfwSetWindowShouldClose(window,GL_TRUE);
+  }
+}
 
 class HelloTriangleApplication
 {
@@ -252,6 +265,9 @@ private:
 
   void mainLoop()
   {
+    glfwSetInputMode(window,GLFW_CURSOR,GLFW_CURSOR_DISABLED);
+    glfwSetCursorPosCallback(window, mouseCallback);
+    glfwSetKeyCallback(window, keycallback);
     while (!glfwWindowShouldClose(window))
     {
       glfwPollEvents();
@@ -260,6 +276,7 @@ private:
 
     vkDeviceWaitIdle(device);
   }
+ 
 
   void cleanupSwapChain()
   {
@@ -858,13 +875,18 @@ private:
 
     transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,miplevels);
     copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-    generateMipmaps(textureImage,texWidth,texHeight,miplevels);
+    generateMipmaps(textureImage,VK_FORMAT_R8G8B8A8_SRGB,texWidth,texHeight,miplevels);
 
     vkDestroyBuffer(device, stagingBuffer, nullptr);
     vkFreeMemory(device, stagingBufferMemory, nullptr);
   }
 
-  void generateMipmaps(VkImage image, uint32_t texWidth, uint32_t texHeight, uint32_t miplevels){
+  void generateMipmaps(VkImage image, VkFormat imageFormat , uint32_t texWidth, uint32_t texHeight, uint32_t miplevels){
+    VkFormatProperties properties;
+    vkGetPhysicalDeviceFormatProperties(physicalDevice,imageFormat,&properties);
+    if(!(properties.optimalTilingFeatures& VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT)){
+      throw std::runtime_error("texture images format does not support linear bliting");
+    }
     VkCommandBuffer commandbuffer = beginSingleTimeCommands();
     VkImageMemoryBarrier barrier{};
     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -957,6 +979,9 @@ private:
     samplerInfo.compareEnable = VK_FALSE;
     samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
     samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    samplerInfo.minLod = 0.0f;
+    samplerInfo.maxLod = static_cast<float>(miplevels);
+    samplerInfo.mipLodBias = 0.0f;
 
     if (vkCreateSampler(device, &samplerInfo, nullptr, &textureSampler) != VK_SUCCESS)
     {
