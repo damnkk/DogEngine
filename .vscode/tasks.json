@@ -1,0 +1,22 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "msvc build",
+            "command": "./build/Debug/vulkan_learning.exe",
+            "args": [
+                "/Zi",
+                "/EHsc",
+                "/Fe:",
+                "${fileDirname}//build/Debug/vulkan_learning.exe",
+                "${file}",
+				
+            ],
+            "problemMatcher": [
+                "$msCompile"
+            ],
+            "group": "build"
+        }
+    ]
+}
