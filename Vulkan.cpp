@@ -40,6 +40,29 @@ const std::vector<const char *> validationLayers = {
 const std::vector<const char *> deviceExtensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
+class Camera{
+public:
+  glm::vec3 pos = glm::vec3(2.0f, 2.0f,2.0f),up = glm::vec3(0.0f,1.0f,0.0f),direction = glm::vec3(0.0f,0.0f,-1.0f);
+  float fov = 70.0f,aspect = 1.0f, zNear = 0.01f,zFar = 100.0f;
+  float pitch = 0.0f,yaw = 0.0f,roll = 0.0f;
+  float left = -1.0f,right = 1.0f,top = 1.0f,down = -1.0f;
+  Camera(){};
+  glm::mat4 getViewMatrix(bool useEularAngle = true){
+    if(useEularAngle){
+      direction.x = cos(glm::radians(pitch)) * sin(glm::radians(yaw));
+      direction.y = -sin(glm::radians(pitch));
+      direction.z = -cos(glm::radians(pitch)) * cos(glm::radians(yaw));
+    }
+    return glm::lookAt(pos,pos+direction,up);
+    //return glm::lookAt(pos, direction, up);
+  }
+  glm::mat4 getProjectMatrix(bool ortho = false){
+    if(ortho){
+      return glm::ortho(left,right,down,top,zNear,zFar);
+    }
+    return glm::perspective(glm::radians(fov),aspect,zNear,zFar);
+  }
+} camera;
 
 
 #ifdef NDEBUG
@@ -136,14 +159,50 @@ struct UniformBufferObject
 };
 
 float lastX = 300, lastY = 300;
+bool firstCall = true;
 void mouseCallback(GLFWwindow* window, double xPos,double yPos)
 {
   std::cout<<"xPos: "<< xPos<<"   yPos: "<< yPos<<"\r";
+  if(firstCall){
+    lastX = xPos;
+    lastY = yPos;
+    firstCall = false;
+    return;
+  }
+  float sensitive = 0.035;
+  float yDif = yPos-lastY;
+  float xDif = xPos-lastX;
+  camera.pitch +=sensitive*yDif;
+  camera.pitch = glm::clamp(camera.pitch,-89.0f,89.0f);
+  camera.yaw +=sensitive*xDif;
+  //camera.yaw = glm::mod(camera.yaw + 180.0f, 360.0f) - 180.0f; 
+  lastX = xPos;
+  lastY = yPos;
+   
 }
 
-void keycallback(GLFWwindow* window, int key, int scancode, int action, int mods){
-  if(key==GLFW_KEY_ESCAPE&&action == GLFW_PRESS){
+void keycallback(GLFWwindow* window){
+  float sensitivity = 0.007;
+  if(glfwGetKey(window,GLFW_KEY_ESCAPE) == GLFW_PRESS){
     glfwSetWindowShouldClose(window,GL_TRUE);
+  }
+  if(glfwGetKey(window,GLFW_KEY_W) == GLFW_PRESS){
+    camera.pos +=sensitivity*camera.direction;
+  }
+  if(glfwGetKey(window,GLFW_KEY_S) == GLFW_PRESS){
+    camera.pos -=sensitivity*camera.direction;
+  }
+  if(glfwGetKey(window,GLFW_KEY_A) == GLFW_PRESS){
+    camera.pos -=sensitivity*glm::normalize(glm::cross(camera.direction,camera.up));
+  }
+  if(glfwGetKey(window,GLFW_KEY_D) == GLFW_PRESS){
+    camera.pos +=sensitivity*glm::normalize(glm::cross(camera.direction,camera.up));
+  }
+  if(glfwGetKey(window,GLFW_KEY_SPACE) == GLFW_PRESS){
+    camera.pos +=sensitivity*glm::vec3(0,1,0);
+  }
+  if(glfwGetKey(window,GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS){
+    camera.pos -=sensitivity*glm::vec3(0,1,0);
   }
 }
 
@@ -214,6 +273,7 @@ private:
   std::vector<VkSemaphore> imageAvailableSemaphores;
   std::vector<VkSemaphore> renderFinishedSemaphores;
   std::vector<VkFence> inFlightFences;
+
   uint32_t currentFrame = 0;
 
   bool framebufferResized = false;
@@ -261,16 +321,18 @@ private:
     createDescriptorSets();
     createCommandBuffers();
     createSyncObjects();
+    createCamera();
   }
 
   void mainLoop()
   {
     glfwSetInputMode(window,GLFW_CURSOR,GLFW_CURSOR_DISABLED);
     glfwSetCursorPosCallback(window, mouseCallback);
-    glfwSetKeyCallback(window, keycallback);
+    
     while (!glfwWindowShouldClose(window))
     {
       glfwPollEvents();
+      keycallback(window);
       drawFrame();
     }
 
@@ -1449,10 +1511,17 @@ private:
     auto currentTime = std::chrono::high_resolution_clock::now();
     float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
+     glm::mat4 unit(    // 单位矩阵
+            glm::vec4(1, 0, 0, 0),
+            glm::vec4(0, 1, 0, 0),
+            glm::vec4(0, 0, 1, 0),
+            glm::vec4(0, 0, 0, 1)
+        );
     UniformBufferObject ubo{};
-    ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 10.0f);
+    ubo.model = glm::translate(unit, glm::vec3(0,2,0))*glm::rotate(glm::mat4(1.0f),glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    //ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.view = camera.getViewMatrix(true);
+    ubo.proj = camera.getProjectMatrix(false);
     ubo.proj[1][1] *= -1;
 
     memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
@@ -1803,6 +1872,11 @@ private:
         indices.push_back(static_cast<uint32_t>( indices.size()));
       }
     }
+  }
+  void createCamera(){
+
+    camera.aspect = swapChainExtent.width
+     / (float)swapChainExtent.height;
   }
 
   static std::vector<char> readFile(const std::string &filename)
