@@ -4,7 +4,7 @@
         {
             "type": "shell",
             "label": "msvc build",
-            "command": "./build/Debug/vulkan_learning.exe",
+            "command": "cl.exe",
             "args": [
                 "/Zi",
                 "/EHsc",

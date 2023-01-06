@@ -11,10 +11,9 @@
             "program": "${fileDirname}\\build/Debug/vulkan_learning.exe",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
+            "cwd": "${fileDirname}",
             "environment": [],
-            "externalConsole": false,
-            "preLaunchTask": "msvc build"
+            "console": "externalTerminal"
         }
     ]
 }
