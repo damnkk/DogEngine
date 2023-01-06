@@ -64,6 +64,47 @@ public:
   }
 } camera;
 
+class Mesh{
+public:
+  Mesh(){}
+  std::vector<Vertex> vertices;
+  std::vector<uint32_t> indices;
+  VkBuffer vertexBuffer;
+  VkDeviceMemory vertexBufferMemory;
+  VkBuffer indexBuffer;
+  VkDeviceMemory imdexBufferMemory;
+  VkImage diffuseImage;
+  VkDeviceMemory diffseImageMemory;
+  VkImageView diffuseImageview;
+  
+  void draw(VkCommandBuffer commandBuffer){
+    VkBuffer vertexBuffers[] = {vertexBuffer};
+    VkDeviceSize offsets[] = {0};
+    vkCmdBindVertexBuffers(commandBuffer, 0, 1,vertexBuffers, offsets);
+    vkCmdBindIndexBuffer(commandBuffer,indexBuffer,0,VK_INDEX_TYPE_UINT32);
+    //vkCmdDrawIndexed??
+    vkCmdDrawIndexed(commandBuffer,static_cast<uint32_t>(indices.size()),1,0,0,0);
+  }
+};
+
+class Model{
+public:
+  Model(){}
+  std::vector<Mesh> meshes;
+  glm::mat4 model;
+
+  void load(std::string model_file_path){
+
+  }
+
+
+  void draw(VkCommandBuffer commandbuffer){
+    for(int i=  0;i<meshes.size();++i)
+    {
+      meshes.at(i).draw(commandbuffer);
+    }
+  }
+};
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -218,6 +259,7 @@ public:
   }
 
 private:
+  friend class Mesh;
   GLFWwindow *window;
 
   VkInstance instance;
