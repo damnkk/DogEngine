@@ -32,6 +32,8 @@ const uint32_t HEIGHT = 600;
 const std::string MODEL_PATH = "models/viking_room.obj";
 const std::string TEXTURE_PATH = "textures/viking_room.png";
 
+const std::vector<std::string> models_path;
+
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
 const std::vector<const char *> validationLayers = {
@@ -64,47 +66,6 @@ public:
   }
 } camera;
 
-class Mesh{
-public:
-  Mesh(){}
-  std::vector<Vertex> vertices;
-  std::vector<uint32_t> indices;
-  VkBuffer vertexBuffer;
-  VkDeviceMemory vertexBufferMemory;
-  VkBuffer indexBuffer;
-  VkDeviceMemory imdexBufferMemory;
-  VkImage diffuseImage;
-  VkDeviceMemory diffseImageMemory;
-  VkImageView diffuseImageview;
-  
-  void draw(VkCommandBuffer commandBuffer){
-    VkBuffer vertexBuffers[] = {vertexBuffer};
-    VkDeviceSize offsets[] = {0};
-    vkCmdBindVertexBuffers(commandBuffer, 0, 1,vertexBuffers, offsets);
-    vkCmdBindIndexBuffer(commandBuffer,indexBuffer,0,VK_INDEX_TYPE_UINT32);
-    //vkCmdDrawIndexed??
-    vkCmdDrawIndexed(commandBuffer,static_cast<uint32_t>(indices.size()),1,0,0,0);
-  }
-};
-
-class Model{
-public:
-  Model(){}
-  std::vector<Mesh> meshes;
-  glm::mat4 model;
-
-  void load(std::string model_file_path){
-
-  }
-
-
-  void draw(VkCommandBuffer commandbuffer){
-    for(int i=  0;i<meshes.size();++i)
-    {
-      meshes.at(i).draw(commandbuffer);
-    }
-  }
-};
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -155,7 +116,7 @@ struct SwapChainSupportDetails
 struct Vertex
 {
   glm::vec3 pos;
-  glm::vec3 color;
+  glm::vec3 normal;
   glm::vec2 texCoord;
 
   static VkVertexInputBindingDescription getBindingDescription()
@@ -180,7 +141,7 @@ struct Vertex
     attributeDescriptions[1].binding = 0;
     attributeDescriptions[1].location = 1;
     attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-    attributeDescriptions[1].offset = offsetof(Vertex, color);
+    attributeDescriptions[1].offset = offsetof(Vertex, normal);
 
     attributeDescriptions[2].binding = 0;
     attributeDescriptions[2].location = 2;
@@ -188,6 +149,44 @@ struct Vertex
     attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
 
     return attributeDescriptions;
+  }
+};
+class Mesh{
+public:
+  Mesh(){}
+  std::vector<Vertex> vertices;
+  std::vector<uint32_t> indices;
+  VkBuffer vertexBuffer;
+  VkDeviceMemory vertexBufferMemory;
+  VkBuffer indexBuffer;
+  VkDeviceMemory indexBufferMemory;
+  VkImage diffuseImage;
+  VkDeviceMemory diffuseImageMemory;
+  VkImageView diffuseImageview;
+  
+  void draw(VkCommandBuffer commandBuffer){
+    VkBuffer vertexBuffers[] = {vertexBuffer};
+    VkDeviceSize offsets[] = {0};
+    vkCmdBindVertexBuffers(commandBuffer, 0, 1,vertexBuffers, offsets);
+    vkCmdBindIndexBuffer(commandBuffer,indexBuffer,0,VK_INDEX_TYPE_UINT32);
+    //vkCmdDrawIndexed??
+    vkCmdDrawIndexed(commandBuffer,static_cast<uint32_t>(indices.size()),1,0,0,0);
+  }
+};
+
+class Model{
+public:
+  Model(){}
+  std::vector<Mesh> meshes;
+  glm::mat4 model;
+
+
+
+  void draw(VkCommandBuffer commandbuffer){
+    for(int i=  0;i<meshes.size();++i)
+    {
+      meshes.at(i).draw(commandbuffer);
+    }
   }
 };
 
@@ -302,6 +301,8 @@ private:
   VkDeviceMemory vertexBufferMemory;
   VkBuffer indexBuffer;
   VkDeviceMemory indexBufferMemory;
+
+  std::vector<Model> scene;
 
   std::vector<VkBuffer> uniformBuffers;
   std::vector<VkDeviceMemory> uniformBuffersMemory;
@@ -445,7 +446,7 @@ private:
     {
       DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
     }
-
+    clearScene(scene);
     vkDestroySurfaceKHR(instance, surface, nullptr);
     vkDestroyInstance(instance, nullptr);
 
@@ -1909,16 +1910,87 @@ private:
           attrib.texcoords[2*index.texcoord_index+0],
           1-attrib.texcoords[2*index.texcoord_index+1]
         };
-        vertex.color = {1.0f,1.0f,1.0f};
         vertices.push_back(vertex);
         indices.push_back(static_cast<uint32_t>( indices.size()));
       }
     }
   }
+
+  // In the future, we can load a huge scene through json file
+  void loadComplexModel(){
+    for(int i = 0;i<models_path.size();++i){
+      std::string model_path = models_path.at(i);
+      tinyobj::ObjReaderConfig reader_config;
+      reader_config.mtl_search_path=model_path.substr(0,model_path.find_last_not_of("/"));
+      tinyobj::ObjReader reader;
+      if(!reader.ParseFromFile(model_path,reader_config)){
+        if(!reader.Error().empty()){
+          std::cout<<"TinyObjReader";
+          throw std::runtime_error(reader.Error());
+        }
+      }
+      if(!reader.Warning().empty()){
+        std::cout<<reader.Warning()<<std::endl;
+      }
+
+      auto& attrib = reader.GetAttrib();
+      auto& shapes = reader.GetShapes();
+      auto& materials = reader.GetMaterials();
+      Model model;
+      for(size_t s = 0;s<shapes.size();++i)
+      {
+        Mesh mesh;
+        size_t index_offset = 0;
+        for(size_t f = 0;f<shapes[s].mesh.num_face_vertices.size();++f){
+          size_t fv = size_t(shapes[s].mesh.num_face_vertices[f]);
+          for(size_t v = 0;v<fv;++v){
+            tinyobj::index_t idx = shapes[s].mesh.indices[index_offset+v];
+            mesh.indices.push_back(idx.vertex_index);
+            Vertex vertex;
+            vertex.pos.x = attrib.vertices[3*size_t(idx.vertex_index)+0];
+            vertex.pos.y = attrib.vertices[3*size_t(idx.vertex_index)+1];
+            vertex.pos.z = attrib.vertices[3*size_t(idx.vertex_index)+2];
+
+            if(idx.normal_index>=0){//没有的话是-1
+              vertex.normal.x = attrib.normals[3*size_t(idx.normal_index)+0];
+              vertex.normal.y = attrib.normals[3*size_t(idx.normal_index)+1];
+              vertex.normal.z = attrib.normals[3*size_t(idx.normal_index)+2];
+            }
+
+            if(idx.texcoord_index>=0){
+              vertex.texCoord.x = attrib.texcoords[2*size_t(idx.texcoord_index)+0];
+              vertex.texCoord.y = attrib.texcoords[2*size_t(idx.texcoord_index)+1];
+            }
+          }
+          index_offset+=fv;
+
+        }
+
+        model.meshes.push_back(mesh);
+      }
+
+    }
+
+  }
   void createCamera(){
 
     camera.aspect = swapChainExtent.width
      / (float)swapChainExtent.height;
+  }
+
+  void clearScene(std::vector<Model>& scene){
+    for(auto& model:scene){
+      for(auto& mesh :model.meshes){
+        vkDestroyBuffer(device,mesh.vertexBuffer,nullptr);
+        vkDestroyBuffer(device,mesh.indexBuffer,nullptr);
+        vkDestroyImage(device,mesh.diffuseImage,nullptr);
+        vkDestroyImageView(device,mesh.diffuseImageview,nullptr);
+        vkFreeMemory(device,mesh.vertexBufferMemory,nullptr);
+        vkFreeMemory(device,mesh.diffuseImageMemory,nullptr);
+        vkFreeMemory(device,mesh.indexBufferMemory,nullptr);
+      }
+    }
+    
   }
 
   static std::vector<char> readFile(const std::string &filename)
