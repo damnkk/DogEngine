@@ -32,7 +32,9 @@ const uint32_t HEIGHT = 600;
 const std::string MODEL_PATH = "models/viking_room.obj";
 const std::string TEXTURE_PATH = "textures/viking_room.png";
 
-const std::vector<std::string> models_path;
+const std::vector<std::string> models_path={
+"D:/Repositories/Vulkan_learn/models/nanosuit/nanosuit.obj"
+};
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -164,13 +166,15 @@ public:
   VkDeviceMemory diffuseImageMemory;
   VkImageView diffuseImageview;
   
-  void draw(VkCommandBuffer commandBuffer){
+  void draw(VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet,VkPipelineLayout& pipelineLayout){
     VkBuffer vertexBuffers[] = {vertexBuffer};
     VkDeviceSize offsets[] = {0};
     vkCmdBindVertexBuffers(commandBuffer, 0, 1,vertexBuffers, offsets);
     vkCmdBindIndexBuffer(commandBuffer,indexBuffer,0,VK_INDEX_TYPE_UINT32);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
     //vkCmdDrawIndexed??
     vkCmdDrawIndexed(commandBuffer,static_cast<uint32_t>(indices.size()),1,0,0,0);
+    //vkCmdDraw(commandBuffer, vertices.size(),1,0,0);
   }
 };
 
@@ -182,10 +186,10 @@ public:
 
 
 
-  void draw(VkCommandBuffer commandbuffer){
+  void draw(VkCommandBuffer commandbuffer, VkDescriptorSet& descriptorSet, VkPipelineLayout& layout){
     for(int i=  0;i<meshes.size();++i)
     {
-      meshes.at(i).draw(commandbuffer);
+      meshes.at(i).draw(commandbuffer, descriptorSet, layout);
     }
   }
 };
@@ -353,18 +357,22 @@ private:
     createDepthResources();
     createFramebuffers();
     createCommandPool();
-    createTextureImage();
-    createTextureImageView();
+    createTextureImage(TEXTURE_PATH, textureImage, textureImageMemory);
+    createTextureImageView(textureImage,miplevels,textureImageView);
     createTextureSampler();
     loadModel();
-    createVertexBuffer();
-    createIndexBuffer();
+    createVertexBuffer(vertices,vertexBuffer,vertexBufferMemory);
+    createIndexBuffer(indices, indexBuffer, indexBufferMemory);
     createUniformBuffers();
     createDescriptorPool();
     createDescriptorSets();
     createCommandBuffers();
     createSyncObjects();
     createCamera();
+//------------------------------------------------------
+    loadComplexModel();
+//------------------------------------------------------
+
   }
 
   void mainLoop()
@@ -439,6 +447,7 @@ private:
     }
 
     vkDestroyCommandPool(device, commandPool, nullptr);
+    clearScene(scene);
 
     vkDestroyDevice(device, nullptr);
 
@@ -446,7 +455,6 @@ private:
     {
       DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
     }
-    clearScene(scene);
     vkDestroySurfaceKHR(instance, surface, nullptr);
     vkDestroyInstance(instance, nullptr);
 
@@ -954,10 +962,10 @@ private:
     }
   }
 
-  void createTextureImage()
+  void createTextureImage(std::string texPath, VkImage& textureImage, VkDeviceMemory& textureImageMemory)
   {
     int texWidth, texHeight, texChannels;
-    stbi_uc *pixels = stbi_load(TEXTURE_PATH.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+    stbi_uc *pixels = stbi_load(texPath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
     VkDeviceSize imageSize = texWidth * texHeight * 4;
     miplevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth,texHeight))))+1;  //这里是计算最多多少层mipmap
     if (!pixels)
@@ -1060,7 +1068,7 @@ private:
     endSingleTimeCommands(commandbuffer);
   }
 
-  void createTextureImageView()
+  void createTextureImageView(VkImage& textureImage,int miplevels,VkImageView& textureImageView)
   {
     textureImageView = createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, miplevels);
   }
@@ -1230,7 +1238,7 @@ private:
     endSingleTimeCommands(commandBuffer);
   }
 
-  void createVertexBuffer()
+  void createVertexBuffer(std::vector<Vertex>& vertices, VkBuffer& vertexBuffer, VkDeviceMemory& vertexBufferMemory)
   {
     VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
 
@@ -1251,7 +1259,7 @@ private:
     vkFreeMemory(device, stagingBufferMemory, nullptr);
   }
 
-  void createIndexBuffer()
+  void createIndexBuffer(std::vector<uint32_t> indices, VkBuffer& indexBuffer, VkDeviceMemory& indexBufferMemory)
   {
     VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
 
@@ -1506,14 +1514,16 @@ private:
     scissor.extent = swapChainExtent;
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-    VkBuffer vertexBuffers[] = {vertexBuffer};
-    VkDeviceSize offsets[] = {0};
-    vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+    // VkBuffer vertexBuffers[] = {vertexBuffer};
+    // VkDeviceSize offsets[] = {0};
+    // vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
-    vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
+    // vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+    // vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
 
-    vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+    // vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+
+    drawScene(scene,commandBuffer, descriptorSets[currentFrame],pipelineLayout);
 
     vkCmdEndRenderPass(commandBuffer);
 
@@ -1921,7 +1931,7 @@ private:
     for(int i = 0;i<models_path.size();++i){
       std::string model_path = models_path.at(i);
       tinyobj::ObjReaderConfig reader_config;
-      reader_config.mtl_search_path=model_path.substr(0,model_path.find_last_not_of("/"));
+      reader_config.mtl_search_path=model_path.substr(0,model_path.find_last_of("/\\"))+"/";
       tinyobj::ObjReader reader;
       if(!reader.ParseFromFile(model_path,reader_config)){
         if(!reader.Error().empty()){
@@ -1937,7 +1947,7 @@ private:
       auto& shapes = reader.GetShapes();
       auto& materials = reader.GetMaterials();
       Model model;
-      for(size_t s = 0;s<shapes.size();++i)
+      for(size_t s = 0;s<shapes.size();++s)
       {
         Mesh mesh;
         size_t index_offset = 0;
@@ -1945,7 +1955,7 @@ private:
           size_t fv = size_t(shapes[s].mesh.num_face_vertices[f]);
           for(size_t v = 0;v<fv;++v){
             tinyobj::index_t idx = shapes[s].mesh.indices[index_offset+v];
-            mesh.indices.push_back(idx.vertex_index);
+            mesh.indices.push_back(static_cast<uint32_t>(mesh.indices.size()));
             Vertex vertex;
             vertex.pos.x = attrib.vertices[3*size_t(idx.vertex_index)+0];
             vertex.pos.y = attrib.vertices[3*size_t(idx.vertex_index)+1];
@@ -1961,16 +1971,26 @@ private:
               vertex.texCoord.x = attrib.texcoords[2*size_t(idx.texcoord_index)+0];
               vertex.texCoord.y = attrib.texcoords[2*size_t(idx.texcoord_index)+1];
             }
+            mesh.vertices.push_back(vertex);
           }
           index_offset+=fv;
-
         }
-
+        createVertexBuffer(mesh.vertices,mesh.vertexBuffer,mesh.vertexBufferMemory);
+        createIndexBuffer(mesh.indices,mesh.indexBuffer, mesh.indexBufferMemory);
+        // Read this mesh's texture
+        std::string texturePath = reader_config.mtl_search_path+materials[shapes[s].mesh.material_ids[0]].diffuse_texname;
+        createTextureImage(texturePath, mesh.diffuseImage, mesh.diffuseImageMemory);
+        createTextureImageView(mesh.diffuseImage,miplevels,mesh.diffuseImageview);
         model.meshes.push_back(mesh);
       }
-
+      scene.push_back(model);
     }
+  }
 
+  void drawScene(std::vector<Model>& scene, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkPipelineLayout& layout) {
+    for(auto & model: scene){
+      model.draw(commandBuffer,descriptorSet,layout);
+    }
   }
   void createCamera(){
 
@@ -1989,8 +2009,7 @@ private:
         vkFreeMemory(device,mesh.diffuseImageMemory,nullptr);
         vkFreeMemory(device,mesh.indexBufferMemory,nullptr);
       }
-    }
-    
+    }  
   }
 
   static std::vector<char> readFile(const std::string &filename)
