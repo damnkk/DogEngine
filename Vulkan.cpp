@@ -11,6 +11,9 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
+#define VMA_IMPLEMENTATION
+#include "vk_mem_alloc.h"
+
 #include <iostream>
 #include <fstream>
 #include <stdexcept>
@@ -320,6 +323,8 @@ private:
   std::vector<VkSemaphore> imageAvailableSemaphores;
   std::vector<VkSemaphore> renderFinishedSemaphores;
   std::vector<VkFence> inFlightFences;
+  VmaAllocator vma;
+
   uint32_t currentFrame = 0;
 
   bool framebufferResized = false;
@@ -348,6 +353,7 @@ private:
     createSurface();
     pickPhysicalDevice();
     createLogicalDevice();
+    createVmaAllocator();
     createSwapChain();
     createImageViews();
     createRenderPass();
@@ -2009,6 +2015,17 @@ private:
         vkFreeMemory(device,mesh.indexBufferMemory,nullptr);
       }
     }  
+  }
+
+  void createVmaAllocator(){
+    VmaAllocatorCreateInfo vmaCreateInfo{};
+    vmaCreateInfo.instance = instance;
+    vmaCreateInfo.physicalDevice = physicalDevice;
+    vmaCreateInfo.device = device;
+    vmaCreateInfo.vulkanApiVersion = VK_API_VERSION_1_3;
+    if(vmaCreateAllocator(&vmaCreateInfo, &vma)!=VK_SUCCESS){
+      throw std::runtime_error("failed to create vulkan memory allocator!");
+    }
   }
 
   static std::vector<char> readFile(const std::string &filename)
