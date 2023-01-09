@@ -5,11 +5,11 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#define TINYOBJLOADER_IMPLEMENTATION
+#include <tiny_obj_loader.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
-#define TINYOBJLOADER_IMPLEMENTATION
-#include <tiny_obj_loader.h>
 
 #include <iostream>
 #include <fstream>
@@ -24,9 +24,17 @@
 #include <array>
 #include <optional>
 #include <set>
+#include <ctime>
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
+
+const std::string MODEL_PATH = "models/viking_room.obj";
+const std::string TEXTURE_PATH = "textures/viking_room.png";
+
+const std::vector<std::string> models_path={
+"C:/Users/admin/JYF_Repositories/Vulkan_learn/models/nanosuit/nanosuit.obj"
+};
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -35,6 +43,31 @@ const std::vector<const char *> validationLayers = {
 
 const std::vector<const char *> deviceExtensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+
+class Camera{
+public:
+  glm::vec3 pos = glm::vec3(2.0f, 2.0f,2.0f),up = glm::vec3(0.0f,1.0f,0.0f),direction = glm::vec3(0.0f,0.0f,-1.0f);
+  float fov = 70.0f,aspect = 1.0f, zNear = 0.01f,zFar = 100.0f;
+  float pitch = 0.0f,yaw = 0.0f,roll = 0.0f;
+  float left = -1.0f,right = 1.0f,top = 1.0f,down = -1.0f;
+  Camera(){};
+  glm::mat4 getViewMatrix(bool useEularAngle = true){
+    if(useEularAngle){
+      direction.x = cos(glm::radians(pitch)) * sin(glm::radians(yaw));
+      direction.y = -sin(glm::radians(pitch));
+      direction.z = -cos(glm::radians(pitch)) * cos(glm::radians(yaw));
+    }
+    return glm::lookAt(pos,pos+direction,up);
+    //return glm::lookAt(pos, direction, up);
+  }
+  glm::mat4 getProjectMatrix(bool ortho = false){
+    if(ortho){
+      return glm::ortho(left,right,down,top,zNear,zFar);
+    }
+    return glm::perspective(glm::radians(fov),aspect,zNear,zFar);
+  }
+} camera;
+
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -85,7 +118,7 @@ struct SwapChainSupportDetails
 struct Vertex
 {
   glm::vec3 pos;
-  glm::vec3 color;
+  glm::vec3 normal;
   glm::vec2 texCoord;
 
   static VkVertexInputBindingDescription getBindingDescription()
@@ -110,7 +143,7 @@ struct Vertex
     attributeDescriptions[1].binding = 0;
     attributeDescriptions[1].location = 1;
     attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-    attributeDescriptions[1].offset = offsetof(Vertex, color);
+    attributeDescriptions[1].offset = offsetof(Vertex, normal);
 
     attributeDescriptions[2].binding = 0;
     attributeDescriptions[2].location = 2;
@@ -120,6 +153,47 @@ struct Vertex
     return attributeDescriptions;
   }
 };
+class Mesh{
+public:
+  Mesh(){}
+  std::vector<Vertex> vertices;
+  std::vector<uint32_t> indices;
+  VkBuffer vertexBuffer;
+  VkDeviceMemory vertexBufferMemory;
+  VkBuffer indexBuffer;
+  VkDeviceMemory indexBufferMemory;
+  VkImage diffuseImage;
+  VkDeviceMemory diffuseImageMemory;
+  VkImageView diffuseImageview;
+  
+  void draw(VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet,VkPipelineLayout& pipelineLayout){
+    VkBuffer vertexBuffers[] = {vertexBuffer};
+    VkDeviceSize offsets[] = {0};
+    vkCmdBindVertexBuffers(commandBuffer, 0, 1,vertexBuffers, offsets);
+    vkCmdBindIndexBuffer(commandBuffer,indexBuffer,0,VK_INDEX_TYPE_UINT32);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
+    //vkCmdDrawIndexed??
+    vkCmdDrawIndexed(commandBuffer,static_cast<uint32_t>(indices.size()),1,0,0,0);
+    //vkCmdDraw(commandBuffer, vertices.size(),1,0,0);
+  }
+};
+
+class Model{
+public:
+  Model(){}
+  std::vector<Mesh> meshes;
+  glm::mat4 model;
+
+
+
+  void draw(VkCommandBuffer commandbuffer, VkDescriptorSet& descriptorSet, VkPipelineLayout& layout){
+    for(int i=  0;i<meshes.size();++i)
+    {
+      meshes.at(i).draw(commandbuffer, descriptorSet, layout);
+    }
+  }
+};
+
 
 struct UniformBufferObject
 {
@@ -128,20 +202,53 @@ struct UniformBufferObject
   alignas(16) glm::mat4 proj;
 };
 
-const std::vector<Vertex> vertices = {
-    {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-    {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-    {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-    {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+float lastX = 300, lastY = 300;
+bool firstCall = true;
+void mouseCallback(GLFWwindow* window, double xPos,double yPos)
+{
+  std::cout<<"xPos: "<< xPos<<"   yPos: "<< yPos<<"\r";
+  if(firstCall){
+    lastX = xPos;
+    lastY = yPos;
+    firstCall = false;
+    return;
+  }
+  float sensitive = 0.035;
+  float yDif = yPos-lastY;
+  float xDif = xPos-lastX;
+  camera.pitch +=sensitive*yDif;
+  camera.pitch = glm::clamp(camera.pitch,-89.0f,89.0f);
+  camera.yaw +=sensitive*xDif;
+  //camera.yaw = glm::mod(camera.yaw + 180.0f, 360.0f) - 180.0f; 
+  lastX = xPos;
+  lastY = yPos;
+   
+}
 
-    {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-    {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-    {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-    {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}};
-
-const std::vector<uint16_t> indices = {
-    0, 1, 2, 2, 3, 0,
-    4, 5, 6, 6, 7, 4};
+void keycallback(GLFWwindow* window){
+  float sensitivity = 0.007;
+  if(glfwGetKey(window,GLFW_KEY_ESCAPE) == GLFW_PRESS){
+    glfwSetWindowShouldClose(window,GL_TRUE);
+  }
+  if(glfwGetKey(window,GLFW_KEY_W) == GLFW_PRESS){
+    camera.pos +=sensitivity*camera.direction;
+  }
+  if(glfwGetKey(window,GLFW_KEY_S) == GLFW_PRESS){
+    camera.pos -=sensitivity*camera.direction;
+  }
+  if(glfwGetKey(window,GLFW_KEY_A) == GLFW_PRESS){
+    camera.pos -=sensitivity*glm::normalize(glm::cross(camera.direction,camera.up));
+  }
+  if(glfwGetKey(window,GLFW_KEY_D) == GLFW_PRESS){
+    camera.pos +=sensitivity*glm::normalize(glm::cross(camera.direction,camera.up));
+  }
+  if(glfwGetKey(window,GLFW_KEY_SPACE) == GLFW_PRESS){
+    camera.pos +=sensitivity*glm::vec3(0,1,0);
+  }
+  if(glfwGetKey(window,GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS){
+    camera.pos -=sensitivity*glm::vec3(0,1,0);
+  }
+}
 
 class HelloTriangleApplication
 {
@@ -155,6 +262,7 @@ public:
   }
 
 private:
+  friend class Mesh;
   GLFWwindow *window;
 
   VkInstance instance;
@@ -181,6 +289,7 @@ private:
 
   VkCommandPool commandPool;
 
+  uint32_t miplevels;
   VkImage textureImage;
   VkDeviceMemory textureImageMemory;
   VkImageView textureImageView;
@@ -190,10 +299,14 @@ private:
   VkDeviceMemory depthImageMemory;
   VkImageView depthImageView;
 
+  std::vector<Vertex> vertices;
+  std::vector<uint32_t> indices;
   VkBuffer vertexBuffer;
   VkDeviceMemory vertexBufferMemory;
   VkBuffer indexBuffer;
   VkDeviceMemory indexBufferMemory;
+
+  std::vector<Model> scene;
 
   std::vector<VkBuffer> uniformBuffers;
   std::vector<VkDeviceMemory> uniformBuffersMemory;
@@ -243,29 +356,39 @@ private:
     createDepthResources();
     createFramebuffers();
     createCommandPool();
-    createTextureImage();
-    createTextureImageView();
+    createTextureImage(TEXTURE_PATH, textureImage, textureImageMemory);
+    createTextureImageView(textureImage,miplevels,textureImageView);
     createTextureSampler();
-    createVertexBuffer();
-    createIndexBuffer();
+    loadModel();
+    createVertexBuffer(vertices,vertexBuffer,vertexBufferMemory);
+    createIndexBuffer(indices, indexBuffer, indexBufferMemory);
     createUniformBuffers();
     createDescriptorPool();
     createDescriptorSets();
     createCommandBuffers();
     createSyncObjects();
-    loadObjModle();
+    createCamera();
+//------------------------------------------------------
+    loadComplexModel();
+//------------------------------------------------------
+
   }
 
   void mainLoop()
   {
+    glfwSetInputMode(window,GLFW_CURSOR,GLFW_CURSOR_DISABLED);
+    glfwSetCursorPosCallback(window, mouseCallback);
+    
     while (!glfwWindowShouldClose(window))
     {
       glfwPollEvents();
+      keycallback(window);
       drawFrame();
     }
 
     vkDeviceWaitIdle(device);
   }
+ 
 
   void cleanupSwapChain()
   {
@@ -323,6 +446,7 @@ private:
     }
 
     vkDestroyCommandPool(device, commandPool, nullptr);
+    clearScene(scene);
 
     vkDestroyDevice(device, nullptr);
 
@@ -330,7 +454,6 @@ private:
     {
       DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
     }
-
     vkDestroySurfaceKHR(instance, surface, nullptr);
     vkDestroyInstance(instance, nullptr);
 
@@ -576,7 +699,7 @@ private:
 
     for (size_t i = 0; i < swapChainImages.size(); i++)
     {
-      swapChainImageViews[i] = createImageView(swapChainImages[i], swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+      swapChainImageViews[i] = createImageView(swapChainImages[i], swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT,1);
     }
   }
 
@@ -838,12 +961,12 @@ private:
     }
   }
 
-  void createTextureImage()
+  void createTextureImage(std::string texPath, VkImage& textureImage, VkDeviceMemory& textureImageMemory)
   {
     int texWidth, texHeight, texChannels;
-    stbi_uc *pixels = stbi_load("textures/penguin.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+    stbi_uc *pixels = stbi_load(texPath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
     VkDeviceSize imageSize = texWidth * texHeight * 4;
-
+    miplevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth,texHeight))))+1;  //这里是计算最多多少层mipmap
     if (!pixels)
     {
       throw std::runtime_error("failed to load texture image!");
@@ -860,19 +983,93 @@ private:
 
     stbi_image_free(pixels);
 
-    createImage(texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureImageMemory);
+    createImage(texWidth, texHeight, miplevels, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT|VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureImageMemory);
 
-    transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,miplevels);
     copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-    transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    generateMipmaps(textureImage,VK_FORMAT_R8G8B8A8_SRGB,texWidth,texHeight,miplevels);
 
     vkDestroyBuffer(device, stagingBuffer, nullptr);
     vkFreeMemory(device, stagingBufferMemory, nullptr);
   }
 
-  void createTextureImageView()
+  void generateMipmaps(VkImage image, VkFormat imageFormat , uint32_t texWidth, uint32_t texHeight, uint32_t miplevels){
+    VkFormatProperties properties;
+    vkGetPhysicalDeviceFormatProperties(physicalDevice,imageFormat,&properties);
+    if(!(properties.optimalTilingFeatures& VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT)){
+      throw std::runtime_error("texture images format does not support linear bliting");
+    }
+    VkCommandBuffer commandbuffer = beginSingleTimeCommands();
+    VkImageMemoryBarrier barrier{};
+    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    barrier.image = image;
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    barrier.subresourceRange.levelCount = 1;
+    barrier.subresourceRange.layerCount = 1;
+    barrier.subresourceRange.baseArrayLayer = 0;
+
+    int32_t mipWidth = texWidth;
+    int32_t mipHeight = texHeight;
+    for(uint32_t i = 1;i<miplevels;++i)
+    {
+      barrier.subresourceRange.baseMipLevel = i-1;
+      barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+      barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+      barrier.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
+      barrier.dstAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT;
+
+      vkCmdPipelineBarrier(commandbuffer,
+            VK_PIPELINE_STAGE_2_TRANSFER_BIT,VK_PIPELINE_STAGE_2_TRANSFER_BIT, 0,
+            0,nullptr,
+            0,nullptr,
+            1,&barrier);//相当于使用了这个屏障
+
+      VkImageBlit blit{};
+      blit.srcOffsets[0] = {0,0,0};
+      blit.srcOffsets[1] = {mipWidth,mipHeight,1};
+      blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+      blit.srcSubresource.mipLevel = i-1;
+      blit.srcSubresource.layerCount  = 1;
+      blit.srcSubresource.baseArrayLayer = 0;
+      blit.dstOffsets[0] = {0,0,0};
+      blit.dstOffsets[1] = {mipWidth>1?mipWidth/2:1,mipHeight>1?mipHeight/2:1,1};
+      blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+      blit.dstSubresource.mipLevel = i;
+      blit.dstSubresource.layerCount = 1;
+      blit.dstSubresource.baseArrayLayer = 0;
+      vkCmdBlitImage(commandbuffer,
+              image,VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+              image,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+              1,&blit,
+              VK_FILTER_LINEAR);
+      barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+      barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+      barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+      barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+      vkCmdPipelineBarrier(commandbuffer,
+    VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
+        0, nullptr,
+        0, nullptr,
+        1, &barrier);
+      if(mipWidth>1) mipWidth/=2;
+      if(mipHeight>1) mipHeight /=2; 
+    }
+    barrier.subresourceRange.baseMipLevel = miplevels-1;
+    barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+    vkCmdPipelineBarrier(commandbuffer,VK_PIPELINE_STAGE_TRANSFER_BIT,VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+    0,0,nullptr,0,nullptr,1,&barrier);
+    endSingleTimeCommands(commandbuffer);
+  }
+
+  void createTextureImageView(VkImage& textureImage,int miplevels,VkImageView& textureImageView)
   {
-    textureImageView = createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
+    textureImageView = createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, miplevels);
   }
 
   void createTextureSampler()
@@ -894,6 +1091,9 @@ private:
     samplerInfo.compareEnable = VK_FALSE;
     samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
     samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    samplerInfo.minLod = 0.0f;
+    samplerInfo.maxLod = static_cast<float>(miplevels);
+    samplerInfo.mipLodBias = 0.0f;
 
     if (vkCreateSampler(device, &samplerInfo, nullptr, &textureSampler) != VK_SUCCESS)
     {
@@ -901,7 +1101,7 @@ private:
     }
   }
 
-  VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags)
+  VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t miplevels)
   {
     VkImageViewCreateInfo viewInfo{};
     viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -910,9 +1110,10 @@ private:
     viewInfo.format = format;
     viewInfo.subresourceRange.aspectMask = aspectFlags;
     viewInfo.subresourceRange.baseMipLevel = 0;
-    viewInfo.subresourceRange.levelCount = 1;
+    viewInfo.subresourceRange.levelCount = miplevels;
     viewInfo.subresourceRange.baseArrayLayer = 0;
     viewInfo.subresourceRange.layerCount = 1;
+    
 
     VkImageView imageView;
     if (vkCreateImageView(device, &viewInfo, nullptr, &imageView) != VK_SUCCESS)
@@ -923,7 +1124,7 @@ private:
     return imageView;
   }
 
-  void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage &image, VkDeviceMemory &imageMemory)
+  void createImage(uint32_t width, uint32_t height, uint32_t miplevels, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage &image, VkDeviceMemory &imageMemory)
   {
     VkImageCreateInfo imageInfo{};
     imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -931,7 +1132,7 @@ private:
     imageInfo.extent.width = width;
     imageInfo.extent.height = height;
     imageInfo.extent.depth = 1;
-    imageInfo.mipLevels = 1;
+    imageInfo.mipLevels = miplevels;
     imageInfo.arrayLayers = 1;
     imageInfo.format = format;
     imageInfo.tiling = tiling;
@@ -961,7 +1162,7 @@ private:
     vkBindImageMemory(device, image, imageMemory, 0);
   }
 
-  void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
+  void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout,uint32_t miplevels)
   {
     VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
@@ -974,7 +1175,7 @@ private:
     barrier.image = image;
     barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     barrier.subresourceRange.baseMipLevel = 0;
-    barrier.subresourceRange.levelCount = 1;
+    barrier.subresourceRange.levelCount = miplevels ;
     barrier.subresourceRange.baseArrayLayer = 0;
     barrier.subresourceRange.layerCount = 1;
 
@@ -1036,7 +1237,7 @@ private:
     endSingleTimeCommands(commandBuffer);
   }
 
-  void createVertexBuffer()
+  void createVertexBuffer(std::vector<Vertex>& vertices, VkBuffer& vertexBuffer, VkDeviceMemory& vertexBufferMemory)
   {
     VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
 
@@ -1057,7 +1258,7 @@ private:
     vkFreeMemory(device, stagingBufferMemory, nullptr);
   }
 
-  void createIndexBuffer()
+  void createIndexBuffer(std::vector<uint32_t> indices, VkBuffer& indexBuffer, VkDeviceMemory& indexBufferMemory)
   {
     VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
 
@@ -1312,15 +1513,16 @@ private:
     scissor.extent = swapChainExtent;
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-    VkBuffer vertexBuffers[] = {vertexBuffer};
-    VkDeviceSize offsets[] = {0};
-    vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+    // VkBuffer vertexBuffers[] = {vertexBuffer};
+    // VkDeviceSize offsets[] = {0};
+    // vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
-    vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+    // vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+    // vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
 
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
+    // vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
-    vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+    drawScene(scene,commandBuffer, descriptorSets[currentFrame],pipelineLayout);
 
     vkCmdEndRenderPass(commandBuffer);
 
@@ -1361,10 +1563,17 @@ private:
     auto currentTime = std::chrono::high_resolution_clock::now();
     float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
+     glm::mat4 unit(    // 单位矩阵
+            glm::vec4(1, 0, 0, 0),
+            glm::vec4(0, 1, 0, 0),
+            glm::vec4(0, 0, 1, 0),
+            glm::vec4(0, 0, 0, 1)
+        );
     UniformBufferObject ubo{};
-    ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 10.0f);
+    ubo.model = glm::translate(unit, glm::vec3(0,2,0))*glm::rotate(glm::mat4(1.0f),glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    //ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.view = camera.getViewMatrix(true);
+    ubo.proj = camera.getProjectMatrix(false);
     ubo.proj[1][1] *= -1;
 
     memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
@@ -1656,10 +1865,10 @@ private:
   void createDepthResources()
   {
     VkFormat depthFormat = findDepthFormat();
-    createImage(swapChainExtent.width, swapChainExtent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL,
+    createImage(swapChainExtent.width, swapChainExtent.height, 1,depthFormat, VK_IMAGE_TILING_OPTIMAL,
                 VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 depthImage, depthImageMemory);
-    depthImageView = createImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+    depthImageView = createImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT,1);
   }
 
   VkFormat findDepthFormat()
@@ -1689,58 +1898,117 @@ private:
   {
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT || VK_FORMAT_D24_UNORM_S8_UINT;
   }
-  void loadObjModle(){
 
-    std::string modelPath = "C:/Users/admin/JYF_Repositories/Vulkan_learn/models/nanosuit/nanosuit.obj";
-    tinyobj::ObjReaderConfig reader_config;
-    reader_config.mtl_search_path = "C:/Users/admin/JYF_Repositories/Vulkan_learn/models/nanosuit";
-    tinyobj::ObjReader reader;
-
-    if (!reader.ParseFromFile(modelPath, reader_config)) {
-
-  exit(1);
-}
-
-if (!reader.Warning().empty()) {
-  std::cout << "TinyObjReader: " << reader.Warning();
-}
-
-    auto &attrib = reader.GetAttrib();
-    auto &shapes = reader.GetShapes();
-    auto &material = reader.GetMaterials();
-    for (size_t s = 0; s < shapes.size();s++){
-      size_t index_offset = 0;
-      for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size();++f){
-        size_t fv = size_t(shapes[s].mesh.num_face_vertices[f]);
-        for (size_t v = 0; v < fv;++v){
-              // access to vertex
-          tinyobj::index_t idx = shapes[s].mesh.indices[index_offset + v];
-          tinyobj::real_t vx = attrib.vertices[3*size_t(idx.vertex_index)+0];
-          tinyobj::real_t vy = attrib.vertices[3*size_t(idx.vertex_index)+1];
-          tinyobj::real_t vz = attrib.vertices[3*size_t(idx.vertex_index)+2];
-
-          // Check if `normal_index` is zero or positive. negative = no normal data
-          if (idx.normal_index >= 0) {
-            tinyobj::real_t nx = attrib.normals[3*size_t(idx.normal_index)+0];
-            tinyobj::real_t ny = attrib.normals[3*size_t(idx.normal_index)+1];
-            tinyobj::real_t nz = attrib.normals[3*size_t(idx.normal_index)+2];
-          }
-
-          // Check if `texcoord_index` is zero or positive. negative = no texcoord data
-          if (idx.texcoord_index >= 0) {
-            tinyobj::real_t tx = attrib.texcoords[2*size_t(idx.texcoord_index)+0];
-            tinyobj::real_t ty = attrib.texcoords[2*size_t(idx.texcoord_index)+1];
-          }
-
-          // Optional: vertex colors
-          // tinyobj::real_t red   = attrib.colors[3*size_t(idx.vertex_index)+0];
-          // tinyobj::real_t green = attrib.colors[3*size_t(idx.vertex_index)+1];
-          // tinyobj::real_t blue  = attrib.colors[3*size_t(idx.vertex_index)+2];
-        }
-        index_offset += fv;
+  void loadModel(){
+    tinyobj:: attrib_t attrib;
+    std::vector<tinyobj::shape_t> shapes;
+    std::vector<tinyobj::material_t> materials;
+    std::string warning;
+    std::string err;
+    bool ret = tinyobj::LoadObj(&attrib,&shapes,&materials,&warning,&err,MODEL_PATH.c_str());
+    if(!ret) throw std::runtime_error(warning+err);
+    for(auto &shape:shapes){
+      for(const auto& index:shape.mesh.indices){
+        Vertex vertex{};
+        vertex.pos = {
+          attrib.vertices[3*index.vertex_index +0],
+          attrib.vertices[3*index.vertex_index+1],
+          attrib.vertices[3*index.vertex_index+2]
+        };
+        vertex.texCoord = {
+          attrib.texcoords[2*index.texcoord_index+0],
+          1-attrib.texcoords[2*index.texcoord_index+1]
+        };
+        vertices.push_back(vertex);
+        indices.push_back(static_cast<uint32_t>( indices.size()));
       }
-      std::cout << material[shapes[s].mesh.material_ids[0]].diffuse_texname << std::endl;
     }
+  }
+
+  // In the future, we can load a huge scene through json file
+  void loadComplexModel(){
+    for(int i = 0;i<models_path.size();++i){
+      std::string model_path = models_path.at(i);
+      tinyobj::ObjReaderConfig reader_config;
+      reader_config.mtl_search_path=model_path.substr(0,model_path.find_last_of("/\\"))+"/";
+      tinyobj::ObjReader reader;
+      if(!reader.ParseFromFile(model_path,reader_config)){
+        if(!reader.Error().empty()){
+          std::cout<<"TinyObjReader";
+          throw std::runtime_error(reader.Error());
+        }
+      }
+      if(!reader.Warning().empty()){
+        std::cout<<reader.Warning()<<std::endl;
+      }
+
+      auto& attrib = reader.GetAttrib();
+      auto& shapes = reader.GetShapes();
+      auto& materials = reader.GetMaterials();
+      Model model;
+      for(size_t s = 0;s<shapes.size();++s)
+      {
+        Mesh mesh;
+        size_t index_offset = 0;
+        for(size_t f = 0;f<shapes[s].mesh.num_face_vertices.size();++f){
+          size_t fv = size_t(shapes[s].mesh.num_face_vertices[f]);
+          for(size_t v = 0;v<fv;++v){
+            tinyobj::index_t idx = shapes[s].mesh.indices[index_offset+v];
+            mesh.indices.push_back(static_cast<uint32_t>(mesh.indices.size()));
+            Vertex vertex;
+            vertex.pos.x = attrib.vertices[3*size_t(idx.vertex_index)+0];
+            vertex.pos.y = attrib.vertices[3*size_t(idx.vertex_index)+1];
+            vertex.pos.z = attrib.vertices[3*size_t(idx.vertex_index)+2];
+
+            if(idx.normal_index>=0){//没有的话是-1
+              vertex.normal.x = attrib.normals[3*size_t(idx.normal_index)+0];
+              vertex.normal.y = attrib.normals[3*size_t(idx.normal_index)+1];
+              vertex.normal.z = attrib.normals[3*size_t(idx.normal_index)+2];
+            }
+
+            if(idx.texcoord_index>=0){
+              vertex.texCoord.x = attrib.texcoords[2*size_t(idx.texcoord_index)+0];
+              vertex.texCoord.y = attrib.texcoords[2*size_t(idx.texcoord_index)+1];
+            }
+            mesh.vertices.push_back(vertex);
+          }
+          index_offset+=fv;
+        }
+        createVertexBuffer(mesh.vertices,mesh.vertexBuffer,mesh.vertexBufferMemory);
+        createIndexBuffer(mesh.indices,mesh.indexBuffer, mesh.indexBufferMemory);
+        // Read this mesh's texture
+        std::string texturePath = reader_config.mtl_search_path+materials[shapes[s].mesh.material_ids[0]].diffuse_texname;
+        createTextureImage(texturePath, mesh.diffuseImage, mesh.diffuseImageMemory);
+        createTextureImageView(mesh.diffuseImage,miplevels,mesh.diffuseImageview);
+        model.meshes.push_back(mesh);
+      }
+      scene.push_back(model);
+    }
+  }
+
+  void drawScene(std::vector<Model>& scene, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkPipelineLayout& layout) {
+    for(auto & model: scene){
+      model.draw(commandBuffer,descriptorSet,layout);
+    }
+  }
+  void createCamera(){
+
+    camera.aspect = swapChainExtent.width
+     / (float)swapChainExtent.height;
+  }
+
+  void clearScene(std::vector<Model>& scene){
+    for(auto& model:scene){
+      for(auto& mesh :model.meshes){
+        vkDestroyBuffer(device,mesh.vertexBuffer,nullptr);
+        vkDestroyBuffer(device,mesh.indexBuffer,nullptr);
+        vkDestroyImage(device,mesh.diffuseImage,nullptr);
+        vkDestroyImageView(device,mesh.diffuseImageview,nullptr);
+        vkFreeMemory(device,mesh.vertexBufferMemory,nullptr);
+        vkFreeMemory(device,mesh.diffuseImageMemory,nullptr);
+        vkFreeMemory(device,mesh.indexBufferMemory,nullptr);
+      }
+    }  
   }
 
   static std::vector<char> readFile(const std::string &filename)

@@ -1,19 +1,31 @@
 {
     "files.associations": {
-        "*.ush": "cpp",
-        "*.usf": "cpp",
-        "vector": "cpp",
-        "algorithm": "cpp",
-        "array": "cpp",
         "atomic": "cpp",
+        "bitset": "cpp",
+        "*.ipp": "cpp",
+        "vector": "cpp",
+        "stdexcept": "cpp",
+        "algorithm": "cpp",
+        "any": "cpp",
+        "array": "cpp",
+        "barrier": "cpp",
         "bit": "cpp",
         "cctype": "cpp",
+        "cfenv": "cpp",
         "charconv": "cpp",
         "chrono": "cpp",
+        "cinttypes": "cpp",
         "clocale": "cpp",
         "cmath": "cpp",
+        "codecvt": "cpp",
         "compare": "cpp",
+        "complex": "cpp",
         "concepts": "cpp",
+        "condition_variable": "cpp",
+        "coroutine": "cpp",
+        "csetjmp": "cpp",
+        "csignal": "cpp",
+        "cstdarg": "cpp",
         "cstddef": "cpp",
         "cstdint": "cpp",
         "cstdio": "cpp",
@@ -21,10 +33,23 @@
         "cstring": "cpp",
         "ctime": "cpp",
         "cwchar": "cpp",
+<<<<<<< HEAD
         "exception": "cpp",
         "format": "cpp",
         "forward_list": "cpp",
         "fstream": "cpp",
+=======
+        "cwctype": "cpp",
+        "deque": "cpp",
+        "exception": "cpp",
+        "execution": "cpp",
+        "filesystem": "cpp",
+        "format": "cpp",
+        "forward_list": "cpp",
+        "fstream": "cpp",
+        "functional": "cpp",
+        "future": "cpp",
+>>>>>>> main
         "initializer_list": "cpp",
         "iomanip": "cpp",
         "ios": "cpp",
@@ -32,11 +57,16 @@
         "iostream": "cpp",
         "istream": "cpp",
         "iterator": "cpp",
+<<<<<<< HEAD
+=======
+        "latch": "cpp",
+>>>>>>> main
         "limits": "cpp",
         "list": "cpp",
         "locale": "cpp",
         "map": "cpp",
         "memory": "cpp",
+<<<<<<< HEAD
         "mutex": "cpp",
         "new": "cpp",
         "optional": "cpp",
@@ -48,14 +78,50 @@
         "stop_token": "cpp",
         "streambuf": "cpp",
         "string": "cpp",
+=======
+        "memory_resource": "cpp",
+        "mutex": "cpp",
+        "new": "cpp",
+        "numbers": "cpp",
+        "numeric": "cpp",
+        "optional": "cpp",
+        "ostream": "cpp",
+        "queue": "cpp",
+        "random": "cpp",
+        "ranges": "cpp",
+        "ratio": "cpp",
+        "regex": "cpp",
+        "scoped_allocator": "cpp",
+        "semaphore": "cpp",
+        "set": "cpp",
+        "shared_mutex": "cpp",
+        "source_location": "cpp",
+        "span": "cpp",
+        "sstream": "cpp",
+        "stack": "cpp",
+        "stop_token": "cpp",
+        "streambuf": "cpp",
+        "string": "cpp",
+        "strstream": "cpp",
+        "syncstream": "cpp",
+>>>>>>> main
         "system_error": "cpp",
         "thread": "cpp",
         "tuple": "cpp",
         "type_traits": "cpp",
+<<<<<<< HEAD
+=======
+        "typeindex": "cpp",
+>>>>>>> main
         "typeinfo": "cpp",
         "unordered_map": "cpp",
         "unordered_set": "cpp",
         "utility": "cpp",
+<<<<<<< HEAD
+=======
+        "valarray": "cpp",
+        "variant": "cpp",
+>>>>>>> main
         "xfacet": "cpp",
         "xhash": "cpp",
         "xiosbase": "cpp",
@@ -72,6 +138,10 @@
         "xtr1common": "cpp",
         "xtree": "cpp",
         "xutility": "cpp"
+<<<<<<< HEAD
     },
     "C_Cpp.dimInactiveRegions": false
+=======
+    }
+>>>>>>> main
 }

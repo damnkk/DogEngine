@@ -1,22 +1,22 @@
 {
-    "version": "2.0.0",
-    "tasks": [
-        {
-            "type": "shell",
-            "label": "msvc build",
-            "command": "cl.exe",
-            "args": [
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "cppbuild",
+			"label": "C/C++: cl.exe 生成活动文件",
+			"command": "cl.exe",
+			"args": [
                 "/Zi",
                 "/EHsc",
                 "/Fe:",
-                "${fileDirname}//build/Debug/vulkan_learning.exe",
-                "${file}",
-				
+                "${fileDirname}/build/Debug/vulkan_learning.exe",
+                "${file}"
             ],
             "problemMatcher": [
                 "$msCompile"
             ],
-            "group": "build"
-        }
-    ]
+            "group": "build",
+			"detail": "编译器: cl.exe"
+		}
+	]
 }

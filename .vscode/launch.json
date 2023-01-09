@@ -1,14 +1,14 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    // 使用 IntelliSense 了解相关属性。 
+    // 悬停以查看现有属性的描述。
+    // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "msvc launch",
+            "name": "vulkan调试启动",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${fileDirname}\\build/Debug/vulkan_learning.exe",
+            "program": "${fileDirname}/build/Debug/vulkan_learning.exe",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
