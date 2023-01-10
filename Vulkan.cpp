@@ -1,34 +1,12 @@
-﻿#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
+﻿
+#include "Camera.h"
 
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#define TINYOBJLOADER_IMPLEMENTATION
-#include <tiny_obj_loader.h>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
-
-#include <iostream>
-#include <fstream>
-#include <stdexcept>
-#include <algorithm>
-#include <chrono>
-#include <vector>
-#include <cstring>
-#include <cstdlib>
-#include <cstdint>
-#include <limits>
-#include <array>
-#include <optional>
-#include <set>
-#include <ctime>
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
+Camera camera;
 const std::string MODEL_PATH = "models/viking_room.obj";
 const std::string TEXTURE_PATH = "textures/viking_room.png";
 
@@ -43,31 +21,6 @@ const std::vector<const char *> validationLayers = {
 
 const std::vector<const char *> deviceExtensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-
-class Camera{
-public:
-  glm::vec3 pos = glm::vec3(2.0f, 2.0f,2.0f),up = glm::vec3(0.0f,1.0f,0.0f),direction = glm::vec3(0.0f,0.0f,-1.0f);
-  float fov = 70.0f,aspect = 1.0f, zNear = 0.01f,zFar = 100.0f;
-  float pitch = 0.0f,yaw = 0.0f,roll = 0.0f;
-  float left = -1.0f,right = 1.0f,top = 1.0f,down = -1.0f;
-  Camera(){};
-  glm::mat4 getViewMatrix(bool useEularAngle = true){
-    if(useEularAngle){
-      direction.x = cos(glm::radians(pitch)) * sin(glm::radians(yaw));
-      direction.y = -sin(glm::radians(pitch));
-      direction.z = -cos(glm::radians(pitch)) * cos(glm::radians(yaw));
-    }
-    return glm::lookAt(pos,pos+direction,up);
-    //return glm::lookAt(pos, direction, up);
-  }
-  glm::mat4 getProjectMatrix(bool ortho = false){
-    if(ortho){
-      return glm::ortho(left,right,down,top,zNear,zFar);
-    }
-    return glm::perspective(glm::radians(fov),aspect,zNear,zFar);
-  }
-} camera;
-
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
