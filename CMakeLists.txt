@@ -8,6 +8,7 @@ include_directories("C:/VulkanSDK/1.3.231.1/Include" "E:/training/GLlib/include"
 add_subdirectory(src)
 find_library(vulkan_lib vulkan-1 "C:/VulkanSDK/1.3.231.1/Lib" "D:/vulkan/Lib")
 find_library(glfw_lib glfw3 "C:/VulkanSDK/1.3.231.1/Lib" "E:/training/GLlib/libs")
+find_library(vma_lib VulkanMemoryAllocatord "C:/VulkanSDK/1.3.231.1/Lib" "E:/training/GLlib/libs")
 aux_source_directory(. DIR_SRC)
 add_executable(vulkan_learning ${DIR_SRC})
 target_link_libraries(vulkan_learning SRC_LIB)

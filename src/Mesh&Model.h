@@ -2,13 +2,12 @@
 #include<iostream>
 #include "Vertex.h"
 
-
-
 struct Texture{
     VkImage textureImage;
     VkDeviceMemory textureImageMemory;
     VkImageView textureImageView;
     VmaAllocation allocation;
+    void destroy(VkDevice& device,VmaAllocator &allocator);
 };
 
 class Mesh{

@@ -12,9 +12,6 @@
 #include <stb_image.h>
 
 
-
-
-
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
@@ -79,10 +76,6 @@ struct SwapChainSupportDetails
   std::vector<VkSurfaceFormatKHR> formats;
   std::vector<VkPresentModeKHR> presentModes;
 };
-
-
-
-
 
 struct UniformBufferObject
 {
@@ -179,9 +172,7 @@ private:
   VkCommandPool commandPool;
 
   uint32_t miplevels;
-  VkImage textureImage;
-  VkDeviceMemory textureImageMemory;
-  VkImageView textureImageView;
+  Texture textureImage;
   VkSampler textureSampler;
 
   VkImage depthImage;
@@ -209,6 +200,7 @@ private:
   std::vector<VkSemaphore> imageAvailableSemaphores;
   std::vector<VkSemaphore> renderFinishedSemaphores;
   std::vector<VkFence> inFlightFences;
+  VmaAllocator allocator;
 
   uint32_t currentFrame = 0;
 
@@ -238,6 +230,7 @@ private:
     createSurface();
     pickPhysicalDevice();
     createLogicalDevice();
+    createVmaAllocator();
     createSwapChain();
     createImageViews();
     createRenderPass();
@@ -246,8 +239,8 @@ private:
     createDepthResources();
     createFramebuffers();
     createCommandPool();
-    createTextureImage(TEXTURE_PATH, textureImage, textureImageMemory);
-    createTextureImageView(textureImage,miplevels,textureImageView);
+    createTextureImage(TEXTURE_PATH, textureImage);
+    createTextureImageView(textureImage,miplevels);
     createTextureSampler();
     loadModel();
     createVertexBuffer(vertices,vertexBuffer,vertexBufferMemory);
@@ -315,10 +308,11 @@ private:
     vkDestroyDescriptorPool(device, descriptorPool, nullptr);
 
     vkDestroySampler(device, textureSampler, nullptr);
-    vkDestroyImageView(device, textureImageView, nullptr);
 
-    vkDestroyImage(device, textureImage, nullptr);
-    vkFreeMemory(device, textureImageMemory, nullptr);
+    // vkDestroyImageView(device, textureImage.textureImageView, nullptr);
+    // vkDestroyImage(device, textureImage.textureImage, nullptr);
+    // vkFreeMemory(device, textureImage.textureImageMemory, nullptr);
+    textureImage.destroy(device, allocator);////////////////////////////////////////////////////
 
     vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
 
@@ -851,7 +845,7 @@ private:
     }
   }
 
-  void createTextureImage(std::string texPath, VkImage& textureImage, VkDeviceMemory& textureImageMemory)
+  void createTextureImage(std::string texPath,Texture& texture)
   {
     int texWidth, texHeight, texChannels;
     stbi_uc *pixels = stbi_load(texPath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
@@ -873,11 +867,11 @@ private:
 
     stbi_image_free(pixels);
 
-    createImage(texWidth, texHeight, miplevels, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT|VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureImageMemory);
+    createImage(texWidth, texHeight, miplevels, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT|VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture.textureImage,texture.textureImageMemory);
 
-    transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,miplevels);
-    copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-    generateMipmaps(textureImage,VK_FORMAT_R8G8B8A8_SRGB,texWidth,texHeight,miplevels);
+    transitionImageLayout(texture.textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,miplevels);
+    copyBufferToImage(stagingBuffer, texture.textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+    //generateMipmaps(texture.textureImage,VK_FORMAT_R8G8B8A8_SRGB,texWidth,texHeight,miplevels);
 
     vkDestroyBuffer(device, stagingBuffer, nullptr);
     vkFreeMemory(device, stagingBufferMemory, nullptr);
@@ -957,9 +951,9 @@ private:
     endSingleTimeCommands(commandbuffer);
   }
 
-  void createTextureImageView(VkImage& textureImage,int miplevels,VkImageView& textureImageView)
+  void createTextureImageView(Texture texutreImage,int miplevels)
   {
-    textureImageView = createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, miplevels);
+    textureImage.textureImageView = createImageView(textureImage.textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, miplevels);
   }
 
   void createTextureSampler()
@@ -1014,16 +1008,50 @@ private:
     return imageView;
   }
 
-  void createImage(uint32_t width, uint32_t height, uint32_t miplevels, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage &image, VkDeviceMemory &imageMemory)
+  void createImage(uint32_t width, uint32_t height, uint32_t miplevels, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image,VkDeviceMemory& imageMemory)
   {
+    // VkImageCreateInfo imageInfo{};
+    // imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    // imageInfo.imageType = VK_IMAGE_TYPE_2D;
+    // imageInfo.extent.width = width;
+    // imageInfo.extent.height = height;
+    // imageInfo.extent.depth = 1;
+    // imageInfo.mipLevels = miplevels;
+    // imageInfo.arrayLayers = 1;
+    // imageInfo.format = format;
+    // imageInfo.tiling = tiling;
+    // imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    // imageInfo.usage = usage;
+    // imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    // imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    // if (vkCreateImage(device, &imageInfo, nullptr, &image) != VK_SUCCESS)
+    // {
+    //   throw std::runtime_error("failed to create image!");
+    // }
+
+    // VkMemoryRequirements memRequirements;
+    // vkGetImageMemoryRequirements(device, image, &memRequirements);
+
+    // VkMemoryAllocateInfo allocInfo{};
+    // allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    // allocInfo.allocationSize = memRequirements.size;
+    // allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
+
+    // if (vkAllocateMemory(device, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS)
+    // {
+    //   throw std::runtime_error("failed to allocate image memory!");
+    // }
+
+    // vkBindImageMemory(device, image, imageMemory, 0);
     VkImageCreateInfo imageInfo{};
     imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     imageInfo.imageType = VK_IMAGE_TYPE_2D;
     imageInfo.extent.width = width;
     imageInfo.extent.height = height;
     imageInfo.extent.depth = 1;
-    imageInfo.mipLevels = miplevels;
     imageInfo.arrayLayers = 1;
+    imageInfo.mipLevels = 1;
     imageInfo.format = format;
     imageInfo.tiling = tiling;
     imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -1031,25 +1059,12 @@ private:
     imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
     imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-    if (vkCreateImage(device, &imageInfo, nullptr, &image) != VK_SUCCESS)
-    {
-      throw std::runtime_error("failed to create image!");
+    VmaAllocationCreateInfo allocationCreateInfo{};
+    allocationCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
+    VmaAllocation allocation;
+    if (vmaCreateImage(allocator, &imageInfo, &allocationCreateInfo, &image, &allocation, nullptr)!=VK_SUCCESS){
+      throw std::runtime_error("failed to create image");
     }
-
-    VkMemoryRequirements memRequirements;
-    vkGetImageMemoryRequirements(device, image, &memRequirements);
-
-    VkMemoryAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
-
-    if (vkAllocateMemory(device, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS)
-    {
-      throw std::runtime_error("failed to allocate image memory!");
-    }
-
-    vkBindImageMemory(device, image, imageMemory, 0);
   }
 
   void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout,uint32_t miplevels)
@@ -1229,7 +1244,7 @@ private:
 
       VkDescriptorImageInfo imageInfo{};
       imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-      imageInfo.imageView = textureImageView;
+      imageInfo.imageView = textureImage.textureImageView;
       imageInfo.sampler = textureSampler;
 
       std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
@@ -1898,6 +1913,17 @@ private:
         vkFreeMemory(device,mesh.indexBufferMemory,nullptr);
       }
     }  
+  }
+
+  void createVmaAllocator(){
+    VmaAllocatorCreateInfo allocInfo{};
+    allocInfo.device = device;
+    allocInfo.instance = instance;
+    allocInfo.physicalDevice = physicalDevice;
+
+    if(vmaCreateAllocator(&allocInfo,&allocator)!=VK_SUCCESS){
+      throw std::runtime_error("failed to create vulkan memory allocator!");
+    }
   }
 
   static std::vector<char> readFile(const std::string &filename)

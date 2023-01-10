@@ -1,5 +1,4 @@
 #include "Mesh&Model.h"
-#define VMA_IMPLEMENTATION
 
 void Mesh::draw(VkCommandBuffer& commandBuffer, VkDescriptorSet& VkDescriptorSet, VkPipelineLayout& pipelineLayout){
     VkBuffer vertexBuffers[] = {vertexBuffer};
@@ -15,4 +14,9 @@ void Model::draw(VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet,
     {
         meshes.at(i).draw(commandBuffer, descriptorSet, pipelineLayout);
     }
+}
+
+void Texture::destroy(VkDevice& device,VmaAllocator &allocator){
+    vkDestroyImageView(device, textureImageView, nullptr);
+    vmaDestroyImage(allocator, textureImage, allocation);
 }
