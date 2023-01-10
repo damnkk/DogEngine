@@ -1,13 +1,18 @@
 ﻿
+
 #include "Common.h"
 #include "Camera.h"
 #include "Vertex.h"
+#include "Mesh&Model.h"
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
+
+
+
 
 
 const uint32_t WIDTH = 800;
@@ -76,46 +81,7 @@ struct SwapChainSupportDetails
 };
 
 
-class Mesh{
-public:
-  Mesh(){}
-  std::vector<Vertex> vertices;
-  std::vector<uint32_t> indices;
-  VkBuffer vertexBuffer;
-  VkDeviceMemory vertexBufferMemory;
-  VkBuffer indexBuffer;
-  VkDeviceMemory indexBufferMemory;
-  VkImage diffuseImage;
-  VkDeviceMemory diffuseImageMemory;
-  VkImageView diffuseImageview;
-  
-  void draw(VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet,VkPipelineLayout& pipelineLayout){
-    VkBuffer vertexBuffers[] = {vertexBuffer};
-    VkDeviceSize offsets[] = {0};
-    vkCmdBindVertexBuffers(commandBuffer, 0, 1,vertexBuffers, offsets);
-    vkCmdBindIndexBuffer(commandBuffer,indexBuffer,0,VK_INDEX_TYPE_UINT32);
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
-    //vkCmdDrawIndexed??
-    vkCmdDrawIndexed(commandBuffer,static_cast<uint32_t>(indices.size()),1,0,0,0);
-    //vkCmdDraw(commandBuffer, vertices.size(),1,0,0);
-  }
-};
 
-class Model{
-public:
-  Model(){}
-  std::vector<Mesh> meshes;
-  glm::mat4 model;
-
-
-
-  void draw(VkCommandBuffer commandbuffer, VkDescriptorSet& descriptorSet, VkPipelineLayout& layout){
-    for(int i=  0;i<meshes.size();++i)
-    {
-      meshes.at(i).draw(commandbuffer, descriptorSet, layout);
-    }
-  }
-};
 
 
 struct UniformBufferObject
@@ -1901,9 +1867,9 @@ private:
         createVertexBuffer(mesh.vertices,mesh.vertexBuffer,mesh.vertexBufferMemory);
         createIndexBuffer(mesh.indices,mesh.indexBuffer, mesh.indexBufferMemory);
         // Read this mesh's texture
-        std::string texturePath = reader_config.mtl_search_path+materials[shapes[s].mesh.material_ids[0]].diffuse_texname;
-        createTextureImage(texturePath, mesh.diffuseImage, mesh.diffuseImageMemory);
-        createTextureImageView(mesh.diffuseImage,miplevels,mesh.diffuseImageview);
+        // std::string texturePath = reader_config.mtl_search_path+materials[shapes[s].mesh.material_ids[0]].diffuse_texname;
+        // createTextureImage(texturePath, mesh.diffuseImage, mesh.diffuseImageMemory);
+        // createTextureImageView(mesh.diffuseImage,miplevels,mesh.diffuseImageview);
         model.meshes.push_back(mesh);
       }
       scene.push_back(model);
@@ -1926,10 +1892,9 @@ private:
       for(auto& mesh :model.meshes){
         vkDestroyBuffer(device,mesh.vertexBuffer,nullptr);
         vkDestroyBuffer(device,mesh.indexBuffer,nullptr);
-        vkDestroyImage(device,mesh.diffuseImage,nullptr);
-        vkDestroyImageView(device,mesh.diffuseImageview,nullptr);
+        
         vkFreeMemory(device,mesh.vertexBufferMemory,nullptr);
-        vkFreeMemory(device,mesh.diffuseImageMemory,nullptr);
+       
         vkFreeMemory(device,mesh.indexBufferMemory,nullptr);
       }
     }  

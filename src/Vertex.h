@@ -1,5 +1,7 @@
+#pragma once
 #include<iostream>
 #include "Common.h"
+
 struct Vertex{
     glm::vec3 pos;
     glm::vec3 normal;
