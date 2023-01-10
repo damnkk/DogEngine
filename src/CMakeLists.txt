@@ -1,3 +1,2 @@
 aux_source_directory(. LIB_SRCS)
-set(SDS_STATES_ALL_SOURCES ${PROJECT_SOURCE_DIR}/src/Camera.cpp)
-set(ALL_SOURCE1 ${SDS_STATES_ALL_SOURCES} PARENT_SCOPE)
+add_library(SRC_LIB STATIC ${LIB_SRCS})

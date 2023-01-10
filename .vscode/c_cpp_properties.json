@@ -5,7 +5,8 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "E:/training/GLlib/include",
-                "D:/vulkan/Include"
+                "D:/vulkan/Include",
+                "C:\\VulkanSDK\\1.3.231.1\\Include"
             ],
             "defines": [
                 "_DEBUG",
