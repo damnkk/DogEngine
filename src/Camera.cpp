@@ -2,9 +2,9 @@
 
 glm::mat4 Camera::getViewMatrix(bool useEularAngle){
     if(useEularAngle){
-        direction.x = sin(glm::radians(pitch)) * cos(glm::radians(yaw));
-        direction.y = -sin(glm::radians(yaw));
-        direction.z = cos(glm::radians(pitch)) * cos(glm::radians(yaw));
+        direction.x = cos(glm::radians(pitch)) * sin(glm::radians(yaw));
+        direction.y = -sin(glm::radians(pitch));
+        direction.z = -cos(glm::radians(pitch)) * cos(glm::radians(yaw));
     }
     return glm::lookAt(pos, pos + direction, up);
 }

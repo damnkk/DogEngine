@@ -1,4 +1,5 @@
 ﻿
+#include "common.h"
 #include "Camera.h"
 
 #define TINYOBJLOADER_IMPLEMENTATION
@@ -15,7 +16,7 @@ const std::string MODEL_PATH = "models/viking_room.obj";
 const std::string TEXTURE_PATH = "textures/viking_room.png";
 
 const std::vector<std::string> models_path={
-"D:/Repositories/Vulkan_learn/models/nanosuit/nanosuit.obj"
+"C:/Users/admin/JYF_Repositories/Vulkan_learn/models/nanosuit/nanosuit.obj"
 };
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
