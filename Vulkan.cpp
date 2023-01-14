@@ -177,15 +177,10 @@ private:
 
   Texture depthImage;
 
-  std::vector<Vertex> vertices;
-  std::vector<uint32_t> indices;
-  Buffer vertexBuffer;
-  Buffer indexBuffer;
-
   std::vector<Model> scene;
 
   std::vector<Buffer> uniformBuffers;
-  std::vector<VkDeviceMemory> uniformBuffersMemory;
+  //std::vector<VkDeviceMemory> uniformBuffersMemory;
   std::vector<void *> uniformBuffersMapped;
 
   VkDescriptorPool descriptorPool;
@@ -227,7 +222,7 @@ private:
     pickPhysicalDevice();
     createLogicalDevice();
     createVmaAllocator();
-    tests();
+    //tests();
     createSwapChain();
     createImageViews();
     createRenderPass();
@@ -239,32 +234,16 @@ private:
     createTextureImage(TEXTURE_PATH, textureImage);
     createTextureImageView(textureImage,miplevels);
     createTextureSampler();
-    loadModel();
-    createVertexBuffer(vertices,vertexBuffer);
-    createIndexBuffer(indices, indexBuffer);
     createUniformBuffers();
     createDescriptorPool();
     createDescriptorSets();
     createCommandBuffers();
     createSyncObjects();
     createCamera();
-//------------------------------------------------------
-    loadComplexModel();
+//--------------------Load models-----------------------
+    loadComplexModel("D:/Repositories/Vulkan_learn/models/nanosuit/nanosuit.obj",glm::vec3(0.0f,1.0f,0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.4f,0.4f,0.4f));
 //------------------------------------------------------
 
-  }
-
-  void tests(){
-    VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-bufferInfo.size = 65536;
-bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
- 
-VmaAllocationCreateInfo allocInfo = {};
-allocInfo.usage = VMA_MEMORY_USAGE_AUTO;
- 
-VkBuffer buffer;
-VmaAllocation allocation;
-vmaCreateBuffer(allocator, &bufferInfo, &allocInfo, &buffer, &allocation, nullptr);
   }
 
   void mainLoop()
@@ -290,12 +269,12 @@ vmaCreateBuffer(allocator, &bufferInfo, &allocInfo, &buffer, &allocation, nullpt
       vkDestroyFramebuffer(device, framebuffer, nullptr);
     }
 
+
     for (auto imageView : swapChainImageViews)
     {
       vkDestroyImageView(device, imageView, nullptr);
     }
-    vmaDestroyImage(allocator, depthImage.textureImage,depthImage.allocation);
-    vkDestroyImageView(device, depthImage.textureImageView, nullptr);
+    depthImage.destroy(device,allocator);
     vkDestroySwapchainKHR(device, swapChain, nullptr);
   }
 
@@ -309,7 +288,9 @@ vmaCreateBuffer(allocator, &bufferInfo, &allocInfo, &buffer, &allocation, nullpt
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
-      vmaDestroyBuffer(allocator, uniformBuffers[i].buffer, uniformBuffers[i].allocation);
+      vmaUnmapMemory(allocator, uniformBuffers[i].allocation);
+      uniformBuffers[i].destroy(device, allocator);
+      //vmaDestroyBuffer(allocator, uniformBuffers[i].buffer, uniformBuffers[i].allocation);
     }
 
     vkDestroyDescriptorPool(device, descriptorPool, nullptr);
@@ -323,9 +304,7 @@ vmaCreateBuffer(allocator, &bufferInfo, &allocInfo, &buffer, &allocation, nullpt
 
     vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
 
-    vmaDestroyBuffer(allocator, indexBuffer.buffer, indexBuffer.allocation);
-
-    vmaDestroyBuffer(allocator, vertexBuffer.buffer, vertexBuffer.allocation);
+    //vmaDestroyBuffer(allocator, vertexBuffer.buffer, vertexBuffer.allocation);
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
@@ -336,6 +315,7 @@ vmaCreateBuffer(allocator, &bufferInfo, &allocInfo, &buffer, &allocation, nullpt
 
     vkDestroyCommandPool(device, commandPool, nullptr);
     clearScene(scene);
+    vmaDestroyAllocator(allocator);
 
     vkDestroyDevice(device, nullptr);
 
@@ -872,13 +852,14 @@ vmaCreateBuffer(allocator, &bufferInfo, &allocInfo, &buffer, &allocation, nullpt
 
     stbi_image_free(pixels);
 
-    createImage(texWidth, texHeight, miplevels, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT|VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture.textureImage);
+    createImage(texWidth, texHeight, miplevels, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT|VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture);
 
     transitionImageLayout(texture.textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,miplevels);
     copyBufferToImage(stagingBuffer.buffer, texture.textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
     generateMipmaps(texture.textureImage,VK_FORMAT_R8G8B8A8_SRGB,texWidth,texHeight,miplevels);
 
-    vmaDestroyBuffer(allocator, stagingBuffer.buffer, stagingBuffer.allocation);
+    stagingBuffer.destroy(device,allocator);
+    //vmaDestroyBuffer(allocator, stagingBuffer.buffer, stagingBuffer.allocation);
   }
 
   void generateMipmaps(VkImage image, VkFormat imageFormat , uint32_t texWidth, uint32_t texHeight, uint32_t miplevels){
@@ -955,7 +936,7 @@ vmaCreateBuffer(allocator, &bufferInfo, &allocInfo, &buffer, &allocation, nullpt
     endSingleTimeCommands(commandbuffer);
   }
 
-  void createTextureImageView(Texture texutreImage,int miplevels)
+  void createTextureImageView(Texture& textureImage,int miplevels)
   {
     textureImage.textureImageView = createImageView(textureImage.textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, miplevels);
   }
@@ -1012,7 +993,7 @@ vmaCreateBuffer(allocator, &bufferInfo, &allocInfo, &buffer, &allocation, nullpt
     return imageView;
   }
 
-  void createImage(uint32_t width, uint32_t height, uint32_t miplevels, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image)
+  void createImage(uint32_t width, uint32_t height, uint32_t miplevels, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, Texture& image)
   {
     // VkImageCreateInfo imageInfo{};
     // imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -1065,8 +1046,7 @@ vmaCreateBuffer(allocator, &bufferInfo, &allocInfo, &buffer, &allocation, nullpt
 
     VmaAllocationCreateInfo allocationCreateInfo{};
     allocationCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
-    VmaAllocation allocation;
-    if (vmaCreateImage(allocator, &imageInfo, &allocationCreateInfo, &image, &allocation, nullptr)!=VK_SUCCESS){
+    if (vmaCreateImage(allocator, &imageInfo, &allocationCreateInfo, &image.textureImage, &image.allocation, nullptr)!=VK_SUCCESS){
       throw std::runtime_error("failed to create image");
     }
   }
@@ -1188,7 +1168,7 @@ vmaCreateBuffer(allocator, &bufferInfo, &allocInfo, &buffer, &allocation, nullpt
     VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
     uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-    uniformBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
+    //uniformBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
     uniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
@@ -1220,7 +1200,7 @@ vmaCreateBuffer(allocator, &bufferInfo, &allocInfo, &buffer, &allocation, nullpt
 
   void createDescriptorSets()
   {
-    std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
+    std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);   //每一个set的layout都是同一个layout
     VkDescriptorSetAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     allocInfo.descriptorPool = descriptorPool;
@@ -1446,22 +1426,15 @@ vmaCreateBuffer(allocator, &bufferInfo, &allocInfo, &buffer, &allocation, nullpt
     }
   }
 
-  void updateUniformBuffer(uint32_t currentImage)
+  void updateUniformBuffer(uint32_t currentImage, glm::mat4 modelMatrix)
   {
     static auto startTime = std::chrono::high_resolution_clock::now();
 
     auto currentTime = std::chrono::high_resolution_clock::now();
     float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
-     glm::mat4 unit(    // 单位矩阵
-            glm::vec4(1, 0, 0, 0),
-            glm::vec4(0, 1, 0, 0),
-            glm::vec4(0, 0, 1, 0),
-            glm::vec4(0, 0, 0, 1)
-        );
     UniformBufferObject ubo{};
-    ubo.model = glm::translate(unit, glm::vec3(0,2,0))*glm::rotate(glm::mat4(1.0f),glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-    //ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.model = modelMatrix;
     ubo.view = camera.getViewMatrix(true);
     ubo.proj = camera.getProjectMatrix(false);
     ubo.proj[1][1] *= -1;
@@ -1485,8 +1458,6 @@ vmaCreateBuffer(allocator, &bufferInfo, &allocInfo, &buffer, &allocation, nullpt
     {
       throw std::runtime_error("failed to acquire swap chain image!");
     }
-
-    updateUniformBuffer(currentFrame);
 
     vkResetFences(device, 1, &inFlightFences[currentFrame]);
 
@@ -1757,7 +1728,7 @@ vmaCreateBuffer(allocator, &bufferInfo, &allocInfo, &buffer, &allocation, nullpt
     VkFormat depthFormat = findDepthFormat();
     createImage(swapChainExtent.width, swapChainExtent.height, 1,depthFormat, VK_IMAGE_TILING_OPTIMAL,
                 VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                depthImage.textureImage);
+                depthImage);
     depthImage.textureImageView = createImageView(depthImage.textureImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT,1);
   }
 
@@ -1789,95 +1760,87 @@ vmaCreateBuffer(allocator, &bufferInfo, &allocInfo, &buffer, &allocation, nullpt
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT || VK_FORMAT_D24_UNORM_S8_UINT;
   }
 
-  void loadModel(){
-    tinyobj:: attrib_t attrib;
-    std::vector<tinyobj::shape_t> shapes;
-    std::vector<tinyobj::material_t> materials;
-    std::string warning;
-    std::string err;
-    bool ret = tinyobj::LoadObj(&attrib,&shapes,&materials,&warning,&err,MODEL_PATH.c_str());
-    if(!ret) throw std::runtime_error(warning+err);
-    for(auto &shape:shapes){
-      for(const auto& index:shape.mesh.indices){
-        Vertex vertex{};
-        vertex.pos = {
-          attrib.vertices[3*index.vertex_index +0],
-          attrib.vertices[3*index.vertex_index+1],
-          attrib.vertices[3*index.vertex_index+2]
-        };
-        vertex.texCoord = {
-          attrib.texcoords[2*index.texcoord_index+0],
-          1-attrib.texcoords[2*index.texcoord_index+1]
-        };
-        vertices.push_back(vertex);
-        indices.push_back(static_cast<uint32_t>( indices.size()));
-      }
-    }
+  glm::mat4 getTranslation(glm::vec3& translate, glm::vec3& rotate, glm::vec3& scale){
+
+    glm::mat4 unit(    // 单位矩阵
+            glm::vec4(1, 0, 0, 0),
+            glm::vec4(0, 1, 0, 0),
+            glm::vec4(0, 0, 1, 0),
+            glm::vec4(0, 0, 0, 1)
+        );
+    glm::mat4 rotateMat;
+    rotateMat = glm::rotate(unit, glm::radians(rotate.x), glm::vec3(1,0,0));
+    rotateMat = glm::rotate(rotateMat, glm::radians(rotate.y), glm::vec3(0,1,0));
+    rotateMat = glm::rotate(rotateMat, glm::radians(rotate.z), glm::vec3(0,0,1));
+    glm::mat4 transMat = glm::translate(unit,translate);
+    glm::mat4 scaleMat = glm::scale(unit, scale);
+    return transMat*rotateMat*scaleMat;
   }
 
+
   // In the future, we can load a huge scene through json file
-  void loadComplexModel(){
-    for(int i = 0;i<models_path.size();++i){
-      std::string model_path = models_path.at(i);
-      tinyobj::ObjReaderConfig reader_config;
-      reader_config.mtl_search_path=model_path.substr(0,model_path.find_last_of("/\\"))+"/";
-      tinyobj::ObjReader reader;
-      if(!reader.ParseFromFile(model_path,reader_config)){
-        if(!reader.Error().empty()){
-          std::cout<<"TinyObjReader";
-          throw std::runtime_error(reader.Error());
-        }
+  void loadComplexModel(const char* file_path, glm::vec3& translate, glm::vec3& rotate, glm::vec3& scale){
+    std::string model_path = file_path;
+    tinyobj::ObjReaderConfig reader_config;
+    reader_config.mtl_search_path=model_path.substr(0,model_path.find_last_of("/\\"))+"/";
+    tinyobj::ObjReader reader;
+    if(!reader.ParseFromFile(model_path,reader_config)){
+      if(!reader.Error().empty()){
+        std::cout<<"TinyObjReader";
+        throw std::runtime_error(reader.Error());
       }
-      if(!reader.Warning().empty()){
-        std::cout<<reader.Warning()<<std::endl;
-      }
-
-      auto& attrib = reader.GetAttrib();
-      auto& shapes = reader.GetShapes();
-      auto& materials = reader.GetMaterials();
-      Model model;
-      for(size_t s = 0;s<shapes.size();++s)
-      {
-        Mesh mesh;
-        size_t index_offset = 0;
-        for(size_t f = 0;f<shapes[s].mesh.num_face_vertices.size();++f){
-          size_t fv = size_t(shapes[s].mesh.num_face_vertices[f]);
-          for(size_t v = 0;v<fv;++v){
-            tinyobj::index_t idx = shapes[s].mesh.indices[index_offset+v];
-            mesh.indices.push_back(static_cast<uint32_t>(mesh.indices.size()));
-            Vertex vertex;
-            vertex.pos.x = attrib.vertices[3*size_t(idx.vertex_index)+0];
-            vertex.pos.y = attrib.vertices[3*size_t(idx.vertex_index)+1];
-            vertex.pos.z = attrib.vertices[3*size_t(idx.vertex_index)+2];
-
-            if(idx.normal_index>=0){//没有的话是-1
-              vertex.normal.x = attrib.normals[3*size_t(idx.normal_index)+0];
-              vertex.normal.y = attrib.normals[3*size_t(idx.normal_index)+1];
-              vertex.normal.z = attrib.normals[3*size_t(idx.normal_index)+2];
-            }
-
-            if(idx.texcoord_index>=0){
-              vertex.texCoord.x = attrib.texcoords[2*size_t(idx.texcoord_index)+0];
-              vertex.texCoord.y = attrib.texcoords[2*size_t(idx.texcoord_index)+1];
-            }
-            mesh.vertices.push_back(vertex);
-          }
-          index_offset+=fv;
-        }
-        createVertexBuffer(mesh.vertices,mesh.vertexBuffer);
-        createIndexBuffer(mesh.indices,mesh.indexBuffer);
-        // Read this mesh's texture
-        // std::string texturePath = reader_config.mtl_search_path+materials[shapes[s].mesh.material_ids[0]].diffuse_texname;
-        // createTextureImage(texturePath, mesh.diffuseImage, mesh.diffuseImageMemory);
-        // createTextureImageView(mesh.diffuseImage,miplevels,mesh.diffuseImageview);
-        model.meshes.push_back(mesh);
-      }
-      scene.push_back(model);
     }
+    if(!reader.Warning().empty()){
+      std::cout<<reader.Warning()<<std::endl;
+    }
+
+    auto& attrib = reader.GetAttrib();
+    auto& shapes = reader.GetShapes();
+    auto& materials = reader.GetMaterials();
+    Model model;
+    model.model = getTranslation(translate, rotate, scale);
+    for(size_t s = 0;s<shapes.size();++s)
+    {
+      Mesh mesh;
+      size_t index_offset = 0;
+      for(size_t f = 0;f<shapes[s].mesh.num_face_vertices.size();++f){
+        size_t fv = size_t(shapes[s].mesh.num_face_vertices[f]);
+        for(size_t v = 0;v<fv;++v){
+          tinyobj::index_t idx = shapes[s].mesh.indices[index_offset+v];
+          mesh.indices.push_back(static_cast<uint32_t>(mesh.indices.size()));
+          Vertex vertex;
+          vertex.pos.x = attrib.vertices[3*size_t(idx.vertex_index)+0];
+          vertex.pos.y = attrib.vertices[3*size_t(idx.vertex_index)+1];
+          vertex.pos.z = attrib.vertices[3*size_t(idx.vertex_index)+2];
+
+          if(idx.normal_index>=0){//没有的话是-1
+            vertex.normal.x = attrib.normals[3*size_t(idx.normal_index)+0];
+            vertex.normal.y = attrib.normals[3*size_t(idx.normal_index)+1];
+            vertex.normal.z = attrib.normals[3*size_t(idx.normal_index)+2];
+          }
+
+          if(idx.texcoord_index>=0){
+            vertex.texCoord.x = attrib.texcoords[2*size_t(idx.texcoord_index)+0];
+            vertex.texCoord.y = attrib.texcoords[2*size_t(idx.texcoord_index)+1];
+          }
+          mesh.vertices.push_back(vertex);
+        }
+        index_offset+=fv;
+      }
+      createVertexBuffer(mesh.vertices,mesh.vertexBuffer);
+      createIndexBuffer(mesh.indices,mesh.indexBuffer);
+      // Read this mesh's texture
+      std::string texturePath = reader_config.mtl_search_path+materials[shapes[s].mesh.material_ids[0]].diffuse_texname;
+      createTextureImage(texturePath, mesh.diffuseTexture);
+      createTextureImageView(mesh.diffuseTexture,miplevels);
+      model.meshes.push_back(mesh);
+    }
+    scene.push_back(model);
   }
 
   void drawScene(std::vector<Model>& scene, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkPipelineLayout& layout) {
     for(auto & model: scene){
+      updateUniformBuffer(currentFrame, model.model);
       model.draw(commandBuffer,descriptorSet,layout);
     }
   }
@@ -1890,8 +1853,11 @@ vmaCreateBuffer(allocator, &bufferInfo, &allocInfo, &buffer, &allocation, nullpt
   void clearScene(std::vector<Model>& scene){
     for(auto& model:scene){
       for(auto& mesh :model.meshes){
-        vmaDestroyBuffer(allocator, vertexBuffer.buffer, vertexBuffer.allocation);
-        vmaDestroyBuffer(allocator, indexBuffer.buffer, indexBuffer.allocation);
+        mesh.vertexBuffer.destroy(device,allocator);
+        mesh.indexBuffer.destroy(device,allocator);
+        mesh.diffuseTexture.destroy(device, allocator);
+        //vmaDestroyBuffer(allocator, vertexBuffer.buffer, vertexBuffer.allocation);
+        //vmaDestroyBuffer(allocator, indexBuffer.buffer, indexBuffer.allocation);
       }
     }  
   }
@@ -1925,6 +1891,24 @@ vmaCreateBuffer(allocator, &bufferInfo, &allocInfo, &buffer, &allocation, nullpt
     file.close();
 
     return buffer;
+  }
+
+  void tests(){
+
+    VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+bufferInfo.size = 65536;
+bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+ 
+VmaAllocationCreateInfo allocInfo = {};
+allocInfo.usage = VMA_MEMORY_USAGE_AUTO;
+ 
+VkBuffer buffer;
+VmaAllocation allocation;
+vmaCreateBuffer(allocator, &bufferInfo, &allocInfo, &buffer, &allocation, nullptr);
+
+vmaDestroyBuffer(allocator, buffer, allocation);
+vmaDestroyAllocator(allocator);
+
   }
 
   static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData)

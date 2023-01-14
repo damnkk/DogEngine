@@ -10,7 +10,7 @@ public:
     std::vector<uint32_t> indices;
     Buffer vertexBuffer;
     Buffer indexBuffer;
-    Texture meshTexture;
+    Texture diffuseTexture;
 
     void draw(VkCommandBuffer& commandbuffer, VkDescriptorSet &VkDescriptorSet, VkPipelineLayout &layout);
 };
