@@ -11,26 +11,10 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
+int textureNum = 0;
 
-const uint32_t WIDTH = 800;
-const uint32_t HEIGHT = 600;
-
+std::vector<Texture> textures={};
 Camera camera;
-const std::string MODEL_PATH = "models/viking_room.obj";
-const std::string TEXTURE_PATH = "textures/viking_room.png";
-
-const std::vector<std::string> models_path={
-"D:/Repositories/Vulkan_learn/models/nanosuit/nanosuit.obj"
-};
-
-const int MAX_FRAMES_IN_FLIGHT = 2;
-
-const std::vector<const char *> validationLayers = {
-    "VK_LAYER_KHRONOS_validation"};
-
-const std::vector<const char *> deviceExtensions = {
-    VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
 #else
@@ -200,9 +184,7 @@ private:
   void initWindow()
   {
     glfwInit();
-
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-
     window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
     glfwSetWindowUserPointer(window, this);
     glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
@@ -226,11 +208,17 @@ private:
     createSwapChain();
     createImageViews();
     createRenderPass();
+    createCommandPool();
+//--------------------Load models-----------------------
+    loadComplexModel("D:/Repositories/Vulkan_learn/models/nanosuit/nanosuit.obj",glm::vec3(0.0f,1.0f,0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.2f,0.2f,0.2f));
+    loadComplexModel("D:/Repositories/Vulkan_learn/models/duck/12248_Bird_v1_L2.obj",glm::vec3(3.0f,1.0f,0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.02f,0.02f,0.02f));
+
+    textureNum = textures.size();
+//------------------------------------------------------
     createDescriptorSetLayout();
     createGraphicsPipeline();
     createDepthResources();
     createFramebuffers();
-    createCommandPool();
     createTextureImage(TEXTURE_PATH, textureImage);
     createTextureImageView(textureImage,miplevels);
     createTextureSampler();
@@ -240,10 +228,6 @@ private:
     createCommandBuffers();
     createSyncObjects();
     createCamera();
-//--------------------Load models-----------------------
-    loadComplexModel("D:/Repositories/Vulkan_learn/models/nanosuit/nanosuit.obj",glm::vec3(0.0f,1.0f,0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.2f,0.2f,0.2f));
-    //loadComplexModel("D:/Repositories/Vulkan_learn/models/duck/12248_Bird_v1_L2.obj",glm::vec3(3.0f,1.0f,0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.02f,0.02f,0.02f));
-//------------------------------------------------------
 
   }
 
@@ -316,6 +300,9 @@ private:
 
     vkDestroyCommandPool(device, commandPool, nullptr);
     clearScene(scene);
+    for(auto & tex:textures){
+      tex.destroy(device, allocator);
+    }
     vmaDestroyAllocator(allocator);
 
     vkDestroyDevice(device, nullptr);
@@ -645,7 +632,7 @@ private:
 
     VkDescriptorSetLayoutBinding samplerLayoutBinding{};
     samplerLayoutBinding.binding = 1;
-    samplerLayoutBinding.descriptorCount = 1;
+    samplerLayoutBinding.descriptorCount = std::move(textureNum);
     samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     samplerLayoutBinding.pImmutableSamplers = nullptr;
     samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -754,11 +741,18 @@ private:
     dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
     dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
     dynamicState.pDynamicStates = dynamicStates.data();
+    
+    VkPushConstantRange push_constent;
+    push_constent.offset = 0;
+    push_constent.size = sizeof(constentData);
+    push_constent.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = 1;
     pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+    pipelineLayoutInfo.pPushConstantRanges = &push_constent;
+    pipelineLayoutInfo.pushConstantRangeCount = 1;
 
     if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
     {
@@ -1185,7 +1179,7 @@ private:
     poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+    poolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT*textures.size());
 
     VkDescriptorPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -1220,11 +1214,12 @@ private:
       bufferInfo.buffer = uniformBuffers[i].buffer;
       bufferInfo.offset = 0;
       bufferInfo.range = sizeof(UniformBufferObject);
-
-      VkDescriptorImageInfo imageInfo{};
-      imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-      imageInfo.imageView = textureImage.textureImageView;
-      imageInfo.sampler = textureSampler;
+      std::vector<VkDescriptorImageInfo> imageInfo(textures.size());
+      for(uint32_t i = 0;i<imageInfo.size();++i){
+        imageInfo[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        imageInfo[i].imageView = textures[i].textureImageView;
+        imageInfo[i].sampler = textureSampler;
+      }
 
       std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
 
@@ -1241,8 +1236,8 @@ private:
       descriptorWrites[1].dstBinding = 1;
       descriptorWrites[1].dstArrayElement = 0;
       descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-      descriptorWrites[1].descriptorCount = 1;
-      descriptorWrites[1].pImageInfo = &imageInfo;
+      descriptorWrites[1].descriptorCount = static_cast<uint32_t>(imageInfo.size());
+      descriptorWrites[1].pImageInfo = imageInfo.data();
 
       vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
      
@@ -1817,9 +1812,12 @@ private:
       createVertexBuffer(mesh.vertices,mesh.vertexBuffer);
       createIndexBuffer(mesh.indices,mesh.indexBuffer);
       // Read this mesh's texture
+      Texture tempTexture;
       std::string texturePath = reader_config.mtl_search_path+materials[shapes[s].mesh.material_ids[0]].diffuse_texname;
-      createTextureImage(texturePath, mesh.diffuseTexture);
-      createTextureImageView(mesh.diffuseTexture,miplevels);
+      createTextureImage(texturePath, tempTexture);
+      createTextureImageView(tempTexture,miplevels);
+      mesh.textureIndex = static_cast<uint32_t>( textures.size());
+      textures.push_back(tempTexture);
       model.meshes.push_back(mesh);
     }
     scene.push_back(model);
@@ -1842,7 +1840,6 @@ private:
       for(auto& mesh :model.meshes){
         mesh.vertexBuffer.destroy(device,allocator);
         mesh.indexBuffer.destroy(device,allocator);
-        mesh.diffuseTexture.destroy(device, allocator);
         //vmaDestroyBuffer(allocator, vertexBuffer.buffer, vertexBuffer.allocation);
         //vmaDestroyBuffer(allocator, indexBuffer.buffer, indexBuffer.allocation);
       }

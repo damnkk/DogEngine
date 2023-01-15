@@ -2,7 +2,6 @@
 #include<iostream>
 #include "Vertex.h"
 #include "allocateObject.h"
-
 class Mesh{
 public:
     Mesh(){}
@@ -10,9 +9,10 @@ public:
     std::vector<uint32_t> indices;
     Buffer vertexBuffer;
     Buffer indexBuffer;
-    Texture diffuseTexture;
+    uint32_t textureIndex;
 
-    void draw(VkDevice& device, VkCommandBuffer& commandbuffer, VkDescriptorSet &descriptorSet, VkPipelineLayout& layout, VkSampler& sampler, std::vector<VkDescriptorSet>& descriptorsets);
+    void draw(VkDevice& device, VkCommandBuffer& commandbuffer, VkDescriptorSet &descriptorSet, VkPipelineLayout& layout, 
+              VkSampler& sampler, std::vector<VkDescriptorSet>& descriptorsets);
 };
 
 class Model{
