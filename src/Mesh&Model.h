@@ -12,7 +12,7 @@ public:
     Buffer indexBuffer;
     Texture diffuseTexture;
 
-    void draw(VkCommandBuffer& commandbuffer, VkDescriptorSet &VkDescriptorSet, VkPipelineLayout &layout);
+    void draw(VkDevice& device, VkCommandBuffer& commandbuffer, VkDescriptorSet &descriptorSet, VkPipelineLayout& layout, VkSampler& sampler, std::vector<VkDescriptorSet>& descriptorsets);
 };
 
 class Model{
@@ -21,5 +21,5 @@ public:
     std::vector<Mesh> meshes;
     glm::mat4 model;
 
-    void draw(VkCommandBuffer &VkCommandBuffer, VkDescriptorSet &VkDescriptorSet, VkPipelineLayout& layout);
+    void draw(VkDevice& device, VkCommandBuffer& commandBuffer, VkDescriptorSet &descriptorSet, VkPipelineLayout& layout, VkSampler& sampler, std::vector<VkDescriptorSet>& descriptorsets);
 };

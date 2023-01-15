@@ -132,7 +132,7 @@ void keycallback(GLFWwindow* window){
   }
 }
 
-class HelloTriangleApplication
+class VulkanApp
 {
 public:
   void run()
@@ -210,7 +210,7 @@ private:
 
   static void framebufferResizeCallback(GLFWwindow *window, int width, int height)
   {
-    auto app = reinterpret_cast<HelloTriangleApplication *>(glfwGetWindowUserPointer(window));
+    auto app = reinterpret_cast<VulkanApp *>(glfwGetWindowUserPointer(window));
     app->framebufferResized = true;
   }
 
@@ -241,7 +241,8 @@ private:
     createSyncObjects();
     createCamera();
 //--------------------Load models-----------------------
-    loadComplexModel("D:/Repositories/Vulkan_learn/models/nanosuit/nanosuit.obj",glm::vec3(0.0f,1.0f,0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.4f,0.4f,0.4f));
+    loadComplexModel("D:/Repositories/Vulkan_learn/models/nanosuit/nanosuit.obj",glm::vec3(0.0f,1.0f,0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.2f,0.2f,0.2f));
+    //loadComplexModel("D:/Repositories/Vulkan_learn/models/duck/12248_Bird_v1_L2.obj",glm::vec3(3.0f,1.0f,0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.02f,0.02f,0.02f));
 //------------------------------------------------------
 
   }
@@ -1244,6 +1245,7 @@ private:
       descriptorWrites[1].pImageInfo = &imageInfo;
 
       vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+     
     }
   }
 
@@ -1346,9 +1348,8 @@ private:
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-    if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS)
-    {
-      throw std::runtime_error("failed to begin recording command buffer!");
+    if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
+        throw std::runtime_error("failed to begin recording command buffer!");
     }
 
     VkRenderPassBeginInfo renderPassInfo{};
@@ -1359,7 +1360,7 @@ private:
     renderPassInfo.renderArea.extent = swapChainExtent;
 
     std::array<VkClearValue, 2> clearValues{};
-    clearValues[0].color = {{0.0f, 0.0f, 0.0f, 0.0f}};
+    clearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
     clearValues[1].depthStencil = {1.0f, 0};
 
     renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
@@ -1372,8 +1373,8 @@ private:
     VkViewport viewport{};
     viewport.x = 0.0f;
     viewport.y = 0.0f;
-    viewport.width = (float)swapChainExtent.width;
-    viewport.height = (float)swapChainExtent.height;
+    viewport.width = (float) swapChainExtent.width;
+    viewport.height = (float) swapChainExtent.height;
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
@@ -1383,23 +1384,14 @@ private:
     scissor.extent = swapChainExtent;
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-    // VkBuffer vertexBuffers[] = {vertexBuffer};
-    // VkDeviceSize offsets[] = {0};
-    // vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-
-    // vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-    // vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
-
-    // vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
-
     drawScene(scene,commandBuffer, descriptorSets[currentFrame],pipelineLayout);
 
     vkCmdEndRenderPass(commandBuffer);
 
-    if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
-    {
-      throw std::runtime_error("failed to record command buffer!");
+    if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
+        throw std::runtime_error("failed to record command buffer!");
     }
+    
   }
 
   void createSyncObjects()
@@ -1428,11 +1420,6 @@ private:
 
   void updateUniformBuffer(uint32_t currentImage, glm::mat4 modelMatrix)
   {
-    static auto startTime = std::chrono::high_resolution_clock::now();
-
-    auto currentTime = std::chrono::high_resolution_clock::now();
-    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-
     UniformBufferObject ubo{};
     ubo.model = modelMatrix;
     ubo.view = camera.getViewMatrix(true);
@@ -1821,7 +1808,7 @@ private:
 
           if(idx.texcoord_index>=0){
             vertex.texCoord.x = attrib.texcoords[2*size_t(idx.texcoord_index)+0];
-            vertex.texCoord.y = attrib.texcoords[2*size_t(idx.texcoord_index)+1];
+            vertex.texCoord.y = -attrib.texcoords[2*size_t(idx.texcoord_index)+1];
           }
           mesh.vertices.push_back(vertex);
         }
@@ -1841,7 +1828,7 @@ private:
   void drawScene(std::vector<Model>& scene, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkPipelineLayout& layout) {
     for(auto & model: scene){
       updateUniformBuffer(currentFrame, model.model);
-      model.draw(commandBuffer,descriptorSet,layout);
+      model.draw(device, commandBuffer,descriptorSet,layout, textureSampler, descriptorSets);
     }
   }
   void createCamera(){
@@ -1921,7 +1908,7 @@ vmaDestroyAllocator(allocator);
 
 int main()
 {
-  HelloTriangleApplication app;
+  VulkanApp app;
 
   try
   {
