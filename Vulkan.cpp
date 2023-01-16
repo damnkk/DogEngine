@@ -210,8 +210,8 @@ private:
     createRenderPass();
     createCommandPool();
 //--------------------Load models-----------------------
-    loadComplexModel("D:/Repositories/Vulkan_learn/models/nanosuit/nanosuit.obj",glm::vec3(0.0f,1.0f,0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.2f,0.2f,0.2f));
-    loadComplexModel("D:/Repositories/Vulkan_learn/models/duck/12248_Bird_v1_L2.obj",glm::vec3(3.0f,1.0f,0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.02f,0.02f,0.02f));
+    loadComplexModel("./models/nanosuit/nanosuit.obj",glm::vec3(0.0f,1.0f,0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.2f,0.2f,0.2f));
+    //loadComplexModel("D:/Repositories/Vulkan_learn/models/duck/12248_Bird_v1_L2.obj",glm::vec3(3.0f,1.0f,0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.02f,0.02f,0.02f));
 
     textureNum = textures.size();
 //------------------------------------------------------
@@ -1177,9 +1177,10 @@ private:
   {
     std::array<VkDescriptorPoolSize, 2> poolSizes{};
     poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+    poolSizes[0].descriptorCount = 2048;
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT*textures.size());
+    //poolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT*textures.size());
+    poolSizes[1].descriptorCount = 2048;
 
     VkDescriptorPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -1760,7 +1761,7 @@ private:
   }
 
 
-  // In the future, we can load a huge scene through json file
+  // In the future, we can stage model path , translate, rotate, scale etc. in json file.
   void loadComplexModel(const char* file_path, glm::vec3& translate, glm::vec3& rotate, glm::vec3& scale){
     std::string model_path = file_path;
     tinyobj::ObjReaderConfig reader_config;
