@@ -5,14 +5,18 @@ void Mesh::draw(VkDevice& device, VkCommandBuffer& commandbuffer, VkDescriptorSe
     VkBuffer vertexBuffers[] = {vertexBuffer.buffer};
     VkDeviceSize offsets[] = {0};
     constentData constant;
-    constant.textureIndex = textureIndex;
+    //constant.textureIndex = textureIndex;
     extern int textureNum;
     constant.textureNum = textureNum;
+    extern std::unordered_map<std::string, Texture> textures;
+    VkDescriptorSet textureDescriptorset = textures[textureIndex].textureDescriptor;
+    std::vector<VkDescriptorSet> descriptorsetss = {descriptorSet, textureDescriptorset};
 
     vkCmdPushConstants(commandbuffer, layout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(constentData), &textureIndex);
     vkCmdBindVertexBuffers(commandbuffer, 0, 1, vertexBuffers, offsets);
     vkCmdBindIndexBuffer(commandbuffer, indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
-    vkCmdBindDescriptorSets(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, 1, &descriptorSet, 0, nullptr);
+    vkCmdBindDescriptorSets(commandbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0,descriptorsetss.size(), descriptorsetss.data(), 0, nullptr);
+    vkCmdDrawIndexed(commandbuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
     vkCmdDrawIndexed(commandbuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 }
 

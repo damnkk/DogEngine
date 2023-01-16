@@ -9,7 +9,7 @@ public:
     std::vector<uint32_t> indices;
     Buffer vertexBuffer;
     Buffer indexBuffer;
-    uint32_t textureIndex;
+    std::string textureIndex;
 
     void draw(VkDevice& device, VkCommandBuffer& commandbuffer, VkDescriptorSet &descriptorSet, VkPipelineLayout& layout, 
               VkSampler& sampler, std::vector<VkDescriptorSet>& descriptorsets);

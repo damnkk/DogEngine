@@ -4,6 +4,7 @@ struct Texture{
     VkImage textureImage;
     VkImageView textureImageView;
     VmaAllocation allocation;
+    VkDescriptorSet textureDescriptor;
     void destroy(VkDevice& device,VmaAllocator &allocator);
 };
 

@@ -26,6 +26,7 @@
 #include <optional>
 #include <set>
 #include <ctime>
+#include <unordered_map>
 
 #include "vk_mem_alloc.h"
 
