@@ -1,6 +1,4 @@
-﻿
-
-#include "Common.h"
+﻿#include "Common.h"
 #include "Camera.h"
 #include "Vertex.h"
 #include "Mesh&Model.h"
@@ -85,7 +83,6 @@ void mouseCallback(GLFWwindow* window, double xPos,double yPos)
   camera.pitch +=sensitive*yDif;
   camera.pitch = glm::clamp(camera.pitch,-89.0f,89.0f);
   camera.yaw +=sensitive*xDif;
-  //camera.yaw = glm::mod(camera.yaw + 180.0f, 360.0f) - 180.0f; 
   lastX = xPos;
   lastY = yPos;
    
@@ -158,18 +155,14 @@ private:
   uint32_t miplevels;
   Texture textureImage;
   VkSampler textureSampler;
-
   Texture depthImage;
-
   std::vector<Model> scene;
 
   std::vector<Buffer> uniformBuffers;
-  //std::vector<VkDeviceMemory> uniformBuffersMemory;
   std::vector<void *> uniformBuffersMapped;
 
   VkDescriptorPool descriptorPool;
   std::vector<VkDescriptorSet> descriptorSets;
-
   std::vector<VkCommandBuffer> commandBuffers;
 
   std::vector<VkSemaphore> imageAvailableSemaphores;
@@ -275,21 +268,14 @@ private:
     {
       vmaUnmapMemory(allocator, uniformBuffers[i].allocation);
       uniformBuffers[i].destroy(device, allocator);
-      //vmaDestroyBuffer(allocator, uniformBuffers[i].buffer, uniformBuffers[i].allocation);
     }
 
     vkDestroyDescriptorPool(device, descriptorPool, nullptr);
 
     vkDestroySampler(device, textureSampler, nullptr);
-
-    // vkDestroyImageView(device, textureImage.textureImageView, nullptr);
-    // vkDestroyImage(device, textureImage.textureImage, nullptr);
-    // vkFreeMemory(device, textureImage.textureImageMemory, nullptr);
     textureImage.destroy(device, allocator);////////////////////////////////////////////////////
 
     vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
-
-    //vmaDestroyBuffer(allocator, vertexBuffer.buffer, vertexBuffer.allocation);
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
@@ -854,7 +840,6 @@ private:
     generateMipmaps(texture.textureImage,VK_FORMAT_R8G8B8A8_SRGB,texWidth,texHeight,miplevels);
 
     stagingBuffer.destroy(device,allocator);
-    //vmaDestroyBuffer(allocator, stagingBuffer.buffer, stagingBuffer.allocation);
   }
 
   void generateMipmaps(VkImage image, VkFormat imageFormat , uint32_t texWidth, uint32_t texHeight, uint32_t miplevels){
@@ -990,40 +975,6 @@ private:
 
   void createImage(uint32_t width, uint32_t height, uint32_t miplevels, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, Texture& image)
   {
-    // VkImageCreateInfo imageInfo{};
-    // imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    // imageInfo.imageType = VK_IMAGE_TYPE_2D;
-    // imageInfo.extent.width = width;
-    // imageInfo.extent.height = height;
-    // imageInfo.extent.depth = 1;
-    // imageInfo.mipLevels = miplevels;
-    // imageInfo.arrayLayers = 1;
-    // imageInfo.format = format;
-    // imageInfo.tiling = tiling;
-    // imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    // imageInfo.usage = usage;
-    // imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-    // imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-    // if (vkCreateImage(device, &imageInfo, nullptr, &image) != VK_SUCCESS)
-    // {
-    //   throw std::runtime_error("failed to create image!");
-    // }
-
-    // VkMemoryRequirements memRequirements;
-    // vkGetImageMemoryRequirements(device, image, &memRequirements);
-
-    // VkMemoryAllocateInfo allocInfo{};
-    // allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    // allocInfo.allocationSize = memRequirements.size;
-    // allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
-
-    // if (vkAllocateMemory(device, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS)
-    // {
-    //   throw std::runtime_error("failed to allocate image memory!");
-    // }
-
-    // vkBindImageMemory(device, image, imageMemory, 0);
     VkImageCreateInfo imageInfo{};
     imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     imageInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -1163,7 +1114,6 @@ private:
     VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
     uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-    //uniformBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
     uniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
@@ -1179,7 +1129,6 @@ private:
     poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     poolSizes[0].descriptorCount = 2048;
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    //poolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT*textures.size());
     poolSizes[1].descriptorCount = 2048;
 
     VkDescriptorPoolCreateInfo poolInfo{};
@@ -1841,8 +1790,6 @@ private:
       for(auto& mesh :model.meshes){
         mesh.vertexBuffer.destroy(device,allocator);
         mesh.indexBuffer.destroy(device,allocator);
-        //vmaDestroyBuffer(allocator, vertexBuffer.buffer, vertexBuffer.allocation);
-        //vmaDestroyBuffer(allocator, indexBuffer.buffer, indexBuffer.allocation);
       }
     }  
   }
@@ -1881,19 +1828,18 @@ private:
   void tests(){
 
     VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-bufferInfo.size = 65536;
-bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
- 
-VmaAllocationCreateInfo allocInfo = {};
-allocInfo.usage = VMA_MEMORY_USAGE_AUTO;
- 
-VkBuffer buffer;
-VmaAllocation allocation;
-vmaCreateBuffer(allocator, &bufferInfo, &allocInfo, &buffer, &allocation, nullptr);
+    bufferInfo.size = 65536;
+    bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    
+    VmaAllocationCreateInfo allocInfo = {};
+    allocInfo.usage = VMA_MEMORY_USAGE_AUTO;
+    
+    VkBuffer buffer;
+    VmaAllocation allocation;
+    vmaCreateBuffer(allocator, &bufferInfo, &allocInfo, &buffer, &allocation, nullptr);
 
-vmaDestroyBuffer(allocator, buffer, allocation);
-vmaDestroyAllocator(allocator);
-
+    vmaDestroyBuffer(allocator, buffer, allocation);
+    vmaDestroyAllocator(allocator);
   }
 
   static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData)
