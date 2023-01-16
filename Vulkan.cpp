@@ -61,7 +61,6 @@ struct SwapChainSupportDetails
 
 struct UniformBufferObject
 {
-  alignas(16) glm::mat4 model;
   alignas(16) glm::mat4 view;
   alignas(16) glm::mat4 proj;
 };
@@ -205,7 +204,7 @@ private:
     createRenderPass();
     createCommandPool();
 //--------------------Load models-----------------------
-    loadComplexModel("./models/nanosuit/nanosuit.obj",glm::vec3(0.0f,1.0f,0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(200.0f,200.0f,200.0f));
+    loadComplexModel("./models/nanosuit/nanosuit.obj",glm::vec3(0.0f,1.0f,0.0f), glm::vec3(0.0f, 90.0f, 0.0f), glm::vec3(0.2f,0.2f,0.2f));
     loadComplexModel("./models/sponza/sponza.obj",glm::vec3(3.0f,1.0f,0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.02f,0.02f,0.02f));
 
     textureNum = textures.size();
@@ -777,7 +776,7 @@ private:
     VkPushConstantRange push_constent;
     push_constent.offset = 0;
     push_constent.size = sizeof(constentData);
-    push_constent.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    push_constent.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
     std::array<VkDescriptorSetLayout, 2>descriptorLayouts = {uniformDescriptorSetLayout, textureDescriptorSetLayout};
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -1391,10 +1390,9 @@ private:
     }
   }
 
-  void updateUniformBuffer(uint32_t currentImage, glm::mat4 modelMatrix)
+  void updateUniformBuffer(uint32_t currentImage)
   {
     UniformBufferObject ubo{};
-    ubo.model = modelMatrix;
     ubo.view = camera.getViewMatrix(true);
     ubo.proj = camera.getProjectMatrix(false);
     ubo.proj[1][1] *= -1;
@@ -1402,8 +1400,17 @@ private:
     memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
   }
 
+  clock_t t1, t2;
   void drawFrame()
   {
+    t2 = clock();
+    float dt = (double)(t2 - t1) / CLOCKS_PER_SEC;//计时粒度为1000毫秒
+    float fps = 1.0 / dt;
+    std::cout << "\r";
+    std::string title = "Vulkan  " + std::to_string(fps);
+    glfwSetWindowTitle(window, title.c_str());
+    t1 = t2;//别忘了更新计时器
+
     vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
     uint32_t imageIndex;
@@ -1759,6 +1766,7 @@ private:
     auto& materials = reader.GetMaterials();
     Model model;
     model.model = getTranslation(translate, rotate, scale);
+
     for(size_t s = 0;s<shapes.size();++s)
     {
       Mesh mesh;
@@ -1805,8 +1813,8 @@ private:
 
   void drawScene(std::vector<Model>& scene, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkPipelineLayout& layout) {
     for(auto & model: scene){
-      updateUniformBuffer(currentFrame, model.model);
-      model.draw(device, commandBuffer,descriptorSet,layout, textureSampler, descriptorSets);
+      updateUniformBuffer(currentFrame);
+      model.draw(device, commandBuffer,descriptorSet,layout, textureSampler);
     }
   }
   void createCamera(){

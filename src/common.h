@@ -27,7 +27,8 @@
 #include <set>
 #include <ctime>
 #include <unordered_map>
-
+#include <algorithm>
+#include <iomanip>
 #include "vk_mem_alloc.h"
 
 const uint32_t WIDTH = 800;
@@ -37,8 +38,7 @@ const std::string MODEL_PATH = "models/viking_room.obj";
 const std::string TEXTURE_PATH = "textures/viking_room.png";
 
 struct constentData{
-      uint32_t textureIndex;
-      uint32_t textureNum;
+    glm::mat4 modelMatrix;
 };
 
 
