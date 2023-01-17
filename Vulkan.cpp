@@ -63,6 +63,7 @@ struct UniformBufferObject
 {
   alignas(16) glm::mat4 view;
   alignas(16) glm::mat4 proj;
+  alignas(16) glm::vec3 cameraPos;
 };
 
 float lastX = 300, lastY = 300;
@@ -206,6 +207,7 @@ private:
 //--------------------Load models-----------------------
     loadComplexModel("./models/nanosuit/nanosuit.obj",glm::vec3(0.0f,1.0f,0.0f), glm::vec3(0.0f, 90.0f, 0.0f), glm::vec3(0.2f,0.2f,0.2f));
     loadComplexModel("./models/sponza/sponza.obj",glm::vec3(3.0f,1.0f,0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.02f,0.02f,0.02f));
+    loadComplexModel("./models/duck/12248_Bird_v1_L2.obj",glm::vec3(0.0f,8.0f,3.0f), glm::vec3(-90.0f, 0.0f, 0.0f), glm::vec3(0.002f,0.002f,0.002f));
 
     textureNum = textures.size();
 //------------------------------------------------------
@@ -645,7 +647,7 @@ private:
       uboLayoutBinding.descriptorCount = 1;
       uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
       uboLayoutBinding.pImmutableSamplers = nullptr;
-      uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+      uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT|VK_SHADER_STAGE_FRAGMENT_BIT;
 
       VkDescriptorSetLayoutBinding binding = uboLayoutBinding;
       VkDescriptorSetLayoutCreateInfo layoutInfo{};
@@ -1396,6 +1398,7 @@ private:
     ubo.view = camera.getViewMatrix(true);
     ubo.proj = camera.getProjectMatrix(false);
     ubo.proj[1][1] *= -1;
+    ubo.cameraPos = camera.pos;
 
     memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
   }
@@ -1756,9 +1759,6 @@ private:
         std::cout<<"TinyObjReader";
         throw std::runtime_error(reader.Error());
       }
-    }
-    if(!reader.Warning().empty()){
-      std::cout<<"Warning: "<<reader.Warning()<<std::endl;
     }
 
     auto& attrib = reader.GetAttrib();
