@@ -1,3 +1,5 @@
 aux_source_directory(. LIB_SRCS)
+message("----------------------")
 message(${LIB_SRCS})
+message("----------------------")
 add_library(SRC_LIB STATIC ${LIB_SRCS})

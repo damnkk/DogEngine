@@ -30,9 +30,13 @@
 #include <algorithm>
 #include <iomanip>
 #include "vk_mem_alloc.h"
+#include "DataStructures.h"
+#include "allocateObject.h"
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
+
+static uint32_t miplevels;
 
 const std::string MODEL_PATH = "models/viking_room.obj";
 const std::string TEXTURE_PATH = "textures/viking_room.png";
@@ -41,12 +45,7 @@ struct constentData{
     glm::mat4 modelMatrix;
 };
 
-
 const int MAX_FRAMES_IN_FLIGHT = 2;
-
-
-const std::vector<const char *> validationLayers = {
-    "VK_LAYER_KHRONOS_validation"};
 
 const std::vector<const char *> deviceExtensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME};
