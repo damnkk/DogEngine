@@ -60,7 +60,7 @@ void mouseCallback(GLFWwindow* window, double xPos,double yPos)
 void keycallback(GLFWwindow* window){
   float sensitivity = 0.007;
   if(glfwGetKey(window,GLFW_KEY_ESCAPE) == GLFW_PRESS){
-    glfwSetWindowShouldClose(window,GL_TRUE);
+    glfwSetWindowShouldClose(window, true);
   }
   if(glfwGetKey(window,GLFW_KEY_W) == GLFW_PRESS){
     camera.pos +=sensitivity*camera.direction;

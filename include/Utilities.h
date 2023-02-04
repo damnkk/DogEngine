@@ -1,5 +1,5 @@
 #pragma once
-#include "Common.h"
+#include "common.h"
 
 //read shader file
 //choose properly Format

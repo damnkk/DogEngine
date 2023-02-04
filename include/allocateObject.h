@@ -1,5 +1,5 @@
 #pragma once
-#include "Common.h"
+#include "common.h"
 
 struct Texture{
     VkImage textureImage;

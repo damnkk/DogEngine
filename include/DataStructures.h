@@ -16,3 +16,23 @@ struct QueueFamilyIndices
     return graphicsFamily.has_value() && presentFamily.has_value();
   }
 };
+
+struct VulkanRenderData{
+  VkInstance instance;
+  MainDevice main_device;
+
+  uint32_t graphic_queue_index;
+  VkQueue graphic_queue;
+
+  uint32_t min_image_count;
+  uint32_t image_count;
+
+  VkDescriptorPool imgui_descriptor_pool;
+  VkDescriptorPool texture_descriptor_pool;
+  VkDescriptorSetLayout texture_descriptor_layout;
+
+  VkCommandPool command_pool;
+
+  std::vector<VkCommandBuffer> command_buffer;
+  VkRenderPass render_pass;
+};
