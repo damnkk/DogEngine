@@ -10,7 +10,7 @@ public:
     void CreateDescriptorPools(size_t swapchain_images, size_t vp_ubo_size, size_t light_ubo_size, size_t settings_ubo_size);
     void CreateSetLayouts();
 
-    void CreateViewProjectionDescriptorSets(const std::vector<VkBuffer>& view_projection_ubo, size_t data_size, size_t swapchain_images);
+    void CreateViewProjectionDescriptorSets(const std::vector<Buffer>& view_projection_ubo, size_t data_size, size_t swapchain_images);
     void CreateInputAttachmentsDescriptorSets(size_t swapchain_size, const std::vector<Texture>& position_buffer,
         const std::vector<Texture>& color_buffer, const std::vector<Texture>& normal_buffer);
     void CreateLightDescriptorSets(const std::vector<VkBuffer>& ubo_light, size_t data_size, size_t swapchain_images);
@@ -33,6 +33,8 @@ public:
   	std::vector<VkDescriptorSet>& GetInputDescriptorSets();
 	std::vector<VkDescriptorSet>& GetLightDescriptorSets();
 	std::vector<VkDescriptorSet>& GetSettingsDescriptorSets();
+
+    void Destroy();
 
     void DestroyTexturePool();
 	void DestroyViewProjectionPool();
@@ -67,7 +69,7 @@ private:
     VkDescriptorPool m_ViewProjectionPool;
     VkDescriptorPool m_TexturePool;
     VkDescriptorPool m_InputPool;
-    VkDescriptorPool	m_ImguiDescriptorPool;
+    VkDescriptorPool m_ImguiDescriptorPool;
     VkDescriptorPool m_LightPool;
     VkDescriptorPool m_SettingsPool;
 

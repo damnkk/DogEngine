@@ -18,6 +18,20 @@ Descriptors::Descriptors(VkDevice *device)
 	m_Device = device;
 }
 
+void Descriptors::Destroy(){
+	DestroyTexturePool();
+	DestroyViewProjectionPool();
+	DestroyImguiPool();
+	DestroyInputPool();
+	DestroyLightPool();
+	DestroySettingsPool();
+	DestroyTextureLayout();
+	DestroyViewProjectionLayout();
+	DestroyInputAttachmentsLayout();
+	DestroyLightLayout();
+	DestroySettingsLayout();
+}
+
 void Descriptors::CreateDescriptorPools(size_t swapchain_images, size_t vp_ubo_size, size_t light_ubo_size, size_t settings_ubo_size)
 {
 	CreateViewProjectionPool(swapchain_images, vp_ubo_size);
@@ -43,7 +57,7 @@ void Descriptors::CreateViewProjectionSetLayout()
 	viewProjectionLayoutBinding.binding				= 0;									
 	viewProjectionLayoutBinding.descriptorType		= VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER; 
 	viewProjectionLayoutBinding.descriptorCount		= 1;								
-	viewProjectionLayoutBinding.stageFlags			= VK_SHADER_STAGE_VERTEX_BIT;		
+	viewProjectionLayoutBinding.stageFlags			= VK_SHADER_STAGE_VERTEX_BIT|VK_SHADER_STAGE_FRAGMENT_BIT;		
 	viewProjectionLayoutBinding.pImmutableSamplers	= nullptr;						
 
 	std::vector<VkDescriptorSetLayoutBinding> layoutBindings = { viewProjectionLayoutBinding };
@@ -162,7 +176,7 @@ void Descriptors::CreateSettingsSetLayout()
 }
 
 void Descriptors::CreateViewProjectionDescriptorSets(
-	const std::vector<VkBuffer> & viewProjectionUBO,
+	const std::vector<Buffer> & viewProjectionUBO,
 	size_t dataSize, size_t swapchain_size)
 {
 	m_DescriptorSets.resize(swapchain_size);
@@ -185,7 +199,7 @@ void Descriptors::CreateViewProjectionDescriptorSets(
 	for (size_t i = 0; i < swapchain_size; ++i)
 	{
 		VkDescriptorBufferInfo vpBufferInfo = {};
-		vpBufferInfo.buffer = viewProjectionUBO[i];		
+		vpBufferInfo.buffer = viewProjectionUBO[i].buffer;		
 		vpBufferInfo.offset = 0;						
 		vpBufferInfo.range	= dataSize;
 
