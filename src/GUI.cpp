@@ -57,6 +57,55 @@ void GUI::LoadFontsToGPU(){
     ImGui::Render();
 }
 
+void GUI::Render()
+{
+	ImGui_ImplVulkan_NewFrame();
+	ImGui_ImplGlfw_NewFrame();
+	ImGui::NewFrame();
+
+	ImGuiWindowFlags window_flags{ ImGuiWindowFlags_NoResize };
+	ImGui::SetNextWindowSize(ImVec2(350.f, 480.f), 0);
+	ImGui::SetNextWindowPos(ImVec2(50.f, 50.f), ImGuiCond_FirstUseEver);
+	
+	ImGui::Begin("Settings", NULL, window_flags);
+	ImGui::Combo("Render Target", &m_SettingsData->render_target, "Position\0Normals\0Albedo\0Deferred Rendering\0");
+
+	switch (m_SettingsData->render_target)
+	{
+	case 0:
+		m_SettingsData->render_target = 0;
+		break;
+	case 1:
+		m_SettingsData->render_target = 1;
+		break;
+	case 2:
+		m_SettingsData->render_target = 2;
+		break;
+	case 3:
+		m_SettingsData->render_target = 3;
+		break;
+	}
+
+	ImGui::TextColored(ImVec4(1.f, 0.f, 0.f, 1.f), "The lights are enabled only \nwhen using deferred rendering");
+
+	ImGui::SliderFloat("Lights Movement Speed", m_LightSpeed, 0.0f, 10.0f);
+	
+
+	ImGui::Combo("Select Light", m_LightIdx, 
+		"1\0""2\0""3\0""4\0""5\0"
+		"6\0""7\0""8\0""9\0""10\0"
+		"11\0""12\0""13\0""14\0""15\0"
+		"16\0""17\0""18\0""19\0""20\0");
+
+	ImGui::ColorPicker3("Lights colour", m_Col);
+	m_LightCol->r = m_Col[0];
+	m_LightCol->g = m_Col[1];
+	m_LightCol->b = m_Col[2];
+
+	ImGui::End();
+	ImGui::Render();
+}
+
 ImDrawData* GUI::GetDrawData(){
     return ImGui::GetDrawData();
 }

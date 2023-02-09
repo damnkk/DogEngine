@@ -1,10 +1,16 @@
-﻿#include "Common.h"
+﻿/*
+目前的内容是我想加GUI界面的时候发现自己的render不能获取render data,在实现getRenderData的函数的时候,发现有个队列索引的东西没有,然后现在是看见了
+队列索引的东西是在创建设备的时候,调用了Utility.h里的一个函数初始化的,回头加这个. 其实之间command相关的地方已经用到了,但是我临时那么改了一下
+绕了过去,现在又出现了这个问题。
+*/
+#include "Common.h"
 #include "Camera.h"
 #include "Vertex.h"
 #include "Mesh&Model.h"
 #include "DebugMessanger.h"
 #include "Utilities.h"
 #include "DescriptorsHandler.h"
+#include "GUI.h"
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
@@ -96,34 +102,36 @@ public:
 
 private:
   friend class Mesh;
+  // this window should be a window class
   GLFWwindow *window;
-
   VkInstance instance;
   VkDebugUtilsMessengerEXT debugMessenger;
   VkSurfaceKHR surface;
-
   MainDevice m_device;
+
+  //------------------queueFamily etc.-------------------------
+  //QueueFamilyIndices m_queueFamily_indices;// inited in device create process.
   VkQueue graphicsQueue;
   VkQueue presentQueue;
+  Descriptors m_descriptor;
 
+//-----------swapchain_Handler--------------------------
   VkSwapchainKHR swapChain;
   std::vector<VkImage> swapChainImages;
   VkFormat swapChainImageFormat;
   VkExtent2D swapChainExtent;
   std::vector<VkImageView> swapChainImageViews;
   std::vector<VkFramebuffer> swapChainFramebuffers;
-
+//------------renderPass_handler----------------
   VkRenderPass renderPass;
-
-  Descriptors m_descriptor;
-  
-
+// ---------------pipeline_handler---------------
   VkPipelineLayout pipelineLayout;
   VkPipeline graphicsPipeline;
-
+//---------------command_handler------------------
   VkCommandPool commandPool;
+  std::vector<VkCommandBuffer> commandBuffers;
 
-  Texture textureImage;
+
   VkSampler textureSampler;
   Texture depthImage;
   std::vector<Model> scene;
@@ -131,7 +139,6 @@ private:
   std::vector<Buffer> uniformBuffers;
   std::vector<void *> uniformBuffersMapped;
 
-  std::vector<VkCommandBuffer> commandBuffers;
 
   std::vector<VkSemaphore> imageAvailableSemaphores;
   std::vector<VkSemaphore> renderFinishedSemaphores;
@@ -166,7 +173,6 @@ private:
     pickPhysicalDevice();
     createLogicalDevice();
     createVmaAllocator();
-    //tests();
     createSwapChain();
     createImageViews();
     createRenderPass();
@@ -181,8 +187,6 @@ private:
     createGraphicsPipeline();
     createDepthResources();
     createFramebuffers();
-    createTextureImage(TEXTURE_PATH, textureImage);
-    createTextureImageView(textureImage,miplevels);
     createTextureSampler();
     createUniformBuffers();
     m_descriptor.CreateDescriptorPools(3,3,3,3);
@@ -224,13 +228,24 @@ private:
   {
     glfwSetInputMode(window,GLFW_CURSOR,GLFW_CURSOR_DISABLED);
     glfwSetCursorPosCallback(window, mouseCallback);
+    //----------------------GUI-----------------------
+    	float lights_pos	= 0.0f;
+      float lights_speed	= 0.0001f;
+      // Light Colours
+      glm::vec3 light_col(1.0f);
+      int light_idx = 0;
+
+      //GUI::getInstance()->SetRenderData()
+
     
+
     while (!glfwWindowShouldClose(window))
     {
       glfwPollEvents();
       keycallback(window);
       drawFrame();
     }
+    
 
     vkDeviceWaitIdle(m_device.logicalDevice);
   }
@@ -266,7 +281,6 @@ private:
 
 
     vkDestroySampler(m_device.logicalDevice, textureSampler, nullptr);
-    textureImage.destroy(m_device.logicalDevice, allocator);
     m_descriptor.Destroy();
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
@@ -860,6 +874,7 @@ private:
   {
     textureImage.textureImageView = Utility::createImageView(textureImage.textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, miplevels);
   }
+
 
   void createTextureSampler()
   {
@@ -1463,21 +1478,11 @@ private:
     }
   }
 
-  void tests(){
-
-    VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-    bufferInfo.size = 65536;
-    bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-    
-    VmaAllocationCreateInfo allocInfo = {};
-    allocInfo.usage = VMA_MEMORY_USAGE_AUTO;
-    
-    VkBuffer buffer;
-    VmaAllocation allocation;
-    vmaCreateBuffer(allocator, &bufferInfo, &allocInfo, &buffer, &allocation, nullptr);
-
-    vmaDestroyBuffer(allocator, buffer, allocation);
-    vmaDestroyAllocator(allocator);
+  const VulkanRenderData GetRenderData(){
+    // VulkanRenderData data = {};
+    // data.main_device = m_device;
+    // data.instance = instance;
+    // data.graphic_queue_index = 
   }
 
   static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData)
