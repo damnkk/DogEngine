@@ -47,8 +47,7 @@ VkFormat Utility::findSupportedFormat(const std::vector<VkFormat>& candidate, Vk
     throw std::runtime_error("failed to find supported format!");
 }
 
-QueueFamilyIndices Utility::findQueueFamilies(VkPhysicalDevice device){
-    QueueFamilyIndices indices;
+void Utility::findQueueFamilies(VkPhysicalDevice device, QueueFamilyIndices& indices){
 
     uint32_t queueFamilyCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
@@ -57,29 +56,30 @@ QueueFamilyIndices Utility::findQueueFamilies(VkPhysicalDevice device){
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
 
     int i = 0;
-    for (const auto &queueFamily : queueFamilies)
-    {
-      if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+    if(queueFamilyCount>0){
+      for (const auto &queueFamily : queueFamilies)
       {
-        indices.graphicsFamily = i;
+        if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+        {
+          indices.graphicsFamily = i;
+        }
+
+        VkBool32 presentSupport = false;
+        vkGetPhysicalDeviceSurfaceSupportKHR(device, i, *m_Surface, &presentSupport);
+
+        if (presentSupport)
+        {
+          indices.presentFamily = i;
+        }
+
+        if (indices.isComplete())
+        {
+          break;
+        }
+
+        i++;
       }
-
-      VkBool32 presentSupport = false;
-      vkGetPhysicalDeviceSurfaceSupportKHR(device, i, *m_Surface, &presentSupport);
-
-      if (presentSupport)
-      {
-        indices.presentFamily = i;
-      }
-
-      if (indices.isComplete())
-      {
-        break;
-      }
-
-      i++;
     }
-    return indices;
 }
 
 bool Utility::checkDeviceExtensionSupport(VkPhysicalDevice device){

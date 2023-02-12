@@ -31,7 +31,7 @@ public:
     // GENERIC
     static std::vector<char> ReadFile(const std::string& filename);
     static VkFormat findSupportedFormat(const std::vector<VkFormat>& candidate, VkImageTiling tiling, VkFormatFeatureFlags features);
-    static QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
+    static void findQueueFamilies(VkPhysicalDevice devic, QueueFamilyIndices& familyIndices);
     static bool checkDeviceExtensionSupport(VkPhysicalDevice device);
 
     // IMAGE&TEXTURE

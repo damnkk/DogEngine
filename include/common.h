@@ -30,6 +30,7 @@
 #include <algorithm>
 #include <iomanip>
 // VMA
+#define VMA_DEBUG_LOG
 #include "vk_mem_alloc.h"
 // DEAR IMGUI
 #include"imgui.h"
