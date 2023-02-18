@@ -15,15 +15,14 @@
 #include "DescriptorsHandler.h"
 #include "GUI.h"
 #include "SwapChainHandler.h"
+#include "RenderPassHandler.h"
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
-
 int textureNum = 0;
-
 std::unordered_map<std::string, Texture> textures;
 Camera camera;
 
@@ -32,8 +31,6 @@ const bool enableValidationLayers = false;
 #else
 const bool enableValidationLayers = true;
 #endif
-
-
 
 struct UniformBufferObject
 {
@@ -117,14 +114,9 @@ private:
 
 //-----------swapchain_Handler--------------------------
   SwapChain m_swapChain;
-  //VkSwapchainKHR swapChain;
- // std::vector<VkImage> swapChainImages;
- // VkFormat swapChainImageFormat;
-  //VkExtent2D swapChainExtent;
-  //std::vector<VkImageView> swapChainImageViews;
-  //std::vector<VkFramebuffer> swapChainFramebuffers;
+
 //------------renderPass_handler----------------
-  VkRenderPass renderPass;
+  RenderPassHandler m_renderPassHandler;
 // ---------------pipeline_handler---------------
   VkPipelineLayout pipelineLayout;
   VkPipeline graphicsPipeline;
@@ -132,14 +124,12 @@ private:
   VkCommandPool commandPool;
   std::vector<VkCommandBuffer> commandBuffers;
 
-
   VkSampler textureSampler;
   Texture depthImage;
   std::vector<Model> scene;
 
   std::vector<Buffer> uniformBuffers;
   std::vector<void *> uniformBuffersMapped;
-
 
   std::vector<VkSemaphore> imageAvailableSemaphores;
   std::vector<VkSemaphore> renderFinishedSemaphores;
@@ -176,9 +166,8 @@ private:
     createLogicalDevice();
     createVmaAllocator();
     m_swapChain.CreateSwapChain();
-    //createSwapChain();
-    //createImageViews();
-    createRenderPass();
+    m_renderPassHandler = RenderPassHandler::RenderPassHandler(&m_device,&m_swapChain);
+    m_renderPassHandler.CreateRenderPass();
     createCommandPool();
 //--------------------Load models-----------------------
     loadComplexModel("./models/nanosuit/nanosuit.obj",glm::vec3(0.0f,1.0f,0.0f), glm::vec3(0.0f, 90.0f, 0.0f), glm::vec3(0.2f,0.2f,0.2f));
@@ -189,7 +178,7 @@ private:
     m_descriptor.CreateSetLayouts();
     createGraphicsPipeline();
     createDepthResources();
-    m_swapChain.SetRenderPass(&renderPass);
+    m_swapChain.SetRenderPass(&m_renderPassHandler.GetRenderPass());
     m_swapChain.CreateFrameBuffers(depthImage.textureImageView);
     createTextureSampler();
     createUniformBuffers();
@@ -203,7 +192,7 @@ private:
       allocInfo.descriptorSetCount = 1;
       allocInfo.pSetLayouts = &m_descriptor.GetTextureSetLayout();
       if(vkAllocateDescriptorSets(m_device.logicalDevice, &allocInfo,&i.second.textureDescriptor)!=VK_SUCCESS){
-        throw std::runtime_error("failed to craete texture descriptor set!");
+        throw std::runtime_error("failed to create texture descriptor set!");
       }
 
       VkDescriptorImageInfo imageInfo{};
@@ -241,8 +230,6 @@ private:
 
       //GUI::getInstance()->SetRenderData()
 
-    
-
     while (!glfwWindowShouldClose(window))
     {
       glfwPollEvents();
@@ -258,11 +245,11 @@ private:
   {
     m_swapChain.CleanUpSwapChain();
     depthImage.destroy(m_device.logicalDevice, allocator);
-    //cleanupSwapChain();
 
     vkDestroyPipeline(m_device.logicalDevice, graphicsPipeline, nullptr);
     vkDestroyPipelineLayout(m_device.logicalDevice, pipelineLayout, nullptr);
-    vkDestroyRenderPass(m_device.logicalDevice, renderPass, nullptr);
+    m_renderPassHandler.DestroyRenderPass();
+    //vkDestroyRenderPass(m_device.logicalDevice, renderPass, nullptr);
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
@@ -440,67 +427,6 @@ private:
     vkGetDeviceQueue(m_device.logicalDevice, m_QueueFamilyIndices.presentFamily.value(), 0, &presentQueue);
   }
 
-  void createRenderPass()
-  {
-    VkAttachmentDescription colorAttachment{};
-    colorAttachment.format = m_swapChain.GetSwapChainImageFormat();
-    colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-    VkAttachmentReference colorAttachmentRef{};
-    colorAttachmentRef.attachment = 0;
-    colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    VkAttachmentDescription depthAttachment{};
-    depthAttachment.format = findDepthFormat();
-    depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-    depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-    VkAttachmentReference depthAttachmentRef{};
-    depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-    depthAttachmentRef.attachment = 1;
-
-    VkSubpassDescription subpass{};
-    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpass.colorAttachmentCount = 1;
-    subpass.pColorAttachments = &colorAttachmentRef;
-    subpass.pDepthStencilAttachment = &depthAttachmentRef;
-
-    VkSubpassDependency dependency;
-    dependency.dependencyFlags = 1;
-    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-    dependency.dstSubpass = 0;
-    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-    dependency.srcAccessMask = 0;
-    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-
-    std::array<VkAttachmentDescription, 2> attachments = {colorAttachment, depthAttachment};
-    VkRenderPassCreateInfo renderPassInfo{};
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-    renderPassInfo.pAttachments = attachments.data();
-    renderPassInfo.subpassCount = 1;
-    renderPassInfo.pSubpasses = &subpass;
-    renderPassInfo.dependencyCount = 1;
-    renderPassInfo.pDependencies = &dependency;
-
-    if (vkCreateRenderPass(m_device.logicalDevice, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
-    {
-      throw std::runtime_error("failed to create render pass!");
-    }
-  }
-
   void createGraphicsPipeline()
   {
     auto vertShaderCode = Utility::ReadFile("shaders/vert.spv");
@@ -623,7 +549,7 @@ private:
     pipelineInfo.pColorBlendState = &colorBlending;
     pipelineInfo.pDynamicState = &dynamicState;
     pipelineInfo.layout = pipelineLayout;
-    pipelineInfo.renderPass = renderPass;
+    pipelineInfo.renderPass = m_renderPassHandler.GetRenderPass();
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
     pipelineInfo.pDepthStencilState = &depthStencil;
@@ -920,7 +846,7 @@ private:
 
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = renderPass;
+    renderPassInfo.renderPass = m_renderPassHandler.GetRenderPass();
     renderPassInfo.framebuffer = m_swapChain.GetFrameBuffer(imageIndex);
 
     renderPassInfo.renderArea.offset = {0, 0};
