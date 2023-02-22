@@ -44,6 +44,7 @@
 
 #include "DataStructures.h"
 #include "allocateObject.h"
+#include "Vertex.h"
 
 
 const uint32_t WIDTH = 800;
