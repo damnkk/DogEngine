@@ -10,7 +10,7 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
-
+   
 int textureNum = 0;
 
 std::unordered_map<std::string, Texture> textures;
