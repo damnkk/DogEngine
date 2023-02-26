@@ -290,6 +290,8 @@ private:
   {
     m_swapChain.SetRecreationStatus(true);
     m_swapChain.ReCreateSwapChain();
+    vmaDestroyImage(allocator,depthImage.textureImage,depthImage.allocation);
+    vkDestroyImageView(m_device.logicalDevice,depthImage.textureImageView,nullptr);
     createDepthResources();
     m_swapChain.CreateFrameBuffers(depthImage.textureImageView);
   }
