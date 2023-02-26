@@ -288,6 +288,7 @@ private:
 
   void recreateSwapChain()
   {
+    m_swapChain.SetRecreationStatus(true);
     m_swapChain.ReCreateSwapChain();
     createDepthResources();
     m_swapChain.CreateFrameBuffers(depthImage.textureImageView);
@@ -980,6 +981,7 @@ private:
   void createDepthResources()
   {
     VkFormat depthFormat = findDepthFormat();
+    //depthImage.destroy(m_device.logicalDevice, allocator);
     Utility::createImage(m_swapChain.GetExtent().width, m_swapChain.GetExtent().height, 1,depthFormat, VK_IMAGE_TILING_OPTIMAL,
                 VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 depthImage);

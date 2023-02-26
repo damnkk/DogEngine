@@ -72,6 +72,7 @@ size_t SwapChain::FrameBufferSize() const{
 }
 
 void SwapChain::CleanUpSwapChain(){
+    
     DestroyFrameBuffers();
     DestroySwapChainImageViews();
     DestroySwapChain();
