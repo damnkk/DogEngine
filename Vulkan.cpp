@@ -1147,6 +1147,7 @@ private:
 int main()
 {
   VulkanApp app;
+  float test1 = 0.02;
   try
   {
     app.run();
