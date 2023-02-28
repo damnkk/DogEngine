@@ -9,7 +9,7 @@ class GraphicPipeline{
 public:
     GraphicPipeline();
     GraphicPipeline(MainDevice* mainDevice, SwapChain* swapChain, RenderPassHandler* renderPassHandler);
-    VkPipeline& getPipline() {return m_FirstPipeline;}
+    VkPipeline& getPipeline() {return m_FirstPipeline;}
     VkPipeline& getSecondPipline(){ return m_SecondPipeline;}
     VkPipelineLayout& getLayout(){return m_FirstPipelineLayout;}
     VkPipelineLayout& getSecondLayout(){return m_SecondPipelineLayout;}

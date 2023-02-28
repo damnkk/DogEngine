@@ -1,7 +1,7 @@
 #include "Mesh&Model.h"
 
 void Mesh::draw(VkDevice& device, VkCommandBuffer& commandbuffer, VkDescriptorSet &descriptorSet, VkPipelineLayout& layout, 
-              VkSampler& sampler, glm::mat4 model){
+    glm::mat4 model){
     VkBuffer vertexBuffers[] = {vertexBuffer.buffer};
     VkDeviceSize offsets[] = {0};
     constentData constant;
@@ -17,9 +17,9 @@ void Mesh::draw(VkDevice& device, VkCommandBuffer& commandbuffer, VkDescriptorSe
     vkCmdDrawIndexed(commandbuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 }
 
-void Model::draw(VkDevice& device, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkPipelineLayout& pipelineLayout, VkSampler& sampler){
+void Model::draw(VkDevice& device, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkPipelineLayout& pipelineLayout){
     for (int i = 0; i < meshes.size();++i)
     {
-        meshes.at(i).draw(device, commandBuffer, descriptorSet, pipelineLayout, sampler, model);
+        meshes.at(i).draw(device, commandBuffer, descriptorSet, pipelineLayout, model);
     }
 }

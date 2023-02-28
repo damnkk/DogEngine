@@ -53,4 +53,5 @@ void main() {
     outColor = vec4(baseColor.xyz*(ans.ambient+ans.diffuse+ans.specular)+vec3(0.0f,1.0f,0.0f)*columFrog(worldPos,ubo.cameraPos),1.0);
     //outColor = vec4(worldPos,1.0);// worldPos visualization
     //outColor = vec4(fragNormal*0.5+0.5,1.0); // normal vector visualization
+    //outColor = vec4(1.0,1.0,0.0,1.0);
 }

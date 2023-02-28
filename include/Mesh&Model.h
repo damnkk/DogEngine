@@ -12,7 +12,7 @@ public:
     std::string textureIndex;
 
     void draw(VkDevice& device, VkCommandBuffer& commandbuffer, VkDescriptorSet &descriptorSet, VkPipelineLayout& layout, 
-              VkSampler& sampler, glm::mat4 Model);
+              glm::mat4 Model);
 };
 
 class Model{
@@ -21,5 +21,5 @@ public:
     std::vector<Mesh> meshes;
     glm::mat4 model;
 
-    void draw(VkDevice& device, VkCommandBuffer& commandBuffer, VkDescriptorSet &descriptorSet, VkPipelineLayout& layout, VkSampler& sampler);
+    void draw(VkDevice& device, VkCommandBuffer& commandBuffer, VkDescriptorSet &descriptorSet, VkPipelineLayout& layout);
 };

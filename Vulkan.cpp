@@ -5,6 +5,7 @@
 
 目前是拆分swapchain handler遇到了一点困难,因为使用swapchain的函数里面使用了renderpass相关的东西,所以明天再实现完renderpass再接着搞。
 ***毁灭问题*** vulkan资源忘记释放的话,我怎么能知道是哪个未释放呢?
+remember we have not implement the definition of the second pipeline creation.
 */
 #include "Common.h"
 #include "Camera.h"
@@ -17,6 +18,7 @@
 #include "SwapChainHandler.h"
 #include "RenderPassHandler.h"
 #include "GraphicsPipeline.h"
+#include "CommandHandler.h"
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
@@ -121,8 +123,9 @@ private:
 // ---------------pipeline_handler---------------
   GraphicPipeline m_pipelineHandler;
 //---------------command_handler------------------
-  VkCommandPool commandPool;
-  std::vector<VkCommandBuffer> commandBuffers;
+  CommandHandler m_CommandHandler;
+  //VkCommandPool commandPool;
+  //std::vector<VkCommandBuffer> commandBuffers;
 // --------------pushConstant------------------
   VkPushConstantRange m_pushConstant;
 
@@ -159,10 +162,11 @@ private:
 
   void initVulkan()
   {
-    Utility::Setup(&m_device, &m_surface, &commandPool, &graphicsQueue, &allocator);
+    Utility::Setup(&m_device, &m_surface, &m_CommandHandler.GetCommandPool(), &graphicsQueue, &allocator);
     m_descriptor = Descriptors::Descriptors(&m_device.logicalDevice);
     m_swapChain = SwapChain::SwapChain(&m_device, &m_surface, window, m_QueueFamilyIndices);
     m_pipelineHandler = GraphicPipeline::GraphicPipeline(&m_device,&m_swapChain, &m_renderPassHandler);
+    m_CommandHandler = CommandHandler::CommandHandler(&m_device,&m_pipelineHandler,&m_renderPassHandler);
     initPushConstant();
     createInstance();
     createSurface();
@@ -172,7 +176,8 @@ private:
     m_swapChain.CreateSwapChain();
     m_renderPassHandler = RenderPassHandler::RenderPassHandler(&m_device,&m_swapChain);
     m_renderPassHandler.CreateRenderPass();
-    createCommandPool();
+    m_CommandHandler.CreateCommandPool(m_QueueFamilyIndices);
+    //createCommandPool();
 //--------------------Load models-----------------------
     loadComplexModel("./models/nanosuit/nanosuit.obj",glm::vec3(0.0f,1.0f,0.0f), glm::vec3(0.0f, 90.0f, 0.0f), glm::vec3(0.2f,0.2f,0.2f));
     //loadComplexModel("./models/sponza/sponza.obj",glm::vec3(3.0f,1.0f,0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.02f,0.02f,0.02f));
@@ -214,8 +219,9 @@ private:
 
       vkUpdateDescriptorSets(m_device.logicalDevice, 1, &descriptorWrite, 0, nullptr); 
     }
-    m_descriptor.CreateViewProjectionDescriptorSets(uniformBuffers,sizeof(UniformBufferObject),2);
-    createCommandBuffers();
+    m_descriptor.CreateViewProjectionDescriptorSets(uniformBuffers,sizeof(UniformBufferObject),MAX_FRAMES_IN_FLIGHT);
+    m_CommandHandler.CreateCommandBuffers(m_swapChain.FrameBufferSize());
+    //createCommandBuffers();
     createSyncObjects();
     createCamera();
   }
@@ -264,8 +270,8 @@ private:
       vkDestroySemaphore(m_device.logicalDevice, imageAvailableSemaphores[i], nullptr);
       vkDestroyFence(m_device.logicalDevice, inFlightFences[i], nullptr);
     }
-
-    vkDestroyCommandPool(m_device.logicalDevice, commandPool, nullptr);
+    m_CommandHandler.DestroyCommandPool();
+    //vkDestroyCommandPool(m_device.logicalDevice, commandPool, nullptr);
     clearScene(scene);
     for(auto & tex:textures){
       tex.second.destroy(m_device.logicalDevice, allocator);
@@ -290,8 +296,7 @@ private:
   {
     m_swapChain.SetRecreationStatus(true);
     m_swapChain.ReCreateSwapChain();
-    vmaDestroyImage(allocator,depthImage.textureImage,depthImage.allocation);
-    vkDestroyImageView(m_device.logicalDevice,depthImage.textureImageView,nullptr);
+    depthImage.destroy(m_device.logicalDevice, allocator);
     createDepthResources();
     m_swapChain.CreateFrameBuffers(depthImage.textureImageView);
   }
@@ -428,20 +433,20 @@ private:
     vkGetDeviceQueue(m_device.logicalDevice, m_QueueFamilyIndices.presentFamily.value(), 0, &presentQueue);
   }
 
-  void createCommandPool()
-  {
-    Utility::findQueueFamilies(m_device.physicalDevice, m_QueueFamilyIndices);
+  // void createCommandPool()
+  // {
+  //   Utility::findQueueFamilies(m_device.physicalDevice, m_QueueFamilyIndices);
 
-    VkCommandPoolCreateInfo poolInfo{};
-    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    poolInfo.queueFamilyIndex = m_QueueFamilyIndices.graphicsFamily.value();
+  //   VkCommandPoolCreateInfo poolInfo{};
+  //   poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+  //   poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+  //   poolInfo.queueFamilyIndex = m_QueueFamilyIndices.graphicsFamily.value();
 
-    if (vkCreateCommandPool(m_device.logicalDevice, &poolInfo, nullptr, &commandPool) != VK_SUCCESS)
-    {
-      throw std::runtime_error("failed to create graphics command pool!");
-    }
-  }
+  //   if (vkCreateCommandPool(m_device.logicalDevice, &poolInfo, nullptr, &commandPool) != VK_SUCCESS)
+  //   {
+  //     throw std::runtime_error("failed to create graphics command pool!");
+  //   }
+  // }
 
   void createTextureImage(std::string texPath,Texture& texture)
   {
@@ -685,49 +690,41 @@ private:
     }
   }
 
-  void createCommandBuffers()
-  {
-    commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-    VkCommandBufferAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.commandPool = commandPool;
-    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandBufferCount = (uint32_t)commandBuffers.size();
+  // void createCommandBuffers()
+  // {
+  //   commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+  //   VkCommandBufferAllocateInfo allocInfo{};
+  //   allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+  //   allocInfo.commandPool = commandPool;
+  //   allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+  //   allocInfo.commandBufferCount = (uint32_t)commandBuffers.size();
 
-    if (vkAllocateCommandBuffers(m_device.logicalDevice, &allocInfo, commandBuffers.data()) != VK_SUCCESS)
-    {
-      throw std::runtime_error("failed to allocate command buffers!");
-    }
-  }
+  //   if (vkAllocateCommandBuffers(m_device.logicalDevice, &allocInfo, commandBuffers.data()) != VK_SUCCESS)
+  //   {
+  //     throw std::runtime_error("failed to allocate command buffers!");
+  //   }
+  // }
 
   void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
   {
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
     if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
         throw std::runtime_error("failed to begin recording command buffer!");
     }
-
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassInfo.renderPass = m_renderPassHandler.GetRenderPass();
     renderPassInfo.framebuffer = m_swapChain.GetFrameBuffer(imageIndex);
-
     renderPassInfo.renderArea.offset = {0, 0};
     renderPassInfo.renderArea.extent = m_swapChain.GetExtent();
-
     std::array<VkClearValue, 2> clearValues{};
     clearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
     clearValues[1].depthStencil = {1.0f, 0};
-
     renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
     renderPassInfo.pClearValues = clearValues.data();
-
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineHandler.getPipline());
-
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineHandler.getPipeline());
     VkViewport viewport{};
     viewport.x = 0.0f;
     viewport.y = 0.0f;
@@ -736,16 +733,12 @@ private:
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-
     VkRect2D scissor{};
     scissor.offset = {0, 0};
     scissor.extent = m_swapChain.GetExtent();
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-
     drawScene(scene,commandBuffer, m_descriptor.GetDescriptorSets()[currentFrame],m_pipelineHandler.getLayout());
-
     vkCmdEndRenderPass(commandBuffer);
-
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
         throw std::runtime_error("failed to record command buffer!");
     }
@@ -805,16 +798,17 @@ private:
     {
       recreateSwapChain();
       return;
-    }
-    else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+    } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
     {
       throw std::runtime_error("failed to acquire swap chain image!");
     }
 
     vkResetFences(m_device.logicalDevice, 1, &inFlightFences[currentFrame]);
 
-    vkResetCommandBuffer(commandBuffers[currentFrame], /*VkCommandBufferResetFlagBits*/ 0);
-    recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
+    vkResetCommandBuffer(m_CommandHandler.GetCommandBuffer(currentFrame), /*VkCommandBufferResetFlagBits*/ 0);
+    m_CommandHandler.RecordCommandBuffers_temp(currentFrame,imageIndex, m_swapChain.GetExtent(),m_swapChain.GetFrameBuffers(),scene, m_descriptor.GetDescriptorSets());
+    //recordCommandBuffer(m_CommandHandler.GetCommandBuffer(currentFrame), imageIndex);
+    updateUniformBuffer(currentFrame);
 
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -826,7 +820,7 @@ private:
     submitInfo.pWaitDstStageMask = waitStages;
 
     submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &commandBuffers[currentFrame];
+    submitInfo.pCommandBuffers = &m_CommandHandler.GetCommandBuffer(currentFrame);
 
     VkSemaphore signalSemaphores[] = {renderFinishedSemaphores[currentFrame]};
     submitInfo.signalSemaphoreCount = 1;
@@ -841,7 +835,6 @@ private:
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfo.waitSemaphoreCount = 1;
     presentInfo.pWaitSemaphores = signalSemaphores;
-
     VkSwapchainKHR swapChains[] = {m_swapChain.GetSwapChain()};
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = swapChains;
@@ -1084,7 +1077,7 @@ private:
   void drawScene(std::vector<Model>& scene, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkPipelineLayout& layout) {
     for(auto & model: scene){
       updateUniformBuffer(currentFrame);
-      model.draw(m_device.logicalDevice, commandBuffer,descriptorSet,layout, textureSampler);
+      model.draw(m_device.logicalDevice, commandBuffer,descriptorSet,layout);
     }
   }
   void createCamera(){
@@ -1147,7 +1140,6 @@ private:
 int main()
 {
   VulkanApp app;
-  float test1 = 0.02;
   try
   {
     app.run();
