@@ -180,7 +180,7 @@ private:
     //createCommandPool();
 //--------------------Load models-----------------------
     loadComplexModel("./models/nanosuit/nanosuit.obj",glm::vec3(0.0f,1.0f,0.0f), glm::vec3(0.0f, 90.0f, 0.0f), glm::vec3(0.2f,0.2f,0.2f));
-    //loadComplexModel("./models/sponza/sponza.obj",glm::vec3(3.0f,1.0f,0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.02f,0.02f,0.02f));
+    loadComplexModel("./models/sponza/sponza.obj",glm::vec3(3.0f,1.0f,0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.02f,0.02f,0.02f));
     loadComplexModel("./models/duck/12248_Bird_v1_L2.obj",glm::vec3(0.0f,8.0f,3.0f), glm::vec3(-90.0f, 0.0f, 0.0f), glm::vec3(0.002f,0.002f,0.002f));
     textureNum = textures.size();
 //------------------------------------------------------
@@ -423,30 +423,13 @@ private:
     {
       createInfo.enabledLayerCount = 0;
     }
-
     if (vkCreateDevice(m_device.physicalDevice, &createInfo, nullptr, &m_device.logicalDevice) != VK_SUCCESS)
     {
       throw std::runtime_error("failed to create logical device!");
     }
-
     vkGetDeviceQueue(m_device.logicalDevice, m_QueueFamilyIndices.graphicsFamily.value(), 0, &graphicsQueue);
     vkGetDeviceQueue(m_device.logicalDevice, m_QueueFamilyIndices.presentFamily.value(), 0, &presentQueue);
   }
-
-  // void createCommandPool()
-  // {
-  //   Utility::findQueueFamilies(m_device.physicalDevice, m_QueueFamilyIndices);
-
-  //   VkCommandPoolCreateInfo poolInfo{};
-  //   poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-  //   poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-  //   poolInfo.queueFamilyIndex = m_QueueFamilyIndices.graphicsFamily.value();
-
-  //   if (vkCreateCommandPool(m_device.logicalDevice, &poolInfo, nullptr, &commandPool) != VK_SUCCESS)
-  //   {
-  //     throw std::runtime_error("failed to create graphics command pool!");
-  //   }
-  // }
 
   void createTextureImage(std::string texPath,Texture& texture)
   {
@@ -466,15 +449,11 @@ private:
     vmaMapMemory(allocator, stagingBuffer.allocation, &data);
     memcpy(data, pixels, static_cast<size_t>(imageSize));
     vmaUnmapMemory(allocator, stagingBuffer.allocation);
-
     stbi_image_free(pixels);
-
     Utility::createImage(texWidth, texHeight, miplevels, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT|VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture);
-
     transitionImageLayout(texture.textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,miplevels);
     Utility::CopyBufferToImage(stagingBuffer.buffer, texture.textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
     generateMipmaps(texture.textureImage,VK_FORMAT_R8G8B8A8_SRGB,texWidth,texHeight,miplevels);
-
     stagingBuffer.destroy(m_device.logicalDevice,allocator);
   }
 
@@ -690,60 +669,6 @@ private:
     }
   }
 
-  // void createCommandBuffers()
-  // {
-  //   commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-  //   VkCommandBufferAllocateInfo allocInfo{};
-  //   allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-  //   allocInfo.commandPool = commandPool;
-  //   allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-  //   allocInfo.commandBufferCount = (uint32_t)commandBuffers.size();
-
-  //   if (vkAllocateCommandBuffers(m_device.logicalDevice, &allocInfo, commandBuffers.data()) != VK_SUCCESS)
-  //   {
-  //     throw std::runtime_error("failed to allocate command buffers!");
-  //   }
-  // }
-
-  void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
-  {
-    VkCommandBufferBeginInfo beginInfo{};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
-        throw std::runtime_error("failed to begin recording command buffer!");
-    }
-    VkRenderPassBeginInfo renderPassInfo{};
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = m_renderPassHandler.GetRenderPass();
-    renderPassInfo.framebuffer = m_swapChain.GetFrameBuffer(imageIndex);
-    renderPassInfo.renderArea.offset = {0, 0};
-    renderPassInfo.renderArea.extent = m_swapChain.GetExtent();
-    std::array<VkClearValue, 2> clearValues{};
-    clearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
-    clearValues[1].depthStencil = {1.0f, 0};
-    renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-    renderPassInfo.pClearValues = clearValues.data();
-    vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineHandler.getPipeline());
-    VkViewport viewport{};
-    viewport.x = 0.0f;
-    viewport.y = 0.0f;
-    viewport.width = (float) m_swapChain.GetExtent().width;
-    viewport.height = (float) m_swapChain.GetExtent().height;
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
-    vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-    VkRect2D scissor{};
-    scissor.offset = {0, 0};
-    scissor.extent = m_swapChain.GetExtent();
-    vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-    drawScene(scene,commandBuffer, m_descriptor.GetDescriptorSets()[currentFrame],m_pipelineHandler.getLayout());
-    vkCmdEndRenderPass(commandBuffer);
-    if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
-        throw std::runtime_error("failed to record command buffer!");
-    }
-  }
-
   void createSyncObjects()
   {
     imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
@@ -807,7 +732,6 @@ private:
 
     vkResetCommandBuffer(m_CommandHandler.GetCommandBuffer(currentFrame), /*VkCommandBufferResetFlagBits*/ 0);
     m_CommandHandler.RecordCommandBuffers_temp(currentFrame,imageIndex, m_swapChain.GetExtent(),m_swapChain.GetFrameBuffers(),scene, m_descriptor.GetDescriptorSets());
-    //recordCommandBuffer(m_CommandHandler.GetCommandBuffer(currentFrame), imageIndex);
     updateUniformBuffer(currentFrame);
 
     VkSubmitInfo submitInfo{};
