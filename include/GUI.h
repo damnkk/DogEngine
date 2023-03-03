@@ -15,12 +15,12 @@ public:
     void SetRenderData(VulkanRenderData data, GLFWwindow* window, SettingsData* ubo_settings, 
         float* lights_speed, int* light_idx, glm::vec3* light_col)
     {
-        m_Data = data;
-        m_Window = window;
-        m_SettingsData = ubo_settings;
-        m_LightSpeed = lights_speed;
-        m_LightIdx = light_idx;
-        m_LightCol = light_col;
+        m_Data              = data;
+        m_Window            = window;
+        m_SettingsData      = ubo_settings;
+        m_LightSpeed        = lights_speed;
+        m_LightIdx          = light_idx;
+        m_LightCol          = light_col;
     }
     void Init();
     void LoadFontsToGPU();

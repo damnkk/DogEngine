@@ -20,7 +20,7 @@ layout(push_constant) uniform Model{
 
 void main() {
     gl_Position = ubo.proj * ubo.view * model.Model * vec4(inPosition, 1.0);
-    worldPos = (model.Model*vec4(inPosition,1.0)).xyz;
+    worldPos = vec3(model.Model*vec4(inPosition,1.0));
     fragNormal = inNormal;
     fragTexCoord = inTexCoord;
 }

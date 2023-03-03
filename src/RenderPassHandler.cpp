@@ -84,10 +84,10 @@ void RenderPassHandler::CreateRenderPass(){
     depth_attach_ref.attachment = 1;
     depth_attach_ref.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-    subpasses[0].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpasses[0].colorAttachmentCount = 1;
-    subpasses[0].pColorAttachments = &color_attach_ref;
-    subpasses[0].pDepthStencilAttachment = &depth_attach_ref;
+    subpasses[0].pipelineBindPoint          = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpasses[0].colorAttachmentCount       = 1;
+    subpasses[0].pColorAttachments          = &color_attach_ref;
+    subpasses[0].pDepthStencilAttachment    = &depth_attach_ref;
 
     std::array<VkSubpassDependency,2> subpass_dep = SetSubpassDependencies();
 
@@ -142,7 +142,7 @@ VkAttachmentDescription RenderPassHandler::InputColourAttachment(const VkFormat&
 VkAttachmentDescription RenderPassHandler::InputPositionAttachment(const VkFormat& imageFormat){
     VkAttachmentDescription position_attachment_input = {};
     position_attachment_input.format = Utility::findSupportedFormat({VK_FORMAT_R32G32B32A32_SFLOAT}, VK_IMAGE_TILING_OPTIMAL,
-                                                  VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL);
+                                                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     position_attachment_input.samples = VK_SAMPLE_COUNT_1_BIT;
     position_attachment_input.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     position_attachment_input.storeOp - VK_ATTACHMENT_STORE_OP_STORE;
@@ -155,8 +155,8 @@ VkAttachmentDescription RenderPassHandler::InputPositionAttachment(const VkForma
 }
 
 VkAttachmentDescription RenderPassHandler::InputDepthAttachment(){
-    VkAttachmentDescription depth_attachment_input = {};
     std::vector<VkFormat> formats = {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT};
+    VkAttachmentDescription depth_attachment_input = {};
     depth_attachment_input.format = Utility::findSupportedFormat(formats,VK_IMAGE_TILING_OPTIMAL,VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
     depth_attachment_input.samples = VK_SAMPLE_COUNT_1_BIT;
     depth_attachment_input.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -170,21 +170,21 @@ VkAttachmentDescription RenderPassHandler::InputDepthAttachment(){
 
 std::array<VkSubpassDependency, 2> RenderPassHandler::SetSubpassDependencies(){
     std::array<VkSubpassDependency,2> dependices = {};
-    dependices[0].srcSubpass = VK_SUBPASS_EXTERNAL;
-    dependices[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-    dependices[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-    dependices[0].dstSubpass = 0;
-    dependices[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependices[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT|VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    dependices[0].dependencyFlags = 0;
+    dependices[0].srcSubpass        = VK_SUBPASS_EXTERNAL;
+    dependices[0].srcStageMask      = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+    dependices[0].srcAccessMask     = VK_ACCESS_MEMORY_READ_BIT;
+    dependices[0].dstSubpass        = 0;
+    dependices[0].dstStageMask      = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependices[0].dstAccessMask     = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT|VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    dependices[0].dependencyFlags   = 0;
 
-    dependices[1].srcSubpass = 0;
-    dependices[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependices[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT|VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    dependices[1].dstSubpass = VK_SUBPASS_EXTERNAL;
-    dependices[1].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-    dependices[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-    dependices[1].dependencyFlags = 0;
+    dependices[1].srcSubpass        = 0;
+    dependices[1].srcStageMask      = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependices[1].srcAccessMask     = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT|VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    dependices[1].dstSubpass        = VK_SUBPASS_EXTERNAL;
+    dependices[1].dstStageMask      = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+    dependices[1].dstAccessMask     = VK_ACCESS_MEMORY_READ_BIT;
+    dependices[1].dependencyFlags   = 0;
     return dependices;
 }
 

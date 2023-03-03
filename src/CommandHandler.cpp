@@ -88,6 +88,7 @@ void CommandHandler::RecordOffScreenCommands(ImDrawData* draw_data, uint32_t cur
 
 void CommandHandler::RecordCommands(ImDrawData* draw_data,uint32_t currImage,VkExtent2D& imageExtent,
     std::vector<VkFramebuffer>& frameBuffers,
+    std::vector<VkDescriptorSet>& vp_desc_sets,
     std::vector<VkDescriptorSet>& light_desc_sets,
     std::vector<VkDescriptorSet>& input_desc_sets,
     std::vector<VkDescriptorSet>& settings_desc_set){
@@ -102,11 +103,10 @@ void CommandHandler::RecordCommands(ImDrawData* draw_data,uint32_t currImage,VkE
     VkRenderPassBeginInfo renderpass_begin_info = {};
     renderpass_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderpass_begin_info.renderPass = *m_RenderPassHandler->GetRenderPassReference();
-    renderpass_begin_info.clearValueCount = static_cast<uint32_t>(clear_values.size());
-    renderpass_begin_info.pClearValues = clear_values.data();
     renderpass_begin_info.renderArea.offset = {0,0};
-    renderpass_begin_info.renderArea.extent.height = imageExtent.height;
-    renderpass_begin_info.renderArea.extent.width = imageExtent.width;
+    renderpass_begin_info.renderArea.extent = imageExtent;
+    renderpass_begin_info.pClearValues = clear_values.data();
+    renderpass_begin_info.clearValueCount = static_cast<uint32_t>(clear_values.size());
     renderpass_begin_info.framebuffer = frameBuffers[currImage];
 
     if(vkBeginCommandBuffer(m_CommandBuffers[currImage],& buffer_begin_info)!=VK_SUCCESS){
@@ -114,14 +114,30 @@ void CommandHandler::RecordCommands(ImDrawData* draw_data,uint32_t currImage,VkE
     }
     vkCmdBeginRenderPass(m_CommandBuffers[currImage],&renderpass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
     vkCmdBindPipeline(m_CommandBuffers[currImage],VK_PIPELINE_BIND_POINT_GRAPHICS,m_graphicPipeline->getSecondPipline());
+    VkViewport viewPort{};
+    viewPort.x = 0.0f;
+    viewPort.y = 0.0f;
+    viewPort.maxDepth = 1.0f;
+    viewPort.minDepth = 0.0f;
+    viewPort.width = (float)imageExtent.width;
+    viewPort.height = (float)imageExtent.height;
+    vkCmdSetViewport(m_CommandBuffers[currImage],0,1,&viewPort);
+
+    VkRect2D scissor{};
+    scissor.extent = imageExtent;
+    scissor.offset = {0,0};
+    vkCmdSetScissor(m_CommandBuffers[currImage],0,1,&scissor);
     {
-        std::array<VkDescriptorSet, 3> desc_set_group = {
+        std::array<VkDescriptorSet, 4> desc_set_group = {
+            vp_desc_sets[currImage],
             input_desc_sets[currImage],
             light_desc_sets[currImage],
             settings_desc_set[currImage]
         };
-        vkCmdBindDescriptorSets(m_CommandBuffers[currImage],VK_PIPELINE_BIND_POINT_GRAPHICS,m_graphicPipeline->getSecondLayout(),0,
-        static_cast<uint32_t>(desc_set_group.size()),desc_set_group.data(),0, nullptr);
+        vkCmdBindDescriptorSets(m_CommandBuffers[currImage],
+                                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                m_graphicPipeline->getSecondLayout(),0,
+                                static_cast<uint32_t>(desc_set_group.size()),desc_set_group.data(),0, nullptr);
     }
     vkCmdDraw(m_CommandBuffers[currImage],3,1,0,0);
     ImGui_ImplVulkan_RenderDrawData(draw_data, m_CommandBuffers[currImage]);
@@ -131,7 +147,7 @@ void CommandHandler::RecordCommands(ImDrawData* draw_data,uint32_t currImage,VkE
     }
 }
 
-void CommandHandler::RecordCommandBuffers_temp(uint32_t currFrame,uint32_t currImage, VkExtent2D imgExtent,
+void CommandHandler::RecordCommandBuffers_forward(ImDrawData* draw_data, uint32_t currFrame,uint32_t currImage, VkExtent2D imgExtent,
     std::vector<VkFramebuffer>& frameBuffers,
     std::vector<Model>& scene,
     std::vector<VkDescriptorSet>& descriptorSets){
@@ -171,7 +187,7 @@ void CommandHandler::RecordCommandBuffers_temp(uint32_t currFrame,uint32_t currI
     for(auto& model:scene){
         model.draw(m_MainDevice->logicalDevice, m_CommandBuffers[currFrame], descriptorSets[currFrame],m_graphicPipeline->getLayout());
     }
-
+    ImGui_ImplVulkan_RenderDrawData(draw_data,m_CommandBuffers[currFrame]);
     vkCmdEndRenderPass(m_CommandBuffers[currFrame]);
     if(vkEndCommandBuffer(m_CommandBuffers[currFrame])!=VK_SUCCESS){
         throw std::runtime_error("Failed to end temp command buffer!");

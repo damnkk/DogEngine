@@ -1,11 +1,9 @@
 ﻿/*
-目前的内容是我想加GUI界面的时候发现自己的render不能获取render data,在实现getRenderData的函数的时候,发现有个队列索引的东西没有,然后现在是看见了
-队列索引的东西是在创建设备的时候,调用了Utility.h里的一个函数初始化的,回头加这个. 其实之间command相关的地方已经用到了,但是我临时那么改了一下
-绕了过去,现在又出现了这个问题。
-
-目前是拆分swapchain handler遇到了一点困难,因为使用swapchain的函数里面使用了renderpass相关的东西,所以明天再实现完renderpass再接着搞。
 ***毁灭问题*** vulkan资源忘记释放的话,我怎么能知道是哪个未释放呢?
 remember we have not implement the definition of the second pipeline creation.
+for this project, we have to set a offScreen renderPass, and a present renderPass
+if I want to implement the PBR, there will be many kinds of material, may be I need 
+an addition renderTarget, and stage different material properties in different channel
 */
 #include "Common.h"
 #include "Camera.h"
@@ -19,16 +17,16 @@ remember we have not implement the definition of the second pipeline creation.
 #include "RenderPassHandler.h"
 #include "GraphicsPipeline.h"
 #include "CommandHandler.h"
+#include "Light.h"
 
+constexpr std::size_t NUM_LIGHTS = 20;
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
-int textureNum = 0;
 std::unordered_map<std::string, Texture> textures;
 Camera camera;
-
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
 #else
@@ -43,15 +41,23 @@ struct UniformBufferObject
 };
 
 float lastX = 300, lastY = 300;
-bool firstCall = true;
+bool click = true;
+
+void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods){
+  if(action == GLFW_PRESS) switch (button)
+  {
+    case GLFW_MOUSE_BUTTON_RIGHT:
+      click = false;
+    break;
+  }
+  if(action == GLFW_RELEASE) click = true;
+}
 void mouseCallback(GLFWwindow* window, double xPos,double yPos)
 {
   std::cout<<"xPos: "<< xPos<<"   yPos: "<< yPos<<"\r";
-  if(firstCall){
+  if(click){
     lastX = xPos;
     lastY = yPos;
-    firstCall = false;
-    return;
   }
   float sensitive = 0.035;
   float yDif = yPos-lastY;
@@ -124,21 +130,33 @@ private:
   GraphicPipeline m_pipelineHandler;
 //---------------command_handler------------------
   CommandHandler m_CommandHandler;
-  //VkCommandPool commandPool;
-  //std::vector<VkCommandBuffer> commandBuffers;
+  CommandHandler m_OffScreenCommandHandler;
 // --------------pushConstant------------------
   VkPushConstantRange m_pushConstant;
 
+  SettingsData m_SettingsData;
+
   VkSampler textureSampler;
-  Texture depthImage;
   std::vector<Model> scene;
 
-  std::vector<Buffer> uniformBuffers;
-  std::vector<void *> uniformBuffersMapped;
 
-  std::vector<VkSemaphore> imageAvailableSemaphores;
-  std::vector<VkSemaphore> renderFinishedSemaphores;
-  std::vector<VkFence> inFlightFences;
+  std::vector<Texture> m_PositionBufferImages;
+  std::vector<Texture> m_ColorBufferImages;
+  std::vector<Texture> m_NormalBufferImages;
+  std::vector<Texture> m_MaterialBufferImages;
+  Texture depthImage;
+
+  std::vector<VkFramebuffer> m_OffScreenFrameBuffer;
+
+  std::vector<Buffer> m_ViewProjectUBO;
+
+  std::vector<Buffer> m_LightUBO;
+  glm::vec3 light_col=glm::vec3(1.0f);
+  std::array<LightData, NUM_LIGHTS> m_LightData;
+
+  std::vector<Buffer> m_SettingsUBO;
+
+  std::vector<SubmissionSyncObjects> m_SyncObjects;
   VmaAllocator allocator;
 
   uint32_t currentFrame = 0;
@@ -167,6 +185,7 @@ private:
     m_swapChain = SwapChain::SwapChain(&m_device, &m_surface, window, m_QueueFamilyIndices);
     m_pipelineHandler = GraphicPipeline::GraphicPipeline(&m_device,&m_swapChain, &m_renderPassHandler);
     m_CommandHandler = CommandHandler::CommandHandler(&m_device,&m_pipelineHandler,&m_renderPassHandler);
+    m_OffScreenCommandHandler = CommandHandler::CommandHandler(&m_device,&m_pipelineHandler,&m_renderPassHandler);
     initPushConstant();
     createInstance();
     createSurface();
@@ -176,23 +195,42 @@ private:
     m_swapChain.CreateSwapChain();
     m_renderPassHandler = RenderPassHandler::RenderPassHandler(&m_device,&m_swapChain);
     m_renderPassHandler.CreateRenderPass();
+    m_renderPassHandler.CreateOffScreenRenderPass();
     m_CommandHandler.CreateCommandPool(m_QueueFamilyIndices);
-    //createCommandPool();
 //--------------------Load models-----------------------
-    loadComplexModel("./models/nanosuit/nanosuit.obj",glm::vec3(0.0f,1.0f,0.0f), glm::vec3(0.0f, 90.0f, 0.0f), glm::vec3(0.2f,0.2f,0.2f));
-    loadComplexModel("./models/sponza/sponza.obj",glm::vec3(3.0f,1.0f,0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.02f,0.02f,0.02f));
-    loadComplexModel("./models/duck/12248_Bird_v1_L2.obj",glm::vec3(0.0f,8.0f,3.0f), glm::vec3(-90.0f, 0.0f, 0.0f), glm::vec3(0.002f,0.002f,0.002f));
-    textureNum = textures.size();
+    loadComplexModel("./models/nanosuit/nanosuit.obj",glm::vec3(0.0f,1.0f,-30.0f), glm::vec3(0.0f, 90.0f, 0.0f), glm::vec3(0.2f,0.2f,0.2f));
+    loadComplexModel("./models/sponza/sponza.obj",glm::vec3(3.0f,1.0f,-30.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.02f,0.02f,0.02f));
+    loadComplexModel("./models/duck/12248_Bird_v1_L2.obj",glm::vec3(0.0f,8.0f,-33.0f), glm::vec3(-90.0f, 0.0f, 0.0f), glm::vec3(0.002f,0.002f,0.002f));
+    //loadComplexModel("./models/the_twins__atomic_heart/scene.gltf",glm::vec3(5.0f,4.0f,0.0f), glm::vec3(-90.0f, 0.0f, 0.0f), glm::vec3(0.02f,0.02f,0.02f));
 //------------------------------------------------------
     m_descriptor.CreateSetLayouts();
-    m_pipelineHandler.SetDescriptorSetLayouts(m_descriptor.GetViewProjectionSetLayout(),m_descriptor.GetTextureSetLayout(), m_descriptor.GetInputSetLayout(), m_descriptor.GetLightSetLayout(),m_descriptor.GetSettingsSetLayout());
+    m_pipelineHandler.SetDescriptorSetLayouts(m_descriptor.GetViewProjectionSetLayout(),
+                                              m_descriptor.GetTextureSetLayout(), 
+                                              m_descriptor.GetInputSetLayout(), 
+                                              m_descriptor.GetLightSetLayout(),
+                                              m_descriptor.GetSettingsSetLayout());
     m_pipelineHandler.CreateGraphicPipeline();
+
+    //Creation of the offscreen buffer images
+    m_PositionBufferImages.resize(m_swapChain.SwapChainImagesSize());
+    m_NormalBufferImages.resize(m_swapChain.SwapChainImagesSize());
+    m_ColorBufferImages.resize(m_swapChain.SwapChainImagesSize());
+
+    for(int i = 0;i<m_ColorBufferImages.size();++i){
+      Utility::CreatePositionBufferImage(m_PositionBufferImages[i],m_swapChain.GetExtent());
+      Utility::CreatePositionBufferImage(m_ColorBufferImages[i],m_swapChain.GetExtent());
+      Utility::CreatePositionBufferImage(m_NormalBufferImages[i], m_swapChain.GetExtent());
+    }
     createDepthResources();
-    m_swapChain.SetRenderPass(&m_renderPassHandler.GetRenderPass());
+    m_swapChain.SetRenderPass(m_renderPassHandler.GetRenderPassReference());
     m_swapChain.CreateFrameBuffers(depthImage.textureImageView);
+    CreateOffScreenFrameBuffer();
+
+    m_OffScreenCommandHandler.CreateCommandPool(m_QueueFamilyIndices);
+    m_OffScreenCommandHandler.CreateCommandBuffers(m_swapChain.FrameBufferSize());
     createTextureSampler();
     createUniformBuffers();
-    m_descriptor.CreateDescriptorPools(3,3,3,3);
+    m_descriptor.CreateDescriptorPools(m_swapChain.SwapChainImagesSize(),3,3,3);
     for(auto& i: textures){
       VkDescriptorSetAllocateInfo allocInfo{};
       allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -219,31 +257,38 @@ private:
 
       vkUpdateDescriptorSets(m_device.logicalDevice, 1, &descriptorWrite, 0, nullptr); 
     }
-    m_descriptor.CreateViewProjectionDescriptorSets(uniformBuffers,sizeof(UniformBufferObject),MAX_FRAMES_IN_FLIGHT);
+    m_descriptor.CreateViewProjectionDescriptorSets(m_ViewProjectUBO,sizeof(UniformBufferObject),m_swapChain.SwapChainImagesSize());
+    m_descriptor.CreateInputAttachmentsDescriptorSets(m_swapChain.SwapChainImagesSize(), m_PositionBufferImages, m_ColorBufferImages, m_NormalBufferImages);
+    m_descriptor.CreateLightDescriptorSets(m_LightUBO, sizeof(LightData), m_swapChain.SwapChainImagesSize());
+    m_descriptor.CreateSettingsDescriptorSets(m_SettingsUBO,sizeof(SettingsData), m_swapChain.SwapChainImagesSize());
     m_CommandHandler.CreateCommandBuffers(m_swapChain.FrameBufferSize());
-    //createCommandBuffers();
+    SetUniformDataStructures();
     createSyncObjects();
     createCamera();
   }
 
   void mainLoop()
   {
-    glfwSetInputMode(window,GLFW_CURSOR,GLFW_CURSOR_DISABLED);
+    glfwSetInputMode(window,GLFW_CURSOR,GLFW_CURSOR);
+    glfwSetMouseButtonCallback(window,mouseButtonCallback);
     glfwSetCursorPosCallback(window, mouseCallback);
     //----------------------GUI-----------------------
     	float lights_pos	= 0.0f;
       float lights_speed	= 0.0001f;
       // Light Colours
-      glm::vec3 light_col(1.0f);
       int light_idx = 0;
-
-      //GUI::getInstance()->SetRenderData()
-
+      GUI::getInstance()->SetRenderData(GetRenderData(),window, &m_SettingsData,&lights_speed, &light_idx, &light_col);
+      GUI::getInstance()->Init();
+      GUI::getInstance()->LoadFontsToGPU();
     while (!glfwWindowShouldClose(window))
     {
       glfwPollEvents();
       keycallback(window);
-      drawFrame();
+      GUI::getInstance()->Render();
+      auto draw_data = GUI::getInstance()->GetDrawData();
+      const bool is_minimized = (draw_data->DisplaySize.x<=0.0f||draw_data->DisplaySize.y<=0.0f);
+      if(!is_minimized) drawFrame(draw_data);
+      UpdateLightColor(light_idx,light_col);
     }
     vkDeviceWaitIdle(m_device.logicalDevice);
   }
@@ -257,8 +302,7 @@ private:
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
-      vmaUnmapMemory(allocator, uniformBuffers[i].allocation);
-      uniformBuffers[i].destroy(m_device.logicalDevice, allocator);
+      m_ViewProjectUBO[i].destroy(m_device.logicalDevice, allocator);
     }
 
     vkDestroySampler(m_device.logicalDevice, textureSampler, nullptr);
@@ -266,10 +310,12 @@ private:
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
-      vkDestroySemaphore(m_device.logicalDevice, renderFinishedSemaphores[i], nullptr);
-      vkDestroySemaphore(m_device.logicalDevice, imageAvailableSemaphores[i], nullptr);
-      vkDestroyFence(m_device.logicalDevice, inFlightFences[i], nullptr);
+      vkDestroySemaphore(m_device.logicalDevice, m_SyncObjects[i].RenderFinished, nullptr);
+      vkDestroySemaphore(m_device.logicalDevice, m_SyncObjects[i].ImageAvailable, nullptr);
+      vkDestroySemaphore(m_device.logicalDevice, m_SyncObjects[i].OffScreenAvaliable, nullptr);
+      vkDestroyFence(m_device.logicalDevice, m_SyncObjects[i].InFlight, nullptr);
     }
+    GUI::getInstance()->Destroy();
     m_CommandHandler.DestroyCommandPool();
     //vkDestroyCommandPool(m_device.logicalDevice, commandPool, nullptr);
     clearScene(scene);
@@ -618,93 +664,86 @@ private:
     Utility::endSingleTimeCommands(commandBuffer);
   }
 
-  void createVertexBuffer(std::vector<Vertex>& vertices, Buffer& vertexBuffer)
-  {
-    VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
-
-    Buffer stagingBuffer;
-    Utility::CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer);
-
-    void *data;
-    vmaMapMemory(allocator, stagingBuffer.allocation,&data);
-    memcpy(data, vertices.data(), (size_t)bufferSize);
-    vmaUnmapMemory(allocator, stagingBuffer.allocation);
-
-    Utility::CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer);
-
-    Utility::CopyBuffer(stagingBuffer.buffer, vertexBuffer.buffer, bufferSize);
-
-    vmaDestroyBuffer(allocator, stagingBuffer.buffer, stagingBuffer.allocation);
-  }
-
-  void createIndexBuffer(std::vector<uint32_t> indices, Buffer& indexBuffer)
-  {
-    VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
-
-    Buffer stagingBuffer;
-    Utility::CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer);
-
-    void *data;
-    vmaMapMemory(allocator, stagingBuffer.allocation, &data);
-    memcpy(data, indices.data(), (size_t)bufferSize);
-    vmaUnmapMemory(allocator, stagingBuffer.allocation);
-    Utility::CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer);
-
-    Utility::CopyBuffer(stagingBuffer.buffer, indexBuffer.buffer, bufferSize);
-
-    vmaDestroyBuffer(allocator, stagingBuffer.buffer, stagingBuffer.allocation);
-  }
-
   void createUniformBuffers()
   {
+    m_ViewProjectUBO.resize(m_swapChain.SwapChainImagesSize());
     VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+    for(size_t i = 0;i<m_swapChain.SwapChainImagesSize();++i){
+      Utility::CreateBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                            m_ViewProjectUBO[i]);
 
-    uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-    uniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
+    }
 
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-    {
-      Utility::CreateBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBuffers[i]);
-      vmaMapMemory(allocator,uniformBuffers[i].allocation,&uniformBuffersMapped[i]);
+    bufferSize = NUM_LIGHTS*sizeof(LightData);
+    m_LightUBO.resize(m_swapChain.SwapChainImagesSize());
+    for(size_t i = 0;i<m_swapChain.SwapChainImagesSize();++i){
+      Utility::CreateBuffer(bufferSize,VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                            m_LightUBO[i]);
+    }
+
+    bufferSize = sizeof(SettingsData);
+    m_SettingsUBO.resize(m_swapChain.SwapChainImagesSize());
+    for(size_t i= 0;i<m_swapChain.SwapChainImagesSize();++i){
+      Utility::CreateBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                            m_SettingsUBO[i]);
     }
   }
 
   void createSyncObjects()
   {
-    imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+    m_SyncObjects.resize(MAX_FRAMES_IN_FLIGHT);
+    VkSemaphoreCreateInfo semaphoreCreateInfo = {};
+    semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+    
+    VkFenceCreateInfo fenceCreateinfo = {};
+    fenceCreateinfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceCreateinfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-    VkSemaphoreCreateInfo semaphoreInfo{};
-    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+    for(size_t i = 0;i<MAX_FRAMES_IN_FLIGHT;++i){
+      VkResult offscreen_avaliable_sem = vkCreateSemaphore(m_device.logicalDevice,&semaphoreCreateInfo, nullptr,&m_SyncObjects[i].OffScreenAvaliable);
+      VkResult image_available_sem = vkCreateSemaphore(m_device.logicalDevice,&semaphoreCreateInfo, nullptr, &m_SyncObjects[i].ImageAvailable);
+      VkResult render_finished_sem = vkCreateSemaphore(m_device.logicalDevice,&semaphoreCreateInfo, nullptr,&m_SyncObjects[i].RenderFinished);
+      VkResult in_flight_fence = vkCreateFence(m_device.logicalDevice, &fenceCreateinfo, nullptr, &m_SyncObjects[i].InFlight);
 
-    VkFenceCreateInfo fenceInfo{};
-    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-    {
-      if (vkCreateSemaphore(m_device.logicalDevice, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
-          vkCreateSemaphore(m_device.logicalDevice, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
-          vkCreateFence(m_device.logicalDevice, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS)
-      {
-        throw std::runtime_error("failed to create synchronization objects for a frame!");
-      }
+      if(offscreen_avaliable_sem!=VK_SUCCESS||
+         image_available_sem !=VK_SUCCESS||
+         render_finished_sem !=VK_SUCCESS||
+         in_flight_fence !=VK_SUCCESS){
+          throw std::runtime_error("Failed to create semaphores and/or Fence!");
+         }
     }
   }
 
   void updateUniformBuffer(uint32_t currentImage)
   {
+    void* vp_data;
     UniformBufferObject ubo{};
     ubo.view = camera.getViewMatrix(true);
     ubo.proj = camera.getProjectMatrix(false);
     ubo.proj[1][1] *= -1;
     ubo.cameraPos = camera.pos;
-    memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
+    vmaMapMemory(allocator,m_ViewProjectUBO[currentImage].allocation, &vp_data);
+    memcpy(vp_data, &ubo, sizeof(ubo));
+    vmaUnmapMemory(allocator, m_ViewProjectUBO[currentImage].allocation);
+    
+    void* light_data;
+    auto light_data_size = m_LightData.size()*sizeof(LightData);
+    vmaMapMemory(allocator,m_LightUBO[currentImage].allocation,&light_data);
+    memcpy(light_data,m_LightData.data(),light_data_size);
+    vmaUnmapMemory(allocator,m_LightUBO[currentImage].allocation);
+
+    void* settings_data;
+    auto settings_data_size = sizeof(SettingsData);
+    vmaMapMemory(allocator,m_SettingsUBO[currentImage].allocation,&settings_data);
+    memcpy(settings_data, &m_SettingsData, settings_data_size);
+    vmaUnmapMemory(allocator,m_SettingsUBO[currentImage].allocation);
   }
 
   clock_t t1, t2;
-  void drawFrame()
+  void drawFrame(ImDrawData* draw_data)
   {
     t2 = clock();
     float dt = (double)(t2 - t1) / CLOCKS_PER_SEC;//计时粒度为1000毫秒
@@ -714,10 +753,16 @@ private:
     glfwSetWindowTitle(window, title.c_str());
     t1 = t2;//别忘了更新计时器
 
-    vkWaitForFences(m_device.logicalDevice, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
+    vkWaitForFences(m_device.logicalDevice, 1, &m_SyncObjects[currentFrame].InFlight, VK_TRUE, std::numeric_limits<uint64_t>::max());
+    vkResetFences(m_device.logicalDevice, 1, &m_SyncObjects[currentFrame].InFlight);
 
     uint32_t imageIndex;
-    VkResult result = vkAcquireNextImageKHR(m_device.logicalDevice, m_swapChain.GetSwapChain(), UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
+    VkResult result = vkAcquireNextImageKHR(
+                      m_device.logicalDevice, 
+                      m_swapChain.GetSwapChain(), 
+                      std::numeric_limits<uint64_t>::max(), 
+                      m_SyncObjects[currentFrame].ImageAvailable, 
+                      VK_NULL_HANDLE, &imageIndex);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR)
     {
@@ -728,41 +773,45 @@ private:
       throw std::runtime_error("failed to acquire swap chain image!");
     }
 
-    vkResetFences(m_device.logicalDevice, 1, &inFlightFences[currentFrame]);
-
-    vkResetCommandBuffer(m_CommandHandler.GetCommandBuffer(currentFrame), /*VkCommandBufferResetFlagBits*/ 0);
-    m_CommandHandler.RecordCommandBuffers_temp(currentFrame,imageIndex, m_swapChain.GetExtent(),m_swapChain.GetFrameBuffers(),scene, m_descriptor.GetDescriptorSets());
-    updateUniformBuffer(currentFrame);
-
-    VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-    VkSemaphore waitSemaphores[] = {imageAvailableSemaphores[currentFrame]};
-    VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-    submitInfo.waitSemaphoreCount = 1;
-    submitInfo.pWaitSemaphores = waitSemaphores;
-    submitInfo.pWaitDstStageMask = waitStages;
-
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &m_CommandHandler.GetCommandBuffer(currentFrame);
-
-    VkSemaphore signalSemaphores[] = {renderFinishedSemaphores[currentFrame]};
-    submitInfo.signalSemaphoreCount = 1;
-    submitInfo.pSignalSemaphores = signalSemaphores;
-
-    if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS)
+    m_OffScreenCommandHandler.RecordOffScreenCommands(draw_data,imageIndex,m_swapChain.GetExtent(),m_OffScreenFrameBuffer,scene,m_descriptor.GetDescriptorSets());
+    m_CommandHandler.RecordCommands(draw_data, currentFrame,m_swapChain.GetExtent(),m_swapChain.GetFrameBuffers(),
+                                    m_descriptor.GetDescriptorSets(),
+                                    m_descriptor.GetLightDescriptorSets(),
+                                    m_descriptor.GetInputDescriptorSets(),
+                                    m_descriptor.GetSettingsDescriptorSets());
+    updateUniformBuffer(imageIndex);
+    VkPipelineStageFlags waitStages[] =
     {
-      throw std::runtime_error("failed to submit draw command buffer!");
+      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+    };
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType                  = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.waitSemaphoreCount     = 1;
+    submitInfo.pWaitSemaphores        = &m_SyncObjects[currentFrame].ImageAvailable;
+    submitInfo.pWaitDstStageMask      = waitStages;
+    submitInfo.commandBufferCount     = 1;
+    submitInfo.pCommandBuffers        = &m_OffScreenCommandHandler.GetCommandBuffer(currentFrame);
+    submitInfo.signalSemaphoreCount   = 1;
+    submitInfo.pSignalSemaphores      = &m_SyncObjects[currentFrame].OffScreenAvaliable;
+
+    if(vkQueueSubmit(graphicsQueue,1,&submitInfo,VK_NULL_HANDLE) != VK_SUCCESS){
+      throw std::runtime_error("Failed to submit offscreen command!");
     }
 
-    VkPresentInfoKHR presentInfo{};
-    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-    presentInfo.waitSemaphoreCount = 1;
-    presentInfo.pWaitSemaphores = signalSemaphores;
-    VkSwapchainKHR swapChains[] = {m_swapChain.GetSwapChain()};
-    presentInfo.swapchainCount = 1;
-    presentInfo.pSwapchains = swapChains;
-    presentInfo.pImageIndices = &imageIndex;
+    submitInfo.pWaitSemaphores      = &m_SyncObjects[currentFrame].OffScreenAvaliable;
+    submitInfo.pCommandBuffers      = &m_CommandHandler.GetCommandBuffer(imageIndex);
+    submitInfo.pSignalSemaphores    = &m_SyncObjects[currentFrame].RenderFinished;
+    if(vkQueueSubmit(graphicsQueue, 1, &submitInfo,  m_SyncObjects[currentFrame].InFlight) != VK_SUCCESS){
+      throw std::runtime_error("Failed to submit post process command!");
+    }
+
+    VkPresentInfoKHR presentInfo = {};
+    presentInfo.sType                 = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    presentInfo.waitSemaphoreCount    = 1;
+    presentInfo.pWaitSemaphores       = &m_SyncObjects[currentFrame].RenderFinished;
+    presentInfo.swapchainCount        =1;
+    presentInfo.pSwapchains           = m_swapChain.GetSwapChainData();
+    presentInfo.pImageIndices         = &imageIndex;
 
     result = vkQueuePresentKHR(presentQueue, &presentInfo);
 
@@ -777,21 +826,6 @@ private:
     }
 
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
-  }
-
-  VkShaderModule createShaderModule(const std::vector<char> &code)
-  {
-    VkShaderModuleCreateInfo createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    createInfo.codeSize = code.size();
-    createInfo.pCode = reinterpret_cast<const uint32_t *>(code.data());
-    VkShaderModule shaderModule;
-    if (vkCreateShaderModule(m_device.logicalDevice, &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
-    {
-      throw std::runtime_error("failed to create shader module!");
-    }
-
-    return shaderModule;
   }
 
   VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats)
@@ -935,64 +969,57 @@ private:
     return transMat*rotateMat*scaleMat;
   }
 
-  // In the future, we can stage model path , translate, rotate, scale etc. in json file.
-  void loadComplexModel(const char* file_path, glm::vec3& translate, glm::vec3& rotate, glm::vec3& scale){
-    std::string model_path = file_path;
-    tinyobj::ObjReaderConfig reader_config;
-    reader_config.mtl_search_path=model_path.substr(0,model_path.find_last_of("/\\"))+"/";
-    tinyobj::ObjReader reader;
-    if(!reader.ParseFromFile(model_path,reader_config)){
-      if(!reader.Error().empty()){
-        std::cout<<"TinyObjReader";
-        throw std::runtime_error(reader.Error());
-      }
+  void loadComplexModel(std::string filePath,glm::vec3& translate, glm::vec3& rotate, glm::vec3& scale){
+    Assimp::Importer import;
+    const aiScene* aiscene = import.ReadFile(filePath, aiProcess_Triangulate|aiProcess_FlipUVs|aiProcess_GenSmoothNormals);
+    if(!aiscene||aiscene->mFlags == AI_SCENE_FLAGS_INCOMPLETE||!aiscene->mRootNode){
+      throw std::runtime_error("Fail to load model :"+filePath);
     }
-
-    auto& attrib = reader.GetAttrib();
-    auto& shapes = reader.GetShapes();
-    auto& materials = reader.GetMaterials();
     Model model;
     model.model = getTranslation(translate, rotate, scale);
-
-    for(size_t s = 0;s<shapes.size();++s)
-    {
+    std::string rootPath = filePath.substr(0, filePath.find_last_of('/'));
+    for(int i = 0;i<aiscene->mNumMeshes;++i){
       Mesh mesh;
-      size_t index_offset = 0;
-      for(size_t f = 0;f<shapes[s].mesh.num_face_vertices.size();++f){
-        size_t fv = size_t(shapes[s].mesh.num_face_vertices[f]);
-        for(size_t v = 0;v<fv;++v){
-          tinyobj::index_t idx = shapes[s].mesh.indices[index_offset+v];
-          mesh.indices.push_back(static_cast<uint32_t>(mesh.indices.size()));
-          Vertex vertex;
-          vertex.pos.x = attrib.vertices[3*size_t(idx.vertex_index)+0];
-          vertex.pos.y = attrib.vertices[3*size_t(idx.vertex_index)+1];
-          vertex.pos.z = attrib.vertices[3*size_t(idx.vertex_index)+2];
+      aiMesh* aimesh = aiscene->mMeshes[i];
+      for(int j = 0;j<aimesh->mNumVertices;++j){
+        Vertex vertex;
+        vertex.pos.x = aimesh->mVertices[j].x;
+        vertex.pos.y = aimesh->mVertices[j].y;
+        vertex.pos.z = aimesh->mVertices[j].z;
 
-          if(idx.normal_index>=0){//没有的话是-1
-            vertex.normal.x = attrib.normals[3*size_t(idx.normal_index)+0];
-            vertex.normal.y = attrib.normals[3*size_t(idx.normal_index)+1];
-            vertex.normal.z = attrib.normals[3*size_t(idx.normal_index)+2];
-          }
+        vertex.normal.x = aimesh->mNormals[j].x;
+        vertex.normal.y = aimesh->mNormals[j].y;
+        vertex.normal.z = aimesh->mNormals[j].z;
 
-          if(idx.texcoord_index>=0){
-            vertex.texCoord.x = attrib.texcoords[2*size_t(idx.texcoord_index)+0];
-            vertex.texCoord.y = -attrib.texcoords[2*size_t(idx.texcoord_index)+1];
-          }
-          mesh.vertices.push_back(vertex);
+        if(aimesh->mTextureCoords[0]){
+          vertex.texCoord.x = aimesh->mTextureCoords[0][j].x;
+          vertex.texCoord.y = aimesh->mTextureCoords[0][j].y;
         }
-        index_offset+=fv;
+        mesh.vertices.push_back(vertex);
       }
-      createVertexBuffer(mesh.vertices,mesh.vertexBuffer);
-      createIndexBuffer(mesh.indices,mesh.indexBuffer);
-      // Read this mesh's texture
-      std::string texturePath = reader_config.mtl_search_path+materials[shapes[s].mesh.material_ids[0]].diffuse_texname;
-      if(textures.find(texturePath) == textures.end()) {
-        Texture tempTexture;
-        createTextureImage(texturePath, tempTexture);
-        createTextureImageView(tempTexture,miplevels);
-        textures[texturePath] = tempTexture;
+
+      for(GLuint j = 0;j<aimesh->mNumFaces;++j){
+        aiFace face = aimesh->mFaces[j];
+        for(GLuint k = 0; k<face.mNumIndices;++k){
+          mesh.indices.push_back(face.mIndices[k]);
+        }
       }
-      mesh.textureIndex = texturePath;
+      Mesh::createVertexBuffer(mesh.vertices,mesh.vertexBuffer, &allocator);
+      Mesh::createIndexBuffer(mesh.indices, mesh.indexBuffer, &allocator);
+      if(aimesh->mMaterialIndex>=0){
+        aiMaterial* material = aiscene->mMaterials[aimesh->mMaterialIndex];
+        aiString aiStr;
+        material->GetTexture(aiTextureType_DIFFUSE, 0, &aiStr);
+        std::string texpath = aiStr.C_Str();
+        texpath = rootPath + '/' + texpath;
+        if(textures.find(texpath)==textures.end()){
+          Texture tempTexture;
+          createTextureImage(texpath, tempTexture);
+          createTextureImageView(tempTexture, miplevels);
+          textures[texpath] = tempTexture;
+        }
+        mesh.textureIndex = texpath;
+      }
       model.meshes.push_back(mesh);
     }
     scene.push_back(model);
@@ -1005,7 +1032,7 @@ private:
     }
   }
   void createCamera(){
-
+    camera.pos = glm::vec3(0.0,0.0,-30.0);
     camera.aspect = m_swapChain.GetExtent().width
      / (float)m_swapChain.GetExtent().height;
   }
@@ -1039,9 +1066,9 @@ private:
     data.imgui_descriptor_pool = m_descriptor.GetImguiDescriptorPool();
     data.min_image_count = 3;
     data.image_count = 3;
-    // data.render_pass = 
-    // data.command_pool = ;
-    // data.command_buffer = ;
+    data.render_pass =  m_renderPassHandler.GetRenderPass();
+    data.command_pool = m_CommandHandler.GetCommandPool();
+    data.command_buffers = m_CommandHandler.GetCommandBuffers();
     data.texture_descriptor_layout = m_descriptor.GetTextureSetLayout();
     data.texture_descriptor_pool = m_descriptor.GetTexturePool();
     return data;
@@ -1059,6 +1086,76 @@ private:
     m_pushConstant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
     m_pipelineHandler.SetPushConstantRange(m_pushConstant);
   }
+
+  void CreateOffScreenFrameBuffer(){
+    m_OffScreenFrameBuffer.resize(m_swapChain.FrameBufferSize());
+    for(uint32_t i = 0;i<m_swapChain.FrameBufferSize();++i){
+      std::array<VkImageView, 4> attachments = {
+        m_PositionBufferImages[i].textureImageView,
+        m_ColorBufferImages[i].textureImageView,
+        m_NormalBufferImages[i].textureImageView,
+        depthImage.textureImageView
+      };
+
+      VkFramebufferCreateInfo frameBufferCreateInfo = {};
+      frameBufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+      frameBufferCreateInfo.renderPass = m_renderPassHandler.GetOffScreenRenderPass();
+      frameBufferCreateInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+      frameBufferCreateInfo.pAttachments = attachments.data();
+      frameBufferCreateInfo.width = m_swapChain.GetExtent().width;
+      frameBufferCreateInfo.height = m_swapChain.GetExtent().height;
+      frameBufferCreateInfo.layers = 1;
+
+      if(vkCreateFramebuffer(m_device.logicalDevice, &frameBufferCreateInfo, nullptr, &m_OffScreenFrameBuffer[i])!=VK_SUCCESS){
+        throw std::runtime_error("Failed to create offscreen framebuffer!");
+      }
+    }
+  }
+
+  void SetUniformDataStructures(){
+    // View-Projection
+	float const aspectRatio = static_cast<float>(m_swapChain.GetExtentWidth()) / static_cast<float>(m_swapChain.GetExtentHeight());
+    // Light
+    pcg_extras::seed_seq_from<std::random_device> seed_source;
+    pcg32 rng(seed_source);
+    std::uniform_real_distribution<float> uniform_dist(0.0f, 1.0f);
+    float rnd_x = 0.0f;
+    float y = -0.5f;
+    float z = 0.0f;
+    float rnd_r = 0.0f;
+    float rnd_g = 0.0f;
+    float rnd_b = 0.0f;
+
+    for (int i = 0; i < NUM_LIGHTS / 2; i += 2)
+    {
+      rnd_r = uniform_dist(rng);
+      rnd_g = uniform_dist(rng);
+      rnd_b = uniform_dist(rng);
+      Light l1 = Light(rnd_r, rnd_g, rnd_b, 1.0f);
+
+      rnd_x = uniform_dist(rng);
+      l1.SetLightPosition(glm::vec4(rnd_r, rnd_g, rnd_b, 1.0f));
+
+      rnd_r = uniform_dist(rng);
+      rnd_g = uniform_dist(rng);
+      rnd_b = uniform_dist(rng);
+      Light l2 = Light(rnd_r, rnd_g, rnd_b, 1.0f);
+
+      rnd_x = uniform_dist(rng);
+      l2.SetLightPosition(glm::vec4(rnd_r, rnd_g, rnd_b, 1.0f));
+
+      m_LightData[i] = l1.GetUBOData();
+      m_LightData[i + 1] = l2.GetUBOData();
+    }
+
+    m_SettingsData.render_target = 3;
+  }
+
+  void UpdateLightColor(int light_idx, const glm::vec3& col){
+    if(light_idx>=m_LightData.size()) return;
+    m_LightData[light_idx].m_Color = col;
+  }
+
 };
 
 int main()

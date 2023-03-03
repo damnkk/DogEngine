@@ -16,24 +16,11 @@ public:
     VkShaderModule CreateShaderModule(const char* path);
     VkPipelineShaderStageCreateInfo CreateVertexShaderStage(const char* vert_str);
     VkPipelineShaderStageCreateInfo CreateFragmentShaderStage(const char* frag_str);
+    void CreateGraphicPipeline();
 
     void SetDescriptorSetLayouts(VkDescriptorSetLayout& descriptorSetLayout, VkDescriptorSetLayout& textureObject,
                                 VkDescriptorSetLayout& inputSetLayout, VkDescriptorSetLayout& lightSetLayout, VkDescriptorSetLayout& settings_set_layout);
     void SetPushConstantRange(VkPushConstantRange& pushConstantRange);
-    void SetVertexStageBindingDescription();
-    void SetVertexAttriuteDescriptions();
-    void SetViewPort();
-    void SetScissor();
-
-    void CreateGraphicPipeline();
-    void CreateVertexInputStage();
-    void CreateInputAssemblyStage();
-    void CreateViewportScissorStage();
-    void CreateDynamicStatesStage();
-    void CreateRasterizerStage();
-    void CreateMultisampleStage();
-    void CreateColourBlendingStage();
-    void CreateDepthStencilStage();
 
     void DestroyShaderModules();
     void DestroyPipeline();

@@ -8,7 +8,7 @@ struct Texture{
     VkDescriptorSet textureDescriptor;
     VkSampler sampler = VK_NULL_HANDLE;
     VkFormat Format		= {};
-    uint32_t miplevels = 0;
+    uint32_t miplevels = 1;
     void destroy(VkDevice& device,VmaAllocator &allocator);
 };
 

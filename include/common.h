@@ -29,6 +29,7 @@
 #include <unordered_map>
 #include <algorithm>
 #include <iomanip>
+#include <random>
 // VMA
 #define VMA_DEBUG_LOG
 #include "vk_mem_alloc.h"
@@ -46,14 +47,22 @@
 #include "allocateObject.h"
 #include "Vertex.h"
 
+#include "assimp/Importer.hpp"
+#include "assimp/scene.h"
+#include "assimp/postprocess.h"
 
-const uint32_t WIDTH = 800;
-const uint32_t HEIGHT = 600;
+// PCG
+#include <pcg/pcg_random.hpp>
+#include <pcg/pcg_extras.hpp>
+#include <pcg/pcg_uint128.hpp>
+
+const uint32_t WIDTH = 1920;
+const uint32_t HEIGHT = 1080;
 
 static uint32_t miplevels;
 
-const std::string MODEL_PATH = "models/viking_room.obj";
-const std::string TEXTURE_PATH = "textures/viking_room.png";
+// const std::string MODEL_PATH = "models/viking_room.obj";
+// const std::string TEXTURE_PATH = "textures/viking_room.png";
 
 struct constentData{
     glm::mat4 modelMatrix;

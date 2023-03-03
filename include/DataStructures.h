@@ -33,6 +33,13 @@ struct VulkanRenderData{
 
   VkCommandPool command_pool;
 
-  std::vector<VkCommandBuffer> command_buffer;
+  std::vector<VkCommandBuffer> command_buffers;
   VkRenderPass render_pass;
+};
+
+struct SubmissionSyncObjects{
+  VkSemaphore OffScreenAvaliable;
+  VkSemaphore ImageAvailable;
+  VkSemaphore RenderFinished;
+  VkFence InFlight;
 };

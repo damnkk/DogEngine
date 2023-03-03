@@ -31,20 +31,26 @@ std::vector<char> Utility::ReadFile(const std::string& filename){
 }
 
 VkFormat Utility::findSupportedFormat(const std::vector<VkFormat>& candidate, VkImageTiling tiling, VkFormatFeatureFlags features){
-    for (auto format : candidate)
-    {
-      VkFormatProperties props;
-      vkGetPhysicalDeviceFormatProperties(m_MainDevice->physicalDevice, format, &props);
-      if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features)
-      {
-        return format;
-      }
-      else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features)
-      {
-        return format;
-      }
-    }
-    throw std::runtime_error("failed to find supported format!");
+    for (VkFormat format : candidate)
+	{
+		VkFormatProperties properties;
+		vkGetPhysicalDeviceFormatProperties(m_MainDevice->physicalDevice, format, &properties);
+
+		bool const is_tiling_linear		 = tiling == VK_IMAGE_TILING_LINEAR;
+		bool const linear_support_flags	 = (properties.linearTilingFeatures & features) == features;
+		bool const is_tiling_optimal	 = tiling == VK_IMAGE_TILING_OPTIMAL;
+		bool const optimal_support_flags = (properties.optimalTilingFeatures & features) == features;
+		
+		if (is_tiling_linear && linear_support_flags)
+		{
+			return format;
+		}
+		else if (is_tiling_optimal && optimal_support_flags)
+		{
+			return format;
+		}
+	}
+	throw std::runtime_error("Failed to find a matching format!");
 }
 
 void Utility::findQueueFamilies(VkPhysicalDevice device, QueueFamilyIndices& indices){
@@ -76,7 +82,6 @@ void Utility::findQueueFamilies(VkPhysicalDevice device, QueueFamilyIndices& ind
         {
           break;
         }
-
         i++;
       }
     }
@@ -197,7 +202,7 @@ void Utility::CreatePositionBufferImage(Texture& image, const VkExtent2D& image_
 	const VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL;
 	const VkFormatFeatureFlags format_flags = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 	image.Format = Utility::findSupportedFormat(formats, tiling, format_flags);
-	Utility::createImage(image_extent.width, image_extent.height, image.miplevels, image.Format, tiling,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, image);
+	Utility::createImage(image_extent.width, image_extent.height, 1, image.Format, tiling,VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, image);
 	image.textureImageView = Utility::createImageView(image.textureImage, image.Format, VK_IMAGE_ASPECT_COLOR_BIT, image.miplevels);
 	{
 		VkSamplerCreateInfo samplerCreateInfo = {};

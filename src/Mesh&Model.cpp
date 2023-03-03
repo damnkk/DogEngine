@@ -17,6 +17,44 @@ void Mesh::draw(VkDevice& device, VkCommandBuffer& commandbuffer, VkDescriptorSe
     vkCmdDrawIndexed(commandbuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 }
 
+void Mesh::createVertexBuffer(std::vector<Vertex>& vertices, Buffer& vertexBuffer, VmaAllocator* allocator)
+  {
+    VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+
+    Buffer stagingBuffer;
+    Utility::CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer);
+
+    void *data;
+    vmaMapMemory(*allocator, stagingBuffer.allocation,&data);
+    memcpy(data, vertices.data(), (size_t)bufferSize);
+    vmaUnmapMemory(*allocator, stagingBuffer.allocation);
+
+    Utility::CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer);
+
+    Utility::CopyBuffer(stagingBuffer.buffer, vertexBuffer.buffer, bufferSize);
+
+    vmaDestroyBuffer(*allocator, stagingBuffer.buffer, stagingBuffer.allocation);
+  }
+
+  void Mesh::createIndexBuffer(std::vector<uint32_t> indices, Buffer& indexBuffer, VmaAllocator* allocator)
+  {
+    VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+
+    Buffer stagingBuffer;
+    Utility::CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer);
+
+    void *data;
+    vmaMapMemory(*allocator, stagingBuffer.allocation, &data);
+    memcpy(data, indices.data(), (size_t)bufferSize);
+    vmaUnmapMemory(*allocator, stagingBuffer.allocation);
+    Utility::CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer);
+
+    Utility::CopyBuffer(stagingBuffer.buffer, indexBuffer.buffer, bufferSize);
+
+    vmaDestroyBuffer(*allocator, stagingBuffer.buffer, stagingBuffer.allocation);
+  }
+
+
 void Model::draw(VkDevice& device, VkCommandBuffer& commandBuffer, VkDescriptorSet& descriptorSet, VkPipelineLayout& pipelineLayout){
     for (int i = 0; i < meshes.size();++i)
     {

@@ -1,6 +1,5 @@
 #pragma once 
 #include "common.h"
-
 #include "GraphicsPipeline.h"
 #include "RenderPassHandler.h"
 #include "Mesh&Model.h"
@@ -11,19 +10,19 @@ public:
     CommandHandler(MainDevice* main_device, GraphicPipeline* pipeline, RenderPassHandler* RenderPassHandler);
     void CreateCommandPool(QueueFamilyIndices& queueIndices);
     void CreateCommandBuffers(size_t const numFrameBuffers);
-    void RecordOffScreenCommands(ImDrawData* draw_data, uint32_t currentImage, VkExtent2D& imageExtent,
-        std::vector<VkFramebuffer>& offScreenFrameBuffers, std::vector<Model>& scene,
-        std::vector<VkDescriptorSet>& descriptorSets);
-    void RecordCommands(ImDrawData* draw_data, uint32_t current_img,VkExtent2D& iamgeExtent,
-        std::vector<VkFramebuffer>& frameBuffers,
-        std::vector<VkDescriptorSet>& light_desc_sets,
-        std::vector<VkDescriptorSet>& inputDescriptorSet,
-        std::vector<VkDescriptorSet>& settings_desc_set);
+    void RecordOffScreenCommands(ImDrawData* draw_data, uint32_t currImage, VkExtent2D& imageExtent,
+    std::vector<VkFramebuffer>& offScreenFrameBuffers, std::vector<Model>& scene, std::vector<VkDescriptorSet>& descriptorsets);
+    void RecordCommands(ImDrawData* draw_data,uint32_t currImage,VkExtent2D& imageExtent,
+    std::vector<VkFramebuffer>& frameBuffers,
+    std::vector<VkDescriptorSet>& vp_desc_sets,
+    std::vector<VkDescriptorSet>& light_desc_sets,
+    std::vector<VkDescriptorSet>& input_desc_sets,
+    std::vector<VkDescriptorSet>& settings_desc_set);
 
-    void RecordCommandBuffers_temp(uint32_t currFrame, uint32_t currImage,VkExtent2D imgExtent,
-        std::vector<VkFramebuffer>& frameBuffers,
-        std::vector<Model>& scene,
-        std::vector<VkDescriptorSet>& descriptorSets);
+    void RecordCommandBuffers_forward(ImDrawData* draw_data, uint32_t currFrame,uint32_t currImage, VkExtent2D imgExtent,
+    std::vector<VkFramebuffer>& frameBuffers,
+    std::vector<Model>& scene,
+    std::vector<VkDescriptorSet>& descriptorSets);
     void DestroyCommandPool();
     void FreeCommandBuffers();
 

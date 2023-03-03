@@ -287,7 +287,7 @@ void Descriptors::CreateInputAttachmentsDescriptorSets(size_t swapchain_size, co
 	}
 }
 
-void Descriptors::CreateLightDescriptorSets(const std::vector<VkBuffer>& ubo_light, size_t data_size, size_t swapchain_images)
+void Descriptors::CreateLightDescriptorSets(std::vector<Buffer>& ubo_light, size_t data_size, size_t swapchain_images)
 {
 	m_LightDescriptorSets.resize(swapchain_images);
 
@@ -309,7 +309,7 @@ void Descriptors::CreateLightDescriptorSets(const std::vector<VkBuffer>& ubo_lig
 	for (size_t i = 0; i < swapchain_images; i++)
 	{
 		VkDescriptorBufferInfo light_buffer_info = {};
-		light_buffer_info.buffer = ubo_light[i];		
+		light_buffer_info.buffer = ubo_light[i].buffer;		
 		light_buffer_info.offset = 0;				
 		light_buffer_info.range	 = data_size;
 
@@ -328,7 +328,7 @@ void Descriptors::CreateLightDescriptorSets(const std::vector<VkBuffer>& ubo_lig
 	}
 }
 
-void Descriptors::CreateSettingsDescriptorSets(const std::vector<VkBuffer>& ubo_settings, size_t data_size, size_t swapchain_images)
+void Descriptors::CreateSettingsDescriptorSets(std::vector<Buffer>& ubo_settings, size_t data_size, size_t swapchain_images)
 {
 	m_SettingsDescriptorSets.resize(swapchain_images);
 
@@ -350,7 +350,7 @@ void Descriptors::CreateSettingsDescriptorSets(const std::vector<VkBuffer>& ubo_
 	for (size_t i = 0; i < swapchain_images; i++)
 	{
 		VkDescriptorBufferInfo settings_buffer_info = {};
-		settings_buffer_info.buffer = ubo_settings[i];
+		settings_buffer_info.buffer = ubo_settings[i].buffer;
 		settings_buffer_info.offset = 0;
 		settings_buffer_info.range	= data_size;
 
