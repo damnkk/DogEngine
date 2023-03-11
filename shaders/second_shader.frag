@@ -64,7 +64,7 @@ void main()
 
 		Lumming.rgb 	   += diffuse + specular;
 	}
-	vec3 ambient = vec3(0.1);
+	vec3 ambient = vec3(0.2);
 	colour.rgb = fragColour*(ambient+Lumming);
 	switch(settings.render_target)
 	{

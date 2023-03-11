@@ -303,6 +303,17 @@ private:
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
       m_ViewProjectUBO[i].destroy(m_device.logicalDevice, allocator);
+      m_PositionBufferImages[i].destroy(m_device.logicalDevice, allocator);
+      m_NormalBufferImages[i].destroy(m_device.logicalDevice, allocator);
+      m_ColorBufferImages[i].destroy(m_device.logicalDevice, allocator);
+      vkDestroyFramebuffer(m_device.logicalDevice, m_OffScreenFrameBuffer[i], nullptr);
+    }
+
+    for(auto &i :m_LightUBO){
+      i.destroy(m_device.logicalDevice, allocator);
+    }
+    for(auto &i:m_SettingsUBO){
+      i.destroy(m_device.logicalDevice, allocator);
     }
 
     vkDestroySampler(m_device.logicalDevice, textureSampler, nullptr);
@@ -316,7 +327,10 @@ private:
       vkDestroyFence(m_device.logicalDevice, m_SyncObjects[i].InFlight, nullptr);
     }
     GUI::getInstance()->Destroy();
+    m_CommandHandler.FreeCommandBuffers();
     m_CommandHandler.DestroyCommandPool();
+    m_OffScreenCommandHandler.FreeCommandBuffers();
+    m_OffScreenCommandHandler.DestroyCommandPool();
     //vkDestroyCommandPool(m_device.logicalDevice, commandPool, nullptr);
     clearScene(scene);
     for(auto & tex:textures){
