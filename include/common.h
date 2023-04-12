@@ -2,41 +2,41 @@
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-#undef  GLFW_INCLUDE_VULKAN
+#undef GLFW_INCLUDE_VULKAN
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#undef  GLM_FORCE_RADIANS
-#undef  GLM_FORCE_DEPTH_ZERO_TO_ONE
+#undef GLM_FORCE_RADIANS
+#undef GLM_FORCE_DEPTH_ZERO_TO_ONE
 
 // stb lib
-#include <iostream>
-#include <fstream>
-#include <stdexcept>
 #include <algorithm>
-#include <chrono>
-#include <vector>
-#include <cstring>
-#include <cstdlib>
-#include <cstdint>
-#include <limits>
 #include <array>
-#include <optional>
-#include <set>
+#include <chrono>
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
 #include <ctime>
-#include <unordered_map>
-#include <algorithm>
+#include <fstream>
 #include <iomanip>
+#include <iostream>
+#include <limits>
+#include <optional>
 #include <random>
+#include <set>
+#include <stdexcept>
+#include <unordered_map>
+#include <vector>
+
 // VMA
 #define VMA_DEBUG_LOG
 #include "vk_mem_alloc.h"
 // DEAR IMGUI
-#include"imgui.h"
-#include"imgui_impl_vulkan.h"
-#include"imgui_impl_glfw.h"
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_vulkan.h"
 
 // // PCG
 // #include <pcg/pcg_random.hpp>
@@ -44,16 +44,16 @@
 // #include <pcg/pcg_uint128.hpp>
 
 #include "DataStructures.h"
-#include "allocateObject.h"
 #include "Vertex.h"
+#include "allocateObject.h"
 
 #include "assimp/Importer.hpp"
-#include "assimp/scene.h"
 #include "assimp/postprocess.h"
+#include "assimp/scene.h"
 
 // PCG
-#include <pcg/pcg_random.hpp>
 #include <pcg/pcg_extras.hpp>
+#include <pcg/pcg_random.hpp>
 #include <pcg/pcg_uint128.hpp>
 
 const uint32_t WIDTH = 1920;
@@ -64,12 +64,11 @@ static uint32_t miplevels;
 // const std::string MODEL_PATH = "models/viking_room.obj";
 // const std::string TEXTURE_PATH = "textures/viking_room.png";
 
-struct constentData{
-    glm::mat4 modelMatrix;
+struct constentData {
+  glm::mat4 modelMatrix;
 };
 
 const int MAX_FRAMES_IN_FLIGHT = 3;
 
 const std::vector<const char *> deviceExtensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-

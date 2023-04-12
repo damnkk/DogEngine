@@ -1,19 +1,25 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.20)
 
-project(vulkan_learning)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
-set(VULKAN_SDK_PATH $ENV{VULKAN_SDK})
-
+set(CMAKE_CXX_COMPILER "E:/software/MinGW/bin/g++.exe")
+project(vulkan_learning)
+set(VULKAN_SDK_PATH $ENV{VULKAN_SDK})  
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+endif()
 add_subdirectory(src)
 find_library(vulkan_lib vulkan-1 "${VULKAN_SDK_PATH}/Lib" "${VULKAN_SDK_PATH}/Lib")
-find_library(glfw_lib glfw3 "${VULKAN_SDK_PATH}/Lib" "F:/training/GLlib/libs")
-find_library(assimp assimp-vc142-mtd "F:/training/GLlib/libs")
-find_library(vma_lib VulkanMemoryAllocatord "${VULKAN_SDK_PATH}/Lib" "F:/training/GLlib/libs")
+find_library(glfw_lib libglfw3 "${VULKAN_SDK_PATH}/Lib" "E:/Lib/lib")
+find_library(assimp libassimpd.dll "E:/Lib/lib")
+find_library(vma_lib libVulkanMemoryAllocatord "${VULKAN_SDK_PATH}/Lib" "E:/Lib/lib")
 aux_source_directory(. DIR_SRC)
 add_executable(vulkan_learning ${DIR_SRC})
-target_include_directories(vulkan_learning PUBLIC "${VULKAN_SDK_PATH}/Include" "F:/training/GLlib/include" "D:/vulkan/Include" "./src" "./include")
+
+target_include_directories(vulkan_learning PUBLIC "E:/repository/OpenSceneGraph/include/" "${VULKAN_SDK_PATH}/Include" "F:/training/GLlib/include" "D:/vulkan/Include" "./src" "./include")
 target_link_libraries(vulkan_learning SRC_LIB)
+target_link_libraries(vulkan_learning imm32)
+
 target_link_libraries(vulkan_learning ${assimp})
 
 target_include_directories(vulkan_learning PUBLIC "${PROJECT_BINARY_DIR}")
