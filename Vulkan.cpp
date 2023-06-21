@@ -1448,7 +1448,7 @@ private:
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT || VK_FORMAT_D24_UNORM_S8_UINT;
   }
 
-  glm::mat4 getTranslation(glm::vec3& translate, glm::vec3& rotate, glm::vec3& scale){
+  glm::mat4 getTranslation(const glm::vec3& translate,const glm::vec3& rotate, const glm::vec3& scale){
 
     glm::mat4 unit(    // 单位矩阵
             glm::vec4(1, 0, 0, 0),
@@ -1467,7 +1467,7 @@ private:
 
 
   // In the future, we can stage model path , translate, rotate, scale etc. in json file.
-  void loadComplexModel(const char* file_path, glm::vec3& translate, glm::vec3& rotate, glm::vec3& scale){
+  void loadComplexModel(const char* file_path, const glm::vec3& translate, const glm::vec3& rotate, const glm::vec3& scale){
     std::string model_path = file_path;
     tinyobj::ObjReaderConfig reader_config;
     reader_config.mtl_search_path=model_path.substr(0,model_path.find_last_of("/\\"))+"/";

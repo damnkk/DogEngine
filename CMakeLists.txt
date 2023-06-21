@@ -1,19 +1,23 @@
 cmake_minimum_required(VERSION 3.10)
 
+set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_PATH}/scripts/buildsystems/vcpkg.cmake")
+
 project(vulkan_learning)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
-include_directories("C:/VulkanSDK/1.3.231.1/Include" "E:/training/GLlib/include" "D:/vulkan/Include" "./src" "./include")
 add_subdirectory(src)
-find_library(vulkan_lib vulkan-1 "C:/VulkanSDK/1.3.231.1/Lib" "D:/vulkan/Lib")
-find_library(glfw_lib glfw3 "C:/VulkanSDK/1.3.231.1/Lib" "E:/training/GLlib/libs")
-find_library(vma_lib VulkanMemoryAllocatord "C:/VulkanSDK/1.3.231.1/Lib" "E:/training/GLlib/libs")
+add_subdirectory(external/glfw)
+find_package(Vulkan REQUIRED)
 aux_source_directory(. DIR_SRC)
 add_executable(vulkan_learning ${DIR_SRC})
-target_link_libraries(vulkan_learning SRC_LIB)
+target_link_libraries(vulkan_learning PUBLIC SRC_LIB)
 
-target_include_directories(vulkan_learning PUBLIC "${PROJECT_BINARY_DIR}")
-target_include_directories(vulkan_learning PUBLIC "C:/VulkanSDK/1.3.231.1/Include" "E:/training/GLlib/include" "D:/vulkan/Include" )
-target_link_libraries(vulkan_learning ${vulkan_lib})
-target_link_libraries(vulkan_learning ${glfw_lib}) 
+target_include_directories(vulkan_learning PUBLIC
+    ${Vulkan_INCLUDE_DIRS}
+    "./include"
+    "./external/glm"
+    "./external/glfw/include"
+    "./external/VMA/include"
+)
+target_link_libraries(vulkan_learning PUBLIC glfw Vulkan::Vulkan)
