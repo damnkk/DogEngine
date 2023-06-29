@@ -1,23 +1,21 @@
-cmake_minimum_required(VERSION 3.10)
-
-set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_PATH}/scripts/buildsystems/vcpkg.cmake")
-
-project(vulkan_learning)
+cmake_minimum_required(VERSION 3.25.0)
+project(Vulkan_Hpp_learning)
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-add_subdirectory(src)
-add_subdirectory(external/glfw)
 find_package(Vulkan REQUIRED)
-aux_source_directory(. DIR_SRC)
-add_executable(vulkan_learning ${DIR_SRC})
-target_link_libraries(vulkan_learning PUBLIC SRC_LIB)
-
-target_include_directories(vulkan_learning PUBLIC
-    ${Vulkan_INCLUDE_DIRS}
+FILE(GLOB_RECURSE sourceFiles  "./src/*.cpp")
+message("-----------------------")
+message(${sourceFiles})
+message("-----------------------")
+add_executable(VulkanHppLearning Vulkan.cpp ${sourceFiles})
+target_include_directories(VulkanHppLearning PUBLIC
+    "./external/glfw/include"
     "./include"
     "./external/glm"
-    "./external/glfw/include"
-    "./external/VMA/include"
-)
-target_link_libraries(vulkan_learning PUBLIC glfw Vulkan::Vulkan)
+    "./external/stb"
+    "./external/tinyGltf"
+    "./VMA/include"
+    "./vulkan-header"
+    ${Vulkan_INCLUDE_DIRS})
+target_link_libraries(VulkanHppLearning PUBLIC Vulkan glfw3 SRC_LIB)

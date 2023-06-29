@@ -1,8 +1,8 @@
 #pragma once
 
 #define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-#undef  GLFW_INCLUDE_VULKAN
+#include "GLFW/glfw3.h"
+#include "vulkan/vulkan.hpp"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -10,6 +10,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 #undef  GLM_FORCE_RADIANS
 #undef  GLM_FORCE_DEPTH_ZERO_TO_ONE
+
+#define VMA_IMPLEMENTATION
+#include "vma/vk_mem_alloc.h"
 
 
 #include <iostream>
@@ -29,7 +32,6 @@
 #include <unordered_map>
 #include <algorithm>
 #include <iomanip>
-#include "vk_mem_alloc.h"
 #include "DataStructures.h"
 #include "allocateObject.h"
 
