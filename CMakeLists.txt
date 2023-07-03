@@ -9,13 +9,14 @@ message("-----------------------")
 message(${sourceFiles})
 message("-----------------------")
 add_executable(VulkanHppLearning Vulkan.cpp ${sourceFiles})
+add_definitions(-DDEBUG)
 target_include_directories(VulkanHppLearning PUBLIC
-    "./external/glfw/include"
-    "./include"
-    "./external/glm"
-    "./external/stb"
-    "./external/tinyGltf"
-    "./VMA/include"
-    "./vulkan-header"
+    "external/glfw/include"
+    "include"
+    "external/glm"
+    "external/stb"
+    "external/tinygltf"
+    "external/VMA/include"
+    "external/vulkan-header"
     ${Vulkan_INCLUDE_DIRS})
 target_link_libraries(VulkanHppLearning PUBLIC Vulkan glfw3 SRC_LIB)

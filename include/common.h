@@ -12,8 +12,7 @@
 #undef  GLM_FORCE_DEPTH_ZERO_TO_ONE
 
 #define VMA_IMPLEMENTATION
-#include "vma/vk_mem_alloc.h"
-
+#include "vk_mem_alloc.h"
 
 #include <iostream>
 #include <fstream>
@@ -51,4 +50,8 @@ const int MAX_FRAMES_IN_FLIGHT = 2;
 
 const std::vector<const char *> deviceExtensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+
+const std::vector<const char*> InstanceLayers = {
+    "VK_LAYER_KHRONOS_validation"
+};
 
