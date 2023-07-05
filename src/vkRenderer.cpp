@@ -28,7 +28,7 @@ void VulkanRenderer::createInstance(){
     }
 }
 
-void VulkanRenderer::DeviceInit(){
+void VulkanRenderer::deviceInit(){
     m_physicalDevice = m_instance.enumeratePhysicalDevices().front();
     std::vector<vk::QueueFamilyProperties> QueueFamilyProperties = m_physicalDevice.getQueueFamilyProperties();
     auto propertyIterator = std::find_if(QueueFamilyProperties.begin(),QueueFamilyProperties.end(),[](vk::QueueFamilyProperties& queueProp){return queueProp.queueFlags&vk::QueueFlagBits::eGraphics&vk::QueueFlagBits::eCompute;});
@@ -52,14 +52,26 @@ void VulkanRenderer::createCommandBuffer(){
         throw std::runtime_error("ERROR: CommandBuffer create failed!");
     }
     vk::Buffer m_buffer;
-    
+}
 
+void VulkanRenderer::createSourface(){
+    glfwCreateWindowSurface(m_instance, m_window, nullptr, &m_surface);
+}
+
+void VulkanRenderer::initWindow(){
+    glfwInit();
+
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE)
+
+    m_window = glfwCreateWindow(WIDTH,HEIGHT,"VulkanRenderer", nullptr, nullptr);
 }
 
 void VulkanRenderer::initVulkan(){
     createInstance();
-    DeviceInit();
+    deviceInit();
     createCommandBuffer();
+    
 }
 
 
