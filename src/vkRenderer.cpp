@@ -4,7 +4,6 @@
 #include "vulkan/vulkan_core.h"
 #include "vulkan/vulkan_enums.hpp"
 #include "vulkan/vulkan_handles.hpp"
-#include <_types/_uint32_t.h>
 #include <stdexcept>
 
 void VulkanRenderer::createInstance(){
@@ -55,6 +54,7 @@ void VulkanRenderer::createCommandBuffer(){
 }
 
 void VulkanRenderer::createSourface(){
+    //glfwCreateWindowSurface(m_instance, m_window, nullptr, &m_surface);
     glfwCreateWindowSurface(m_instance, m_window, nullptr, &m_surface);
 }
 
@@ -62,7 +62,7 @@ void VulkanRenderer::initWindow(){
     glfwInit();
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE)
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
     m_window = glfwCreateWindow(WIDTH,HEIGHT,"VulkanRenderer", nullptr, nullptr);
 }

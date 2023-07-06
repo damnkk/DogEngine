@@ -18,7 +18,7 @@ public:
     vk::CommandPool m_commandPool;
     uint32_t m_queueFamilyIdx;
     std::array<vk::CommandBuffer,3> m_commandBuffers;
-    vk::SurfaceKHR m_surface;
-    GLFWwindow* window;
+    VkSurfaceKHR m_surface;
+    GLFWwindow* m_window;
     vk::Pipeline m_pipeline;
 };
