@@ -1,15 +1,12 @@
-#pragma once
+#ifndef ALLOCATEOBJECT_H
+#define ALLOCATEOBJECT_H
 #include "Common.h"
 
 struct Texture{
-    VkImage textureImage;
-    VkImageView textureImageView;
-    VmaAllocation allocation;
-    VkDescriptorSet textureDescriptor;
-    VkSampler sampler = VK_NULL_HANDLE;
-    VkFormat Format		= {};
-    uint32_t miplevels = 0;
-    void destroy(VkDevice& device,VmaAllocator &allocator);
+    vk::Image TextureImage;
+    vk::ImageView TextureImageView;
+    vk::DeviceMemory TextureMemory;
+    void destroy();
 };
 
 struct Buffer{
@@ -17,3 +14,5 @@ struct Buffer{
     VmaAllocation allocation;
     void destroy(VkDevice& devcie,VmaAllocator& allocator);
 };
+
+#endif

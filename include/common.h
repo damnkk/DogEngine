@@ -1,4 +1,5 @@
-#pragma once
+#ifndef COMMON_H
+#define COMMON_H
 
 #define GLFW_INCLUDE_VULKAN
 #define VK_USE_PLATFORM_WIN32_KHR
@@ -11,9 +12,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #undef  GLM_FORCE_RADIANS
 #undef  GLM_FORCE_DEPTH_ZERO_TO_ONE
-
-#define VMA_IMPLEMENTATION
-#include "vk_mem_alloc.h"
 
 #include <iostream>
 #include <fstream>
@@ -32,11 +30,10 @@
 #include <unordered_map>
 #include <algorithm>
 #include <iomanip>
-#include "DataStructures.h"
-#include "allocateObject.h"
+#include "vk_mem_alloc.h"
 
-const uint32_t WIDTH = 800;
-const uint32_t HEIGHT = 600;
+const uint32_t WIDTH = 1920;
+const uint32_t HEIGHT = 1080;
 
 static uint32_t miplevels;
 
@@ -56,3 +53,4 @@ const std::vector<const char*> InstanceLayers = {
     "VK_LAYER_KHRONOS_validation"
 };
 
+#endif 

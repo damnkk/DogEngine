@@ -8,6 +8,12 @@ FILE(GLOB_RECURSE sourceFiles  "./src/*.cpp")
 message("-----------------------")
 message(${sourceFiles})
 message("-----------------------")
+add_subdirectory(external/glfw)
+add_subdirectory(external/glm)
+add_subdirectory(external/tinygltf)
+add_subdirectory(external/TinyObjLoader)
+add_subdirectory(external/VMA)
+   
 add_executable(VulkanHppLearning Vulkan.cpp ${sourceFiles})
 add_definitions(-DDEBUG)
 target_include_directories(VulkanHppLearning PUBLIC
@@ -19,4 +25,5 @@ target_include_directories(VulkanHppLearning PUBLIC
     "external/VMA/include"
     "external/vulkan-header"
     ${Vulkan_INCLUDE_DIRS})
-target_link_libraries(VulkanHppLearning PUBLIC Vulkan glfw3 SRC_LIB)
+
+target_link_libraries(VulkanHppLearning PUBLIC ${Vulkan_LIBRARIES} glfw )
