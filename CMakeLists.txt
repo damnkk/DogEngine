@@ -16,12 +16,13 @@ find_library(vma_lib libVulkanMemoryAllocatord "${VULKAN_SDK_PATH}/Lib" "E:/Lib/
 aux_source_directory(. DIR_SRC)
 add_executable(vulkan_learning ${DIR_SRC})
 
-target_include_directories(vulkan_learning PUBLIC "E:/repository/OpenSceneGraph/include/" "${VULKAN_SDK_PATH}/Include" "F:/training/GLlib/include" "D:/vulkan/Include" "./src" "./include")
+target_include_directories(vulkan_learning PUBLIC "E:/repository/OpenSceneGraph/include/" "${VULKAN_SDK_PATH}/Include" "E:/training/GLlib/include" "D:/vulkan/Include" "./src" "./include")
 target_link_libraries(vulkan_learning SRC_LIB)
 target_link_libraries(vulkan_learning imm32)
 
 target_link_libraries(vulkan_learning ${assimp})
 
-target_include_directories(vulkan_learning PUBLIC "${PROJECT_BINARY_DIR}")
+target_include_directories(vulkan_learning PUBLIC "${PROJECT_BINARY_DIR}"
+"./src")
 target_link_libraries(vulkan_learning ${vulkan_lib})
 target_link_libraries(vulkan_learning ${glfw_lib}) 
