@@ -223,9 +223,74 @@ void VulkanRenderer::createPipeline(){
 
 }
 
+void VulkanRenderer::createTexture(const vk::ImageCreateInfo& imgInfo, const vk::Format& format, Texture& texture){
+    texture.TextureImage = m_device.createImage(imgInfo);
+    vk::PhysicalDeviceMemoryProperties memoryProperties = m_physicalDevice.getMemoryProperties();
+    vk::MemoryRequirements memoryRequires = m_device.getImageMemoryRequirements(texture.TextureImage);
+    uint32_t typebits = memoryRequires.memoryTypeBits;
+    uint32_t typeIndex=  uint32_t(~0);
+    for (uint32_t i = 0;i<memoryProperties.memoryTypeCount;++i){
+        if((typebits&1)&&((memoryProperties.memoryTypes[i].propertyFlags&vk::MemoryPropertyFlagBits::eDeviceLocal)==vk::MemoryPropertyFlagBits::eDeviceLocal)){
+            typeIndex = i;
+            break;
+        }
+        typebits>>=1;
+    }
+    assert(typeIndex!=uint32_t(~0));
+    texture.TextureMemory = m_device.allocateMemory(vk::MemoryAllocateInfo(memoryRequires.size, typeIndex));
+    m_device.bindImageMemory(texture.TextureImage, texture.TextureMemory,0);
+    texture.m_TextureInfo.imageView = m_device.createImageView(vk::ImageViewCreateInfo(vk::ImageViewCreateFlags(),texture.TextureImage, vk::ImageViewType::e2D,format,{},vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eDepth,0,1,0,1)));
+}
+
+void VulkanRenderer::createBuffer(const vk::BufferCreateInfo& bufferInfo, Buffer& buffer){
+    buffer.bufferObject = m_device.createBuffer(bufferInfo);
+    vk::MemoryRequirements bufferRequire = m_device.getBufferMemoryRequirements(buffer.bufferObject);
+    vk::PhysicalDeviceMemoryProperties bufferProp = m_physicalDevice.getMemoryProperties();
+    uint32_t typebits = bufferRequire.memoryTypeBits;
+    uint32_t typeIdx = uint32_t(~0);
+    for(uint32_t i = 0;i<bufferProp.memoryTypeCount;++i){
+        if((typebits&1)&&((bufferProp.memoryTypes[i].propertyFlags&(vk::MemoryPropertyFlagBits::eHostVisible|vk::MemoryPropertyFlagBits::eHostCoherent)) == (vk::MemoryPropertyFlagBits::eHostVisible|vk::MemoryPropertyFlagBits::eHostCoherent))){
+            typeIdx = i;
+            break;
+        }
+        typebits>>=1;
+    }
+
+    vk::DeviceMemory bufferMemory = m_device.allocateMemory(vk::MemoryAllocateInfo(bufferRequire.size,typeIdx));
+    m_device.bindBufferMemory(buffer.bufferObject, buffer.bufferMemory,0);
+
+}
+
 void VulkanRenderer::initDepthBuffer(){
     vk::Format depthFormat = vk::Format::eD32Sfloat;
+    vk::FormatProperties formatProperties = m_physicalDevice.getFormatProperties(depthFormat);
+    vk::ImageTiling tiling;
+    if(formatProperties.linearTilingFeatures&vk::FormatFeatureFlagBits::eDepthStencilAttachment){
+        tiling = vk::ImageTiling::eLinear;
+    }else if(formatProperties.optimalTilingFeatures&vk::FormatFeatureFlagBits::eDepthStencilAttachment){
+        tiling = vk::ImageTiling::eOptimal;
+    }else{
+        throw std::runtime_error("DepthStencilAttachment is not supported for eD32sfloat format!");
+    }
+    vk::ImageCreateInfo depthImageCreateInfo(vk::ImageCreateFlags(),vk::ImageType::e2D,
+                                        depthFormat,
+                                        vk::Extent3D(m_swapChainExtent,1),
+                                        1,
+                                        1,
+                                        vk::SampleCountFlagBits::e1,
+                                        tiling,
+                                        vk::ImageUsageFlagBits::eDepthStencilAttachment);
+    createTexture(depthImageCreateInfo, depthFormat, m_depthImage);
 }
+
+void VulkanRenderer::createUniformBuffers(){
+    for(int i = 0;i<m_swapChainImage.size();++i){
+        vk::BufferCreateInfo bufferInfo(vk::BufferCreateFlags(), sizeof(UniformData), vk::BufferUsageFlagBits::eUniformBuffer,vk::SharingMode::eExclusive);
+        createBuffer(bufferInfo, m_uniformBuffers[i]);
+        m_uniformMapped[i] = static_cast<uint8_t*>(m_device.mapMemory(m_uniformBuffers[i].bufferMemory,0,bufferInfo.size));
+    }
+}
+
 
 void VulkanRenderer::initVulkan(){
 
@@ -240,7 +305,8 @@ void VulkanRenderer::initVulkan(){
     createCommandBuffer();
     //presentation
     createSwapChain();
-   
+    initDepthBuffer();
+    createUniformBuffers();
     //draw
     createPipeline();
 

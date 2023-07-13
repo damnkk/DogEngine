@@ -13,6 +13,9 @@
 #undef  GLM_FORCE_RADIANS
 #undef  GLM_FORCE_DEPTH_ZERO_TO_ONE
 
+#define TINYGLTF_IMPLEMENTATIONI
+#include "tiny_gltf.h"
+
 #include <iostream>
 #include <fstream>
 #include <stdexcept>

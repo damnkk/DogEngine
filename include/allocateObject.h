@@ -4,14 +4,15 @@
 
 struct Texture{
     vk::Image TextureImage;
-    vk::ImageView TextureImageView;
+    vk::DescriptorImageInfo m_TextureInfo;
     vk::DeviceMemory TextureMemory;
+    vk::Format TextureFormat;
     void destroy();
 };
 
 struct Buffer{
-    VkBuffer buffer;
-    VmaAllocation allocation;
+    vk::Buffer bufferObject;
+    vk::DeviceMemory bufferMemory;
     void destroy(VkDevice& devcie,VmaAllocator& allocator);
 };
 

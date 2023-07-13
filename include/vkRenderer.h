@@ -1,7 +1,8 @@
 #pragma once
 #include "common.h"
 #include "allocateObject.h"
-
+#include "Camera.h"
+#include "DataStructures.h"
 class VulkanRenderer{
 public:
     void fun();
@@ -16,7 +17,14 @@ public:
     void createSwapChain();
     void setupDebugMessenger();
     void initDepthBuffer();
+    void createUniformBuffers();
+//----------------pipeline---------------
+
     void createPipeline();
+
+    //--------------utils---------------------
+    void createTexture(const vk::ImageCreateInfo& imgInfo, const vk::Format& format, Texture& texture );
+    void createBuffer(const vk::BufferCreateInfo& bufferInfo, Buffer& buffer);
 
     vk::Instance m_instance;
     vk::ApplicationInfo info;
@@ -31,7 +39,6 @@ public:
     vk::CommandPool m_commandPool;
     vk::DebugUtilsMessengerEXT m_debugMessenger;
 
-    vk::Pipeline m_pipeline;
     uint32_t graphicIndex;
     uint32_t computeIndex;
     uint32_t presentIndex;
@@ -40,8 +47,16 @@ public:
     vk::Queue m_presentQueue;
     std::set<uint32_t> m_queueFamilyIdx;
 
+    vk::DescriptorSetLayout m_descriptorSetLayout;
+
+    vk::Pipeline m_pipeline;
+    vk::PipelineLayout m_pipelineLayout;
     Texture m_depthImage;
+    std::vector<Buffer> m_uniformBuffers;
+    std::vector<void*> m_uniformMapped;
+    Camera m_camera;
     std::array<vk::CommandBuffer,3> m_commandBuffers;
     vk::SurfaceKHR m_surface;
     GLFWwindow* m_window;
+    
 };
