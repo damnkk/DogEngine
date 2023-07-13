@@ -19,5 +19,6 @@ target_include_directories(vulkan_learning PUBLIC
     "./external/glm"
     "./external/glfw/include"
     "./external/VMA/include"
+    "./external/TinyObjLoader"
 )
 target_link_libraries(vulkan_learning PUBLIC glfw Vulkan::Vulkan)
