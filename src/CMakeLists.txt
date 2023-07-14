@@ -12,4 +12,5 @@ target_include_directories(SRC_LIB PUBLIC
     "../external/vulkan-header/include"
     "../external/TinyObjLoader"
     "../external/stb"
+    "../external/tinygltf"
 )
