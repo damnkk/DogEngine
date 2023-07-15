@@ -5,11 +5,16 @@
 #include "DebugMessanger.h"
 #include "Utilities.h"
 
+
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
 
+
+#define TINYGLTF_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
+#define TINYGLTF_NO_STB_IMAGE_WRITE
+
+#include "tiny_gltf.h"
 int textureNum = 0;
 float testNumWithNoSense = 0.0f;
 
@@ -1465,6 +1470,18 @@ private:
     return transMat*rotateMat*scaleMat;
   }
 
+  void loadGltfModel(const char* file_path, const glm::vec3 translate, const glm::vec3& rotate, const glm::vec3& scale){
+    tinygltf::Model gltfInput;
+    tinygltf::TinyGLTF gltfContext;
+    std::string error,warning;
+
+    bool fileLoaded = gltfContext.LoadASCIIFromFile(&gltfInput,&error,&warning,file_path);
+    if(!fileLoaded){
+      throw std::runtime_error(error+"\n"+warning);
+    }else{
+      tinygltf::Material mts;
+    }
+  }
 
   // In the future, we can stage model path , translate, rotate, scale etc. in json file.
   void loadComplexModel(const char* file_path, const glm::vec3& translate, const glm::vec3& rotate, const glm::vec3& scale){
