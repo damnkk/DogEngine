@@ -1,7 +1,7 @@
 ﻿#include "Common.h"
 #include "Camera.h"
 #include "Vertex.h"
-#include "Mesh&Model.h"
+#include "MeshModel.h"
 #include "DebugMessanger.h"
 #include "Utilities.h"
 
@@ -178,8 +178,8 @@ private:
 //--------------------Load models-----------------------
     loadComplexModel("./models/nanosuit/nanosuit.obj",glm::vec3(0.0f,1.0f,0.0f), glm::vec3(0.0f, 90.0f, 0.0f), glm::vec3(0.2f,0.2f,0.2f));
     //loadComplexModel("./models/sponza/sponza.obj",glm::vec3(3.0f,1.0f,0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.02f,0.02f,0.02f));
-    loadComplexModel("./models/duck/12248_Bird_v1_L2.obj",glm::vec3(0.0f,8.0f,3.0f), glm::vec3(-90.0f, 0.0f, 0.0f), glm::vec3(0.002f,0.002f,0.002f));
-    loadGltfModel("./models/DamagedHelmet/glTF/DamagedHelmet.gltf", glm::vec3(0.0f,1.0f,0.0f), glm::vec3(0.0f, 90.0f, 0.0f), glm::vec3(0.2f,0.2f,0.2f));
+    loadComplexModel("./models/duck/12248_Bird_v1_L2.obj", glm::vec3(0.0f, 8.0f, 3.0f), glm::vec3(-90.0f, 0.0f, 0.0f), glm::vec3(0.002f, 0.002f, 0.002f));
+    loadGltfModel("D:/Repositories/Vulkan_learn/models/DamagedHelmet/glTF/DamagedHelmet.gltf", glm::vec3(0.0f,1.0f,0.0f), glm::vec3(0.0f, 90.0f, 0.0f), glm::vec3(0.2f,0.2f,0.2f));
     textureNum = textures.size();
 //------------------------------------------------------
     createDescriptorSetLayout("uniform");
@@ -1499,15 +1499,22 @@ private:
         loadedModel.loadNode(node, gltfInput,nullptr,indexBuffer,vertexBuffer);
       }
     }
+
+    auto modelMatrix = getTranslation(translate,rotate,scale);
+    for(auto i:loadedModel.mNodes){
+      i->matrix = modelMatrix;
+    }
     size_t vertexBufferSize = vertexBuffer.size()*sizeof(GltfModel::Vertex);
     size_t indexBufferSize  = indexBuffer.size()*sizeof(uint32_t);
-    loadedModel.Indices.count =static_cast<uint32_t>(indexBuffer.size());
+    loadedModel.indexCount =static_cast<uint32_t>(indexBuffer.size());
 
     Buffer vertexStagingBuffer,indexStagingBuffer;
     Utility::CreateBuffer(static_cast<VkDeviceSize>(vertexBufferSize),VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT,VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,vertexStagingBuffer);
     Utility::CreateBuffer(static_cast<VkDeviceSize>(indexBufferSize),VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT,VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,indexStagingBuffer);
-    Utility::CopyBuffer(vertexStagingBuffer.buffer,loadedModel.Vertices.vertexBuffer, vertexBufferSize);
-    Utility::CopyBuffer(indexStagingBuffer.buffer, loadedModel.Indices.indexBuffer, indexBufferSize);
+    Utility::CreateBuffer(static_cast<VkDeviceSize>(vertexBufferSize),VK_BUFFER_USAGE_TRANSFER_DST_BIT|VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,loadedModel.Vertices);
+    Utility::CreateBuffer(static_cast<VkDeviceSize>(indexBufferSize),VK_BUFFER_USAGE_TRANSFER_DST_BIT|VK_BUFFER_USAGE_INDEX_BUFFER_BIT,VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,loadedModel.Indices);
+    Utility::CopyBuffer(vertexStagingBuffer.buffer,loadedModel.Vertices.buffer, vertexBufferSize);
+    Utility::CopyBuffer(indexStagingBuffer.buffer, loadedModel.Indices.buffer, indexBufferSize);
     vertexStagingBuffer.destroy(m_device.logicalDevice, allocator);
     indexStagingBuffer.destroy(m_device.logicalDevice, allocator);
   }

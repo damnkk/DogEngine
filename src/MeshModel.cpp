@@ -1,4 +1,4 @@
-#include "Mesh&Model.h"
+#include "MeshModel.h"
 
 void Mesh::draw(VkDevice& device, VkCommandBuffer& commandbuffer, VkDescriptorSet &descriptorSet, VkPipelineLayout& layout, 
               VkSampler& sampler, glm::mat4 model){

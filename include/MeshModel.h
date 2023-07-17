@@ -24,15 +24,9 @@ public:
         VkVertexInputBindingDescription getVertexBindingDescription();
         std::vector<VkVertexInputAttributeDescription> getVertexAttributeDescription();
     };
-    struct{
-        VkBuffer vertexBuffer;
-        VmaAllocation allocation;
-    } Vertices;
-    struct{
-        int count;
-        VkBuffer indexBuffer;
-        VmaAllocation allocation;
-    } Indices;
+    Buffer Vertices;
+    Buffer Indices;
+    uint32_t indexCount=0;
 
     struct Primitive{
         uint32_t firstIndex;
@@ -95,7 +89,6 @@ public:
             }else{
                 buffer = &gltfImage.image[0];
                 bufferSize = gltfImage.image.size();
-                deleteBuffer = true;
             }
             Buffer stagingBuffer;
             Utility::CreateBuffer(bufferSize,VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -111,7 +104,7 @@ public:
 
             Utility::createImage(gltfImage.width,gltfImage.height,images[i].miplevels,VK_FORMAT_R8G8B8A8_SRGB,VK_IMAGE_TILING_OPTIMAL,VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT|VK_BUFFER_USAGE_TRANSFER_SRC_BIT|
                                     VK_IMAGE_USAGE_SAMPLED_BIT,VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,images[i]);
-            Utility::createImageView(images[i].textureImage,VK_FORMAT_R8G8B8A8_SRGB,VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT,1);
+            images[i].textureImageView=Utility::createImageView(images[i].textureImage,VK_FORMAT_R8G8B8A8_SRGB,VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT,1);
             Utility::CreateTextureSampler(images[i]);
         }
     }
@@ -128,27 +121,23 @@ public:
         for(uint32_t i = 0;i<input.materials.size();++i){
             tinygltf::Material gltfMaterial = input.materials[i];
             decltype(gltfMaterial.values)& value = gltfMaterial.values;
-            if(value.find("baseColorFactor")!= value.end()){
-                materials[i].baseColorFactor = glm::make_vec4(value["baseColorFactor"].ColorFactor().data());
-            }
-            if(value.find("emissiveFactor") != value.end()){
-                materials[i].emissiveFactor = glm::make_vec3(value["emissiveFactor"].ColorFactor().data());
-            }
-            if(value.find("baseColorTexture")!= value.end()){
-                materials[i].baseColorTextureIndex = value["baseColorTexture"].TextureIndex();
-            }
-            if(value.find("emissiveTexture") != value.end()){
-                materials[i].emissiveTextureIndex = value["emissiveTexture"].TextureIndex();
-            }
-            if(value.find("occlusionTexture") != value.end()){
-                materials[i].occlusionTextureIndex = value["occlusionTexture"].TextureIndex();
-            }
-            if(value.find("normalTexture")!= value.end()){
-                materials[i].normalTextureIndex = value["normalTexture"].TextureIndex();
-            }
-            if(value.find("metallicRoughnessTexture")!=value.end()){
-                materials[i].metallicRoughnessTextureIndex = value["metallicRoughnessTexture"].TextureIndex();
-            }
+            decltype(gltfMaterial.additionalValues)& additionValues = gltfMaterial.additionalValues;
+
+            materials[i].baseColorFactor = glm::make_vec4(&gltfMaterial.pbrMetallicRoughness.baseColorFactor[0]);
+
+            materials[i].emissiveFactor = glm::make_vec3(&gltfMaterial.emissiveFactor[0]);
+            
+            materials[i].baseColorTextureIndex = gltfMaterial.pbrMetallicRoughness.baseColorTexture.index;
+           
+            materials[i].emissiveTextureIndex = gltfMaterial.emissiveTexture.index>=0?gltfMaterial.emissiveTexture.index:-1;
+            
+            materials[i].occlusionTextureIndex =gltfMaterial.occlusionTexture.index>=0?gltfMaterial.occlusionTexture.index:-1;
+            
+
+            materials[i].normalTextureIndex = gltfMaterial.normalTexture.index>=0?gltfMaterial.normalTexture.index:-1;
+            
+            materials[i].metallicRoughnessTextureIndex =gltfMaterial.pbrMetallicRoughness.metallicRoughnessTexture.index>=0?gltfMaterial.pbrMetallicRoughness.metallicRoughnessTexture.index:-1;
+            
         }
     }
 
@@ -214,7 +203,7 @@ public:
                         Vertex vert{};
                         vert.pos = glm::vec4(glm::make_vec3(&positionBuffer[v*3]),1.0f);
                         vert.normal = glm::normalize(glm::vec3(normalsBuffer?glm::make_vec3(&normalsBuffer[v*3]):glm::vec3(0.0f)));
-                        vert.uv = texCoordsBuffer? glm::make_vec2(&texCoordsBuffer[v*3]):glm::vec2(0.0f);
+                        vert.uv = texCoordsBuffer? glm::make_vec2(&texCoordsBuffer[v*2]):glm::vec2(0.0f);
                         vert.color = glm::vec3(1.0f);
                         vertexBuffer.push_back(vert);
                     }
@@ -264,6 +253,8 @@ public:
         }
         if(parent){
             parent->children.push_back(node);
+        }else{
+            mNodes.push_back(node);
         }
     }
 
@@ -297,8 +288,8 @@ public:
 
     void draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout){
         VkDeviceSize offset = 0;
-        vkCmdBindVertexBuffers(commandBuffer,0,1,&Vertices.vertexBuffer,0);
-        vkCmdBindIndexBuffer(commandBuffer,Indices.indexBuffer,0,VK_INDEX_TYPE_UINT32);
+        vkCmdBindVertexBuffers(commandBuffer,0,1,&Vertices.buffer,0);
+        vkCmdBindIndexBuffer(commandBuffer,Indices.buffer,0,VK_INDEX_TYPE_UINT32);
         for(auto node:mNodes){
             drawNode(commandBuffer, pipelineLayout,node);
         }
@@ -308,8 +299,8 @@ public:
         for(auto node:mNodes){
             delete node;
         }
-        vmaDestroyBuffer(*vmaAllocator,Vertices.vertexBuffer,Vertices.allocation);
-        vmaDestroyBuffer(*vmaAllocator, Indices.indexBuffer,Indices.allocation);
+        Vertices.destroy(*logicalDevice,*vmaAllocator);
+        Indices.destroy(*logicalDevice, *vmaAllocator);
         for(auto& image:images){
             image.destroy(*logicalDevice,*vmaAllocator);
         }
