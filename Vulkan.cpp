@@ -179,6 +179,7 @@ private:
     loadComplexModel("./models/nanosuit/nanosuit.obj",glm::vec3(0.0f,1.0f,0.0f), glm::vec3(0.0f, 90.0f, 0.0f), glm::vec3(0.2f,0.2f,0.2f));
     //loadComplexModel("./models/sponza/sponza.obj",glm::vec3(3.0f,1.0f,0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.02f,0.02f,0.02f));
     loadComplexModel("./models/duck/12248_Bird_v1_L2.obj",glm::vec3(0.0f,8.0f,3.0f), glm::vec3(-90.0f, 0.0f, 0.0f), glm::vec3(0.002f,0.002f,0.002f));
+    loadGltfModel("./models/DamagedHelmet/glTF/DamagedHelmet.gltf", glm::vec3(0.0f,1.0f,0.0f), glm::vec3(0.0f, 90.0f, 0.0f), glm::vec3(0.2f,0.2f,0.2f));
     textureNum = textures.size();
 //------------------------------------------------------
     createDescriptorSetLayout("uniform");
@@ -1475,12 +1476,40 @@ private:
     tinygltf::TinyGLTF gltfContext;
     std::string error,warning;
 
+    GltfModel loadedModel;
+    loadedModel.logicalDevice = &m_device.logicalDevice;
+    loadedModel.vmaAllocator = &allocator;
+    loadedModel.copyQueue = &graphicsQueue;
+
     bool fileLoaded = gltfContext.LoadASCIIFromFile(&gltfInput,&error,&warning,file_path);
+    std::vector<uint32_t> indexBuffer;
+    std::vector<GltfModel::Vertex> vertexBuffer;
+
     if(!fileLoaded){
+      std::cout<<error<<std::endl;
+      std::cout<<warning<<std::endl;
       throw std::runtime_error(error+"\n"+warning);
     }else{
-      tinygltf::Material mts;
+      loadedModel.loadImage(gltfInput);
+      loadedModel.loadTextures(gltfInput);
+      loadedModel.loadMaterials(gltfInput);
+      const tinygltf::Scene& scene = gltfInput.scenes[0];
+      for(size_t i= 0;i<scene.nodes.size();++i){
+        const tinygltf::Node node = gltfInput.nodes[scene.nodes[i]];
+        loadedModel.loadNode(node, gltfInput,nullptr,indexBuffer,vertexBuffer);
+      }
     }
+    size_t vertexBufferSize = vertexBuffer.size()*sizeof(GltfModel::Vertex);
+    size_t indexBufferSize  = indexBuffer.size()*sizeof(uint32_t);
+    loadedModel.Indices.count =static_cast<uint32_t>(indexBuffer.size());
+
+    Buffer vertexStagingBuffer,indexStagingBuffer;
+    Utility::CreateBuffer(static_cast<VkDeviceSize>(vertexBufferSize),VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT,VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,vertexStagingBuffer);
+    Utility::CreateBuffer(static_cast<VkDeviceSize>(indexBufferSize),VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT,VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,indexStagingBuffer);
+    Utility::CopyBuffer(vertexStagingBuffer.buffer,loadedModel.Vertices.vertexBuffer, vertexBufferSize);
+    Utility::CopyBuffer(indexStagingBuffer.buffer, loadedModel.Indices.indexBuffer, indexBufferSize);
+    vertexStagingBuffer.destroy(m_device.logicalDevice, allocator);
+    indexStagingBuffer.destroy(m_device.logicalDevice, allocator);
   }
 
   // In the future, we can stage model path , translate, rotate, scale etc. in json file.
