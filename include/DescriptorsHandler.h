@@ -1,86 +1,96 @@
-#pragma once 
+#pragma once
 
-#include"common.h"
+#include "common.h"
 
-class Descriptors{
+class Descriptors {
 public:
-    Descriptors();
-    Descriptors(VkDevice* device);
+  Descriptors();
+  Descriptors(VkDevice *device);
 
-    void CreateDescriptorPools(size_t swapchain_images, size_t vp_ubo_size, size_t light_ubo_size, size_t settings_ubo_size);
-    void CreateSetLayouts();
+  void CreateDescriptorPools(size_t swapchain_images, size_t vp_ubo_size,
+                             size_t light_ubo_size, size_t settings_ubo_size);
+  void CreateSetLayouts();
 
-    void CreateViewProjectionDescriptorSets(const std::vector<Buffer>& view_projection_ubo, size_t data_size, size_t swapchain_images);
-    void CreateInputAttachmentsDescriptorSets(size_t swapchain_size, const std::vector<Texture>& position_buffer,
-        const std::vector<Texture>& color_buffer, const std::vector<Texture>& normal_buffer);
-    void CreateLightDescriptorSets(std::vector<Buffer>& ubo_light, size_t data_size, size_t swapchain_images);
-    void CreateSettingsDescriptorSets(std::vector<Buffer>& ubo_settings, size_t data_size, size_t swapchain_images);
+  void CreateViewProjectionDescriptorSets(
+      const std::vector<Buffer> &view_projection_ubo, size_t data_size,
+      size_t swapchain_images);
+  void CreateInputAttachmentsDescriptorSets(
+      size_t swapchain_size, const std::vector<Texture> &position_buffer,
+      const std::vector<Texture> &color_buffer,
+      const std::vector<Texture> &normal_buffer);
+  void UpdateInputAttachmentsDescriptorSets(
+      size_t swapchain_size, const std::vector<Texture> &position_buffer,
+      const std::vector<Texture> &color_buffer,
+      const std::vector<Texture> &normal_buffer);
+  void CreateLightDescriptorSets(std::vector<Buffer> &ubo_light,
+                                 size_t data_size, size_t swapchain_images);
+  void CreateSettingsDescriptorSets(std::vector<Buffer> &ubo_settings,
+                                    size_t data_size, size_t swapchain_images);
 
-    VkDescriptorSetLayout& GetViewProjectionSetLayout();
-    VkDescriptorSetLayout& GetTextureSetLayout();
-    VkDescriptorSetLayout& GetInputSetLayout();
-    VkDescriptorSetLayout& GetLightSetLayout();
-    VkDescriptorSetLayout& GetSettingsSetLayout();
+  VkDescriptorSetLayout &GetViewProjectionSetLayout();
+  VkDescriptorSetLayout &GetTextureSetLayout();
+  VkDescriptorSetLayout &GetInputSetLayout();
+  VkDescriptorSetLayout &GetLightSetLayout();
+  VkDescriptorSetLayout &GetSettingsSetLayout();
 
-    VkDescriptorPool& GetVpPool();
-    VkDescriptorPool& GetImguiDescriptorPool();
-    VkDescriptorPool& GetTexturePool();
-    VkDescriptorPool& GetInputPool();
-    VkDescriptorPool& GetLightPool();
-    VkDescriptorPool& GetSettingsPool();
+  VkDescriptorPool &GetVpPool();
+  VkDescriptorPool &GetImguiDescriptorPool();
+  VkDescriptorPool &GetTexturePool();
+  VkDescriptorPool &GetInputPool();
+  VkDescriptorPool &GetLightPool();
+  VkDescriptorPool &GetSettingsPool();
 
-    std::vector<VkDescriptorSet>& GetDescriptorSets();
-  	std::vector<VkDescriptorSet>& GetInputDescriptorSets();
-	std::vector<VkDescriptorSet>& GetLightDescriptorSets();
-	std::vector<VkDescriptorSet>& GetSettingsDescriptorSets();
+  std::vector<VkDescriptorSet> &GetDescriptorSets();
+  std::vector<VkDescriptorSet> &GetInputDescriptorSets();
+  std::vector<VkDescriptorSet> &GetLightDescriptorSets();
+  std::vector<VkDescriptorSet> &GetSettingsDescriptorSets();
 
-    void Destroy();
+  void Destroy();
 
-    void DestroyTexturePool();
-	void DestroyViewProjectionPool();
-	void DestroyImguiPool();
-	void DestroyInputPool();
-	void DestroyLightPool();
-	void DestroySettingsPool();
+  void DestroyTexturePool();
+  void DestroyViewProjectionPool();
+  void DestroyImguiPool();
+  void DestroyInputPool();
+  void DestroyLightPool();
+  void DestroySettingsPool();
 
-	void DestroyTextureLayout();
-	void DestroyViewProjectionLayout();
-	void DestroyInputAttachmentsLayout();
-	void DestroyLightLayout();
-	void DestroySettingsLayout();
-
-private:
-	void CreateViewProjectionPool(size_t swapchain_images, size_t ubo_size);
-	void CreateTexturePool();
-	void CreateImguiPool();
-	void CreateInputAttachmentsPool(size_t swapchain_images);
-	void CreateLightPool(size_t swapchain_images, size_t ubo_size);
-	void CreateSettingsPool(size_t swapchain_images, size_t ubo_size);
-
-	void CreateViewProjectionSetLayout();
-	void CreateTextureSetLayout();
-	void CreateInputSetLayout();
-	void CreateLightSetLayout();
-	void CreateSettingsSetLayout();
-
+  void DestroyTextureLayout();
+  void DestroyViewProjectionLayout();
+  void DestroyInputAttachmentsLayout();
+  void DestroyLightLayout();
+  void DestroySettingsLayout();
 
 private:
-    VkDevice * m_Device;
-    VkDescriptorPool m_ViewProjectionPool;
-    VkDescriptorPool m_TexturePool;
-    VkDescriptorPool m_InputPool;
-    VkDescriptorPool m_ImguiDescriptorPool;
-    VkDescriptorPool m_LightPool;
-    VkDescriptorPool m_SettingsPool;
+  void CreateViewProjectionPool(size_t swapchain_images, size_t ubo_size);
+  void CreateTexturePool();
+  void CreateImguiPool();
+  void CreateInputAttachmentsPool(size_t swapchain_images);
+  void CreateLightPool(size_t swapchain_images, size_t ubo_size);
+  void CreateSettingsPool(size_t swapchain_images, size_t ubo_size);
 
-    VkDescriptorSetLayout m_ViewProjectionLayout;
-    VkDescriptorSetLayout m_TextureLayout;
-    VkDescriptorSetLayout m_InputLayout;
-    VkDescriptorSetLayout m_LightLayout;
-    VkDescriptorSetLayout m_SettingsLayout;
+  void CreateViewProjectionSetLayout();
+  void CreateTextureSetLayout();
+  void CreateInputSetLayout();
+  void CreateLightSetLayout();
+  void CreateSettingsSetLayout();
 
-    std::vector<VkDescriptorSet> m_DescriptorSets;
-    std::vector<VkDescriptorSet> m_InputDescriptorSets;
-    std::vector<VkDescriptorSet> m_LightDescriptorSets;
-    std::vector<VkDescriptorSet> m_SettingsDescriptorSets;
+private:
+  VkDevice *m_Device;
+  VkDescriptorPool m_ViewProjectionPool;
+  VkDescriptorPool m_TexturePool;
+  VkDescriptorPool m_InputPool;
+  VkDescriptorPool m_ImguiDescriptorPool;
+  VkDescriptorPool m_LightPool;
+  VkDescriptorPool m_SettingsPool;
+
+  VkDescriptorSetLayout m_ViewProjectionLayout;
+  VkDescriptorSetLayout m_TextureLayout;
+  VkDescriptorSetLayout m_InputLayout;
+  VkDescriptorSetLayout m_LightLayout;
+  VkDescriptorSetLayout m_SettingsLayout;
+
+  std::vector<VkDescriptorSet> m_DescriptorSets;
+  std::vector<VkDescriptorSet> m_InputDescriptorSets;
+  std::vector<VkDescriptorSet> m_LightDescriptorSets;
+  std::vector<VkDescriptorSet> m_SettingsDescriptorSets;
 };

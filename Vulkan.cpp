@@ -19,6 +19,7 @@ in different channel
 #include "SwapChainHandler.h"
 #include "Utilities.h"
 #include "Vertex.h"
+#include <stdint.h>
 
 constexpr std::size_t NUM_LIGHTS = 20;
 #define TINYOBJLOADER_IMPLEMENTATION
@@ -33,8 +34,6 @@ const bool enableValidationLayers = false;
 #else
 const bool enableValidationLayers = true;
 #endif
-
-
 
 struct UniformBufferObject {
   alignas(16) glm::mat4 view;
@@ -183,14 +182,15 @@ private:
     Utility::Setup(&m_device, &m_surface, &m_CommandHandler.GetCommandPool(),
                    &graphicsQueue, &allocator);
     m_descriptor = Descriptors(&m_device.logicalDevice);
-    m_swapChain = SwapChain(&m_device, &m_surface, window,
-                                       m_QueueFamilyIndices);
-    m_pipelineHandler = GraphicPipeline(
-        &m_device, &m_swapChain, &m_renderPassHandler);
-    m_CommandHandler = CommandHandler(
-        &m_device, &m_pipelineHandler, &m_renderPassHandler);
-    m_OffScreenCommandHandler = CommandHandler(&m_device,&m_pipelineHandler,&m_renderPassHandler);
-        
+    m_swapChain =
+        SwapChain(&m_device, &m_surface, window, m_QueueFamilyIndices);
+    m_pipelineHandler =
+        GraphicPipeline(&m_device, &m_swapChain, &m_renderPassHandler);
+    m_CommandHandler =
+        CommandHandler(&m_device, &m_pipelineHandler, &m_renderPassHandler);
+    m_OffScreenCommandHandler =
+        CommandHandler(&m_device, &m_pipelineHandler, &m_renderPassHandler);
+
     initPushConstant();
     createInstance();
     createSurface();
@@ -207,8 +207,8 @@ private:
                      glm::vec3(0.0f, 1.0f, -30.0f),
                      glm::vec3(0.0f, 90.0f, 0.0f), glm::vec3(0.2f, 0.2f, 0.2f));
     loadComplexModel("./models/sponza/sponza.obj",
-                     glm::vec3(3.0f, 1.0f, -30.0f), glm::vec3(0.0f, 0.0f, 0.0f),
-                     glm::vec3(0.02f, 0.02f, 0.02f));
+                     glm::vec3(3.0f, 1.0f, -30.0f), glm::vec3(0.0f, 0.0f,
+                     0.0f), glm::vec3(0.02f, 0.02f, 0.02f));
     loadComplexModel(
         "./models/duck/12248_Bird_v1_L2.obj", glm::vec3(0.0f, 8.0f, -33.0f),
         glm::vec3(-90.0f, 0.0f, 0.0f), glm::vec3(0.002f, 0.002f, 0.002f));
@@ -385,6 +385,42 @@ private:
     depthImage.destroy(m_device.logicalDevice, allocator);
     createDepthResources();
     m_swapChain.CreateFrameBuffers(depthImage.textureImageView);
+
+    for(auto& i:m_CommandHandler.GetCommandBuffers()){
+      vkFreeCommandBuffers(m_device.logicalDevice, m_CommandHandler.GetCommandPool(), 1, &i);
+    }
+    m_CommandHandler.CreateCommandBuffers(3);
+  }
+
+  void resizeWindow(){
+    recreateSwapChain();
+    for(auto& i: m_OffScreenFrameBuffer){
+      vkDestroyFramebuffer(m_device.logicalDevice, i, nullptr);
+    }
+    for (int i = 0; i < m_ColorBufferImages.size(); ++i) {
+      m_PositionBufferImages[i].destroy(m_device.logicalDevice, allocator);
+      Utility::CreatePositionBufferImage(m_PositionBufferImages[i],
+                                         m_swapChain.GetExtent());
+      m_ColorBufferImages[i].destroy(m_device.logicalDevice, allocator);
+      Utility::CreatePositionBufferImage(m_ColorBufferImages[i],
+                                         m_swapChain.GetExtent());
+      m_NormalBufferImages[i].destroy(m_device.logicalDevice, allocator);
+      Utility::CreatePositionBufferImage(m_NormalBufferImages[i],
+                                         m_swapChain.GetExtent());
+    }
+    m_descriptor.UpdateInputAttachmentsDescriptorSets(
+        m_swapChain.SwapChainImagesSize(), m_PositionBufferImages,
+        m_ColorBufferImages, m_NormalBufferImages);
+
+    CreateOffScreenFrameBuffer();
+
+    vkDeviceWaitIdle(m_device.logicalDevice);
+    for(auto& i:m_OffScreenCommandHandler.GetCommandBuffers()){
+      vkFreeCommandBuffers(m_device.logicalDevice, m_OffScreenCommandHandler.GetCommandPool(), 1, &i);
+    }
+    m_OffScreenCommandHandler.CreateCommandBuffers(3);
+    VkExtent2D extent = m_swapChain.GetExtent();
+    camera.aspect = (float)(extent.width/extent.height);
   }
 
   void createInstance() {
@@ -419,7 +455,7 @@ private:
 
       createInfo.pNext = nullptr;
     }
-    
+
     if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
       throw std::runtime_error("failed to create instance!");
     }
@@ -520,6 +556,7 @@ private:
                     std::floor(std::log2(std::max(texWidth, texHeight)))) +
                 1; // 这里是计算最多多少层mipmap
     if (!pixels) {
+      std::cout << texPath << std::endl;
       throw std::runtime_error("failed to load texture image!");
     }
 
@@ -791,15 +828,7 @@ private:
     vmaUnmapMemory(allocator, m_SettingsUBO[currentImage].allocation);
   }
 
-  clock_t t1, t2;
   void drawFrame(ImDrawData *draw_data) {
-    t2 = clock();
-    float dt = (double)(t2 - t1) / CLOCKS_PER_SEC; // 计时粒度为1000毫秒
-    float fps = 1.0 / dt;
-    std::cout << "\r";
-    std::string title = "Vulkan  " + std::to_string(fps);
-    glfwSetWindowTitle(window, title.c_str());
-    t1 = t2; // 别忘了更新计时器
 
     vkWaitForFences(m_device.logicalDevice, 1,
                     &m_SyncObjects[currentFrame].InFlight, VK_TRUE,
@@ -822,15 +851,15 @@ private:
     }
 
     m_OffScreenCommandHandler.RecordOffScreenCommands(
-        draw_data, imageIndex, m_swapChain.GetExtent(), m_OffScreenFrameBuffer,
+        draw_data, currentFrame, m_swapChain.GetExtent(), m_OffScreenFrameBuffer,
         scene, m_descriptor.GetDescriptorSets());
     m_CommandHandler.RecordCommands(
-        draw_data, currentFrame, m_swapChain.GetExtent(),
-        m_swapChain.GetFrameBuffers(), m_descriptor.GetDescriptorSets(),
-        m_descriptor.GetLightDescriptorSets(),
-        m_descriptor.GetInputDescriptorSets(),
-        m_descriptor.GetSettingsDescriptorSets());
-    updateUniformBuffer(imageIndex);
+        draw_data, imageIndex, m_swapChain.GetExtent(),
+        m_swapChain.GetFrameBuffers(), m_descriptor.GetDescriptorSets()[currentFrame],
+        m_descriptor.GetLightDescriptorSets()[currentFrame],
+        m_descriptor.GetInputDescriptorSets()[currentFrame],
+        m_descriptor.GetSettingsDescriptorSets()[currentFrame]);
+    updateUniformBuffer(currentFrame);
     VkPipelineStageFlags waitStages[] = {
         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
     VkSubmitInfo submitInfo{};
@@ -872,7 +901,7 @@ private:
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR ||
         framebufferResized) {
       framebufferResized = false;
-      recreateSwapChain();
+      resizeWindow();
     } else if (result != VK_SUCCESS) {
       throw std::runtime_error("failed to present swap chain image!");
     }
@@ -1085,7 +1114,7 @@ private:
     }
   }
   void createCamera() {
-    camera.pos = glm::vec3(0.0, 0.0, -30.0);
+    camera.pos = glm::vec3(0.0, 3.0, -30.0);
     camera.aspect =
         m_swapChain.GetExtent().width / (float)m_swapChain.GetExtent().height;
   }
@@ -1132,7 +1161,15 @@ private:
                 VkDebugUtilsMessageTypeFlagsEXT messageType,
                 const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
                 void *pUserData) {
-    std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
+    // std::cerr << "validation layer: " << pCallbackData->pMessage <<
+    // std::endl;
+    if (pCallbackData->objectCount > 0) {
+      for (uint32_t i = 0; i < pCallbackData->objectCount; ++i) {
+        std::cerr << "Object [" << i
+                  << "] :" << pCallbackData->pObjects[i].pObjectName
+                  << std::endl;
+      }
+    }
     return VK_FALSE;
   }
 

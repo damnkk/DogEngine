@@ -88,10 +88,10 @@ void CommandHandler::RecordOffScreenCommands(ImDrawData* draw_data, uint32_t cur
 
 void CommandHandler::RecordCommands(ImDrawData* draw_data,uint32_t currImage,VkExtent2D& imageExtent,
     std::vector<VkFramebuffer>& frameBuffers,
-    std::vector<VkDescriptorSet>& vp_desc_sets,
-    std::vector<VkDescriptorSet>& light_desc_sets,
-    std::vector<VkDescriptorSet>& input_desc_sets,
-    std::vector<VkDescriptorSet>& settings_desc_set){
+    VkDescriptorSet vp_desc_sets,
+    VkDescriptorSet light_desc_sets,
+    VkDescriptorSet input_desc_sets,
+    VkDescriptorSet settings_desc_set){
     VkCommandBufferBeginInfo buffer_begin_info = {};
     buffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     buffer_begin_info.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
@@ -129,10 +129,10 @@ void CommandHandler::RecordCommands(ImDrawData* draw_data,uint32_t currImage,VkE
     vkCmdSetScissor(m_CommandBuffers[currImage],0,1,&scissor);
     {
         std::array<VkDescriptorSet, 4> desc_set_group = {
-            vp_desc_sets[currImage],
-            input_desc_sets[currImage],
-            light_desc_sets[currImage],
-            settings_desc_set[currImage]
+            vp_desc_sets,
+            input_desc_sets,
+            light_desc_sets,
+            settings_desc_set
         };
         vkCmdBindDescriptorSets(m_CommandBuffers[currImage],
                                 VK_PIPELINE_BIND_POINT_GRAPHICS,

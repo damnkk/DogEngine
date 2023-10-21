@@ -14,10 +14,10 @@ public:
     std::vector<VkFramebuffer>& offScreenFrameBuffers, std::vector<Model>& scene, std::vector<VkDescriptorSet>& descriptorsets);
     void RecordCommands(ImDrawData* draw_data,uint32_t currImage,VkExtent2D& imageExtent,
     std::vector<VkFramebuffer>& frameBuffers,
-    std::vector<VkDescriptorSet>& vp_desc_sets,
-    std::vector<VkDescriptorSet>& light_desc_sets,
-    std::vector<VkDescriptorSet>& input_desc_sets,
-    std::vector<VkDescriptorSet>& settings_desc_set);
+    VkDescriptorSet vp_desc_sets,
+    VkDescriptorSet light_desc_sets,
+    VkDescriptorSet input_desc_sets,
+    VkDescriptorSet settings_desc_set);
 
     void RecordCommandBuffers_forward(ImDrawData* draw_data, uint32_t currFrame,uint32_t currImage, VkExtent2D imgExtent,
     std::vector<VkFramebuffer>& frameBuffers,
