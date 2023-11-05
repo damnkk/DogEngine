@@ -1,6 +1,12 @@
 #pragma once
 
 #include "common.h"
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
+namespace dg{
 
 struct LightData{
     glm::vec3 m_Color = glm::vec3(1.0f);
@@ -22,3 +28,5 @@ public:
 private: 
     LightData m_LightData;
 };
+
+}

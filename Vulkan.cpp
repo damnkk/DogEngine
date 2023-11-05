@@ -27,7 +27,10 @@ constexpr std::size_t NUM_LIGHTS = 20;
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
-std::unordered_map<std::string, Texture> textures;
+
+
+using namespace dg;
+//std::unordered_map<std::string, Texture> textures;
 Camera camera;
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -119,6 +122,7 @@ private:
   // QueueFamilyIndices m_queueFamily_indices;// inited in device create
   // process.
   QueueFamilyIndices m_QueueFamilyIndices;
+
   VkQueue graphicsQueue;
   VkQueue presentQueue;
   Descriptors m_descriptor;
@@ -247,7 +251,7 @@ private:
     createUniformBuffers();
     m_descriptor.CreateDescriptorPools(m_swapChain.SwapChainImagesSize(), 3, 3,
                                        3);
-    for (auto &i : textures) {
+    for (auto &i : Mesh::textures) {
       VkDescriptorSetAllocateInfo allocInfo{};
       allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
       allocInfo.descriptorPool = m_descriptor.GetTexturePool();
@@ -361,7 +365,7 @@ private:
     m_OffScreenCommandHandler.DestroyCommandPool();
     // vkDestroyCommandPool(m_device.logicalDevice, commandPool, nullptr);
     clearScene(scene);
-    for (auto &tex : textures) {
+    for (auto &tex : Mesh::textures) {
       tex.second.destroy(m_device.logicalDevice, allocator);
     }
     vmaDestroyAllocator(allocator);
@@ -499,8 +503,8 @@ private:
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
     std::set<uint32_t> uniqueQueueFamilies = {
-        m_QueueFamilyIndices.graphicsFamily.value(),
-        m_QueueFamilyIndices.presentFamily.value()};
+        m_QueueFamilyIndices.graphicsFamily,
+        m_QueueFamilyIndices.presentFamily};
 
     float queuePriority = 1.0f;
     for (uint32_t queueFamily : uniqueQueueFamilies) {
@@ -540,10 +544,10 @@ private:
       throw std::runtime_error("failed to create logical device!");
     }
     vkGetDeviceQueue(m_device.logicalDevice,
-                     m_QueueFamilyIndices.graphicsFamily.value(), 0,
+                     m_QueueFamilyIndices.graphicsFamily, 0,
                      &graphicsQueue);
     vkGetDeviceQueue(m_device.logicalDevice,
-                     m_QueueFamilyIndices.presentFamily.value(), 0,
+                     m_QueueFamilyIndices.presentFamily, 0,
                      &presentQueue);
   }
 
@@ -1093,11 +1097,11 @@ private:
         material->GetTexture(aiTextureType_DIFFUSE, 0, &aiStr);
         std::string texpath = aiStr.C_Str();
         texpath = rootPath + '/' + texpath;
-        if (textures.find(texpath) == textures.end()) {
+        if (Mesh::textures.find(texpath) == Mesh::textures.end()) {
           Texture tempTexture;
           createTextureImage(texpath, tempTexture);
           createTextureImageView(tempTexture, miplevels);
-          textures[texpath] = tempTexture;
+          Mesh::textures[texpath] = tempTexture;
         }
         mesh.textureIndex = texpath;
       }
@@ -1143,7 +1147,7 @@ private:
     VulkanRenderData data = {};
     data.main_device = m_device;
     data.instance = instance;
-    data.graphic_queue_index = m_QueueFamilyIndices.graphicsFamily.value();
+    data.graphic_queue_index = m_QueueFamilyIndices.graphicsFamily;
     data.graphic_queue = graphicsQueue;
     data.imgui_descriptor_pool = m_descriptor.GetImguiDescriptorPool();
     data.min_image_count = 3;

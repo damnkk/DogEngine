@@ -1,5 +1,6 @@
 #include "Light.h"
 
+namespace dg{
 
 Light::Light(){
     m_LightData.m_Color = glm::vec3(1.0f,1.0f,1.0f);
@@ -24,3 +25,5 @@ Light::~Light(){
 
 void Light::SetLightPosition(glm::vec3 lightPosition) noexcept{m_LightData.m_LightPosition = lightPosition;}
 void Light::SetLightRadius(float lightRadius) noexcept{m_LightData.m_Radius = lightRadius;}
+
+} //namespace dg

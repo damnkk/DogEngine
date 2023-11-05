@@ -1,6 +1,7 @@
 
 #include "Vertex.h"
 
+namespace dg{
 VkVertexInputBindingDescription Vertex::getBindingDescription(){
     VkVertexInputBindingDescription bindingDescription{};
     bindingDescription.binding = 0;
@@ -29,3 +30,5 @@ std::array<VkVertexInputAttributeDescription,3> Vertex::getAttributeDescriptions
     attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
     return attributeDescriptions;
 }
+
+}//namespace dg

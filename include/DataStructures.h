@@ -1,5 +1,12 @@
-#include"Common.h"
+#ifndef DATASTRUCTURE_H
+#define DATASTRUCTURE_H
 
+#include"Common.h"
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
+
+
+namespace dg{
 struct MainDevice{
     VkPhysicalDevice physicalDevice;
     VkDevice logicalDevice;
@@ -8,12 +15,12 @@ struct MainDevice{
 
 struct QueueFamilyIndices
 {
-  std::optional<uint32_t> graphicsFamily;
-  std::optional<uint32_t> presentFamily;
+  uint32_t graphicsFamily;
+  uint32_t presentFamily;
 
   bool isComplete()
   {
-    return graphicsFamily.has_value() && presentFamily.has_value();
+    return graphicsFamily!= -1 && presentFamily != -1;
   }
 };
 
@@ -43,3 +50,7 @@ struct SubmissionSyncObjects{
   VkSemaphore RenderFinished;
   VkFence InFlight;
 };
+
+} //namespace dg
+
+#endif //DATASTRUCTURE_H

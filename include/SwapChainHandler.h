@@ -2,7 +2,7 @@
 
 #include "common.h"
 #include "Utilities.h"
-
+namespace dg{
 struct SwapChainImage{
     VkImage image;
     VkImageView imageView;
@@ -77,3 +77,5 @@ private:
     VkPresentModeKHR ChooseBestPresentationMode(const std::vector<VkPresentModeKHR>& presentationModes);
     VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities);
 };
+
+}  //namespace dg

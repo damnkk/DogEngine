@@ -1,4 +1,5 @@
-aux_source_directory(. LIB_SRCS)
+FILE(GLOB_RECURSE LIB_SRCS *.cpp *.h)
+#aux_source_directory(. LIB_SRCS)
 message("--------------file lists-------------")
 message(${LIB_SRCS})
 message("-------------------------------------")

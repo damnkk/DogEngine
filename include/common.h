@@ -1,15 +1,14 @@
 #pragma once
 
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-#undef GLFW_INCLUDE_VULKAN
+// #define GLFW_INCLUDE_VULKAN
+// #include <GLFW/glfw3.h>
 
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#undef GLM_FORCE_RADIANS
-#undef GLM_FORCE_DEPTH_ZERO_TO_ONE
+// #define GLM_FORCE_RADIANS
+// #define GLM_FORCE_DEPTH_ZERO_TO_ONE
+// #include <glm/glm.hpp>
+// #include <glm/gtc/matrix_transform.hpp>
+// #undef GLM_FORCE_RADIANS
+// #undef GLM_FORCE_DEPTH_ZERO_TO_ONE
 
 // stb lib
 #include <algorithm>
@@ -30,26 +29,27 @@
 #include <unordered_map>
 #include <vector>
 
-// VMA
-#define VMA_DEBUG_LOG
-#include "vk_mem_alloc.h"
-// DEAR IMGUI
-#include "imgui.h"
-#include "imgui_impl_glfw.h"
-#include "imgui_impl_vulkan.h"
+// // VMA
+// #define VMA_DEBUG_LOG
+// #include "vk_mem_alloc.h"
+// // DEAR IMGUI
+// #include "imgui.h"
+// #include "imgui_impl_glfw.h"
+// #include "imgui_impl_vulkan.h"
 
-// // PCG
-// #include <pcg/pcg_random.hpp>
-// #include <pcg/pcg_extras.hpp>
-// #include <pcg/pcg_uint128.hpp>
+// // // PCG
+// // #include <pcg/pcg_random.hpp>
+// // #include <pcg/pcg_extras.hpp>
+// // #include <pcg/pcg_uint128.hpp>
 
-#include "DataStructures.h"
-#include "Vertex.h"
-#include "allocateObject.h"
+// #include "DataStructures.h"
+// #include "Vertex.h"
+// #include "gpuResource.h"
 
 #include "assimp/Importer.hpp"
 #include "assimp/postprocess.h"
 #include "assimp/scene.h"
+#include "platform.h"
 
 // PCG
 #include <pcg/pcg_extras.hpp>
@@ -64,11 +64,11 @@ static uint32_t miplevels;
 // const std::string MODEL_PATH = "models/viking_room.obj";
 // const std::string TEXTURE_PATH = "textures/viking_room.png";
 
-struct constentData {
-  glm::mat4 modelMatrix;
-};
+// struct constentData {
+//   glm::mat4 modelMatrix;
+// };
 
-const int MAX_FRAMES_IN_FLIGHT = 3;
+// const int MAX_FRAMES_IN_FLIGHT = 3;
 
-const std::vector<const char *> deviceExtensions = {
-    VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+// const std::vector<const char *> deviceExtensions = {
+//     VK_KHR_SWAPCHAIN_EXTENSION_NAME};

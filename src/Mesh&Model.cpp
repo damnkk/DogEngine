@@ -1,12 +1,13 @@
 #include "Mesh&Model.h"
 
+namespace dg{
+    std::unordered_map<std::string, Texture> Mesh::textures = {};
 void Mesh::draw(VkDevice& device, VkCommandBuffer& commandbuffer, VkDescriptorSet &descriptorSet, VkPipelineLayout& layout, 
     glm::mat4 model){
     VkBuffer vertexBuffers[] = {vertexBuffer.buffer};
     VkDeviceSize offsets[] = {0};
     constentData constant;
     constant.modelMatrix = model;
-    extern std::unordered_map<std::string, Texture> textures;
     VkDescriptorSet textureDescriptorset = textures[textureIndex].textureDescriptor;
     std::vector<VkDescriptorSet> descriptorsetss = {descriptorSet, textureDescriptorset};
 
@@ -61,3 +62,5 @@ void Model::draw(VkDevice& device, VkCommandBuffer& commandBuffer, VkDescriptorS
         meshes.at(i).draw(device, commandBuffer, descriptorSet, pipelineLayout, model);
     }
 }
+
+} //namespace dg

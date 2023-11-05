@@ -1,5 +1,18 @@
 #pragma once
 #include"common.h"
+#include "DataStructures.h"
+
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
+// DEAR IMGUI
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_vulkan.h"
+
+namespace dg{
 
 struct SettingsData {
 	int render_target;
@@ -40,3 +53,5 @@ private:
     VulkanRenderData m_Data;
     ImGui_ImplVulkan_InitInfo init_info = {};
 };
+
+} //namespace dg

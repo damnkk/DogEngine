@@ -1,7 +1,11 @@
 #pragma once
 
 #include "common.h"
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
+#include "gpuResource.h"
 
+namespace dg{
 class Descriptors {
 public:
   Descriptors();
@@ -94,3 +98,5 @@ private:
   std::vector<VkDescriptorSet> m_LightDescriptorSets;
   std::vector<VkDescriptorSet> m_SettingsDescriptorSets;
 };
+
+} //namespace dg

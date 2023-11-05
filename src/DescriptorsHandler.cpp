@@ -1,6 +1,8 @@
 #include "DescriptorsHandler.h"
-#include "Utilities.h"
-#include "common.h"
+// DEAR IMGUI
+#include "imgui.h"
+
+namespace dg{
 
 Descriptors::Descriptors() {
   m_ViewProjectionLayout = {};
@@ -706,3 +708,5 @@ void Descriptors::DestroyLightPool() {
 void Descriptors::DestroySettingsPool() {
   vkDestroyDescriptorPool(*m_Device, m_SettingsPool, nullptr);
 }
+
+}//namespace dg

@@ -3,6 +3,14 @@
 #include "GraphicsPipeline.h"
 #include "RenderPassHandler.h"
 #include "Mesh&Model.h"
+#include "DataStructures.h"
+
+// DEAR IMGUI
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_vulkan.h"
+
+namespace dg{
 
 class CommandHandler{
 public:
@@ -37,3 +45,5 @@ private:
     VkCommandPool m_GraphicsCommandPool;
     std::vector<VkCommandBuffer> m_CommandBuffers;
 };
+
+} //namespcae dg

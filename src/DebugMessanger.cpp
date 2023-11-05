@@ -1,5 +1,7 @@
 #include "DebugMessanger.h"
 
+namespace dg{
+
 DebugMessanger *DebugMessanger::s_Instance = nullptr;
 
 void DebugMessanger::Clear() {
@@ -53,6 +55,8 @@ VKAPI_ATTR VkBool32 VKAPI_CALL DebugMessanger::DebugCallback(
   case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
     std::cerr << "[Error]";
     break;
+  case VK_DEBUG_UTILS_MESSAGE_SEVERITY_FLAG_BITS_MAX_ENUM_EXT:
+    break;
   }
 
   switch (messageType) {
@@ -71,12 +75,12 @@ VKAPI_ATTR VkBool32 VKAPI_CALL DebugMessanger::DebugCallback(
   std::cerr << "MessageID name: " << pCallbackData->pMessageIdName << std::endl;
   std::cerr << "Type: " << pCallbackData->sType;
   std::cerr << "Message: " << pCallbackData->pMessage << std::endl;
-  if (pCallbackData->objectCount > 0) {
-    for (uint32_t i = 0; i < pCallbackData->objectCount; ++i) {
-      std::cerr << "Object [" << i
-                << "] :" << pCallbackData->pObjects[i].pObjectName << std::endl;
-    }
-  }
+  // if (pCallbackData->objectCount > 0) {
+  //   for (uint32_t i = 0; i < pCallbackData->objectCount; ++i) {
+  //     std::cerr << "Object [" << i
+  //               << "] :" << pCallbackData->pObjects[i].pObjectName << std::endl;
+  //   }
+  // }
   return VK_FALSE;
 }
 
@@ -103,3 +107,5 @@ void DebugMessanger::DestroyDebugUtilsMessengerEXT(
     func(instance, m_DebugMessenger, pAllocator);
   }
 }
+
+} //namespace dg

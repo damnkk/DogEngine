@@ -1,6 +1,6 @@
-#include "common.h"
 #include "SwapChainHandler.h"
 
+namespace dg{
 SwapChain::SwapChain(){
     m_SwapChain = 0;
     m_MainDevice  = {};
@@ -140,8 +140,8 @@ void SwapChain::CreateSwapChain(){
 
     if(m_QueueFamilyIndices.graphicsFamily !=m_QueueFamilyIndices.presentFamily){
         uint32_t queueFamilyIndices[] {
-            static_cast<uint32_t>(m_QueueFamilyIndices.graphicsFamily.value()),
-            static_cast<uint32_t>(m_QueueFamilyIndices.presentFamily.value())
+            static_cast<uint32_t>(m_QueueFamilyIndices.graphicsFamily),
+            static_cast<uint32_t>(m_QueueFamilyIndices.presentFamily)
         };
 
         swapChainCreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
@@ -258,10 +258,11 @@ VkExtent2D SwapChain::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCa
             static_cast<uint32_t>(width),
             static_cast<uint32_t>(height)
         };
-        actualExtent.width = std::clamp(actualExtent.width,surfaceCapabilities.minImageExtent.width,surfaceCapabilities.maxImageExtent.height);
-        actualExtent.height = std::clamp(actualExtent.height, surfaceCapabilities.minImageExtent.height,surfaceCapabilities.maxImageExtent.height);
+        actualExtent.width = glm::clamp(actualExtent.width,surfaceCapabilities.minImageExtent.width,surfaceCapabilities.maxImageExtent.height);
+        actualExtent.height = glm::clamp(actualExtent.height, surfaceCapabilities.minImageExtent.height,surfaceCapabilities.maxImageExtent.height);
         return actualExtent;
     }
 }
 
 
+}//namespace dg;

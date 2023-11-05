@@ -1,4 +1,6 @@
-#include "allocateObject.h"
+#include "gpuResource.h"
+
+namespace dg{
 
 void Texture::destroy(VkDevice& device, VmaAllocator& allocator){
     vkDestroyImageView(device, textureImageView, nullptr);
@@ -10,3 +12,4 @@ void Buffer::destroy(VkDevice& device, VmaAllocator& allocator){
     vmaDestroyBuffer(allocator, buffer, allocation);
 }
 
+} //namespace dg

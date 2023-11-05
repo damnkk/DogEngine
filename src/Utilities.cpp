@@ -2,6 +2,7 @@
 
 //static member properties must be initialized, before static member func use them. And their 
 //initialization should be done in cpp file.
+namespace dg{
 MainDevice*		Utility::m_MainDevice		= nullptr;
 VkSurfaceKHR*	Utility::m_Surface			= nullptr;
 VkCommandPool*	Utility::m_CommandPool		= nullptr;
@@ -345,3 +346,4 @@ VkShaderModule Utility::createShaderModule(const std::vector<char>& code){
 }
 
 
+} // namespace dg

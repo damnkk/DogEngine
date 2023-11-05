@@ -3,7 +3,10 @@
 #include "Utilities.h"
 #include "RenderPassHandler.h"
 #include "SwapChainHandler.h"
+#include "DataStructures.h"
 
+
+namespace dg{
 class GraphicPipeline{
 
 public:
@@ -65,3 +68,5 @@ private:
 
     VkPipelineColorBlendAttachmentState m_ColourStateAttachment = {};
 };
+
+} //namespace dg

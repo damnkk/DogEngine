@@ -5,6 +5,8 @@
 #include<iostream>
 #include"Common.h"
 
+namespace dg{
+
 const std::vector<const char *> validationLayers = {
     "VK_LAYER_KHRONOS_validation"};
 
@@ -44,3 +46,5 @@ private:
     VkInstance m_VulkanInstance;
     VkDebugUtilsMessengerEXT m_DebugMessenger;
 };
+
+} //namespace dg

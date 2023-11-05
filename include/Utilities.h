@@ -1,25 +1,25 @@
 #pragma once
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
 #include "common.h"
+#include "gpuResource.h"
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
-//read shader file
-//choose properly Format
-//get queue family indices
-//get possible device extension support
+#include "DataStructures.h"
 
-//create image
-//createimge view
-//create sampler
-//create multiple buffer image(depth position normal color)
+namespace dg{
 
-//memory type index
+struct constentData {
+  glm::mat4 modelMatrix;
+};
 
-//create buffer
-//copy buffer cmd
-//copy image buffer 
+const int MAX_FRAMES_IN_FLIGHT = 3;
 
-//command buffer begin recording and end&submit
-
-//create shader module
+const std::vector<const char *> deviceExtensions = {
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
 class Utility{
 public:
@@ -62,3 +62,5 @@ private:
     static VkQueue* m_GraphicsQueue;
     static VmaAllocator* m_allocator;
 };
+
+} //namespace dg

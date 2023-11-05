@@ -3,6 +3,8 @@
 #include "Utilities.h"
 #include "SwapChainHandler.h"
 
+
+namespace dg{
 // RenderPass is created as a component of graphics pipline, when recording command buffer
 // user need to set the right renderPass
 class RenderPassHandler{
@@ -30,3 +32,5 @@ private:
     VkRenderPass m_RenderPass = {};
     VkRenderPass m_OffScreenRenderPass = {};
 };
+
+}

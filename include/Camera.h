@@ -1,5 +1,12 @@
 #pragma once
-#include "Common.h"
+
+
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
+namespace dg{
 
 class Camera {
 public:
@@ -12,3 +19,5 @@ public:
     glm::mat4 getViewMatrix(bool useEularAngle = true);
     glm::mat4 getProjectMatrix(bool ortho = false);
 };
+
+}

@@ -1,5 +1,7 @@
-#include "common.h"
+
 #include "CommandHandler.h"
+
+namespace dg{
 CommandHandler::CommandHandler(){
     m_MainDevice = {};
     m_GraphicsCommandPool = {};
@@ -19,7 +21,7 @@ void CommandHandler::CreateCommandPool(QueueFamilyIndices& queueIndices){
     VkCommandPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    poolInfo.queueFamilyIndex = queueIndices.graphicsFamily.value();
+    poolInfo.queueFamilyIndex = queueIndices.graphicsFamily;
     if(vkCreateCommandPool(m_MainDevice->logicalDevice,& poolInfo,nullptr,&m_GraphicsCommandPool)!=VK_SUCCESS){
         throw std::runtime_error("failed to create command Pool!");
     }
@@ -203,3 +205,4 @@ void CommandHandler::FreeCommandBuffers(){
 }
 
 
+} //namespace dg

@@ -1,5 +1,6 @@
 #include "RenderPassHandler.h"
 
+namespace dg{
 RenderPassHandler::RenderPassHandler() {
   m_RenderPass = 0;
   m_OffScreenRenderPass = 0;
@@ -151,7 +152,7 @@ RenderPassHandler::InputPositionAttachment(const VkFormat &imageFormat) {
       VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
   position_attachment_input.samples = VK_SAMPLE_COUNT_1_BIT;
   position_attachment_input.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-  position_attachment_input.storeOp - VK_ATTACHMENT_STORE_OP_STORE;
+  position_attachment_input.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
   position_attachment_input.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
   position_attachment_input.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
   position_attachment_input.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -207,3 +208,5 @@ void RenderPassHandler::DestroyRenderPass() {
   vkDestroyRenderPass(m_MainDevice->logicalDevice, m_OffScreenRenderPass,
                       nullptr);
 }
+
+} //namespace dg

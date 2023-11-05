@@ -1,5 +1,5 @@
 #include "GUI.h"
-
+namespace dg{
 GUI* GUI::s_Instance = nullptr;
 
 void GUI::Init(){
@@ -126,3 +126,4 @@ void GUI::Destroy(){
     ImGui::DestroyContext();
 }
 
+} //namespace dg

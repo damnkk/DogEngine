@@ -1,6 +1,8 @@
 #include "GraphicsPipeline.h"
-#include "common.h"
 
+#include "Vertex.h"
+
+namespace dg{
 GraphicPipeline::GraphicPipeline() {
   m_MainDevice = {};
   m_FirstPipeline = 0;
@@ -285,3 +287,5 @@ void GraphicPipeline::DestroyPipeline() {
   vkDestroyPipelineLayout(m_MainDevice->logicalDevice, m_SecondPipelineLayout,
                           nullptr);
 }
+
+} //namespace dg
