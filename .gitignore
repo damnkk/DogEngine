@@ -34,4 +34,6 @@
 # Files
 build/
 .vs/
+models/sponza
+models/*
 .cache/
