@@ -1,3 +1,25 @@
 [submodule "external/spdlog"]
 	path = external/spdlog
 	url = https://github.com/gabime/spdlog.git
+[submodule "external/glm"]
+	path = external/glm
+	url = https://github.com/g-truc/glm.git
+[submodule "external/glfw"]
+	path = external/glfw
+	url = https://github.com/glfw/glfw.git
+[submodule "external/stb"]
+	path = external/stb
+	url = https://github.com/nothings/stb.git
+[submodule "external/tinyGltf"]
+	path = external/tinyGltf
+	url = https://github.com/syoyo/tinygltf.git
+[submodule "external/TinyObjLoader"]
+	path = external/TinyObjLoader
+	url = https://github.com/tinyobjloader/tinyobjloader.git
+[submodule "external/VMA"]
+	path = external/VMA
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
+[submodule "external/vulkan-header"]
+	path = external/vulkan-header
+	url = https://github.com/KhronosGroup/Vulkan-Hpp.git
+
