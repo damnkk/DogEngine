@@ -12,8 +12,18 @@ GLFWwindow* createGLTFWindow(u32 width,u32 height) {
   return window;
 }
 
+bool isMinimized = false;
+void windowIconifyCallback(GLFWwindow* window, int iconified){
+  if(iconified){
+    isMinimized = true;
+  }else {
+    isMinimized = false;
+  }
+}
+
 int main() {
   auto window = createGLTFWindow(1280,720);
+  glfwSetWindowIconifyCallback(window, windowIconifyCallback);
   ContextCreateInfo contextInfo;
   contextInfo.set_window(1280, 720, window);
   contextInfo.m_applicatonName = "God Engine";
@@ -22,13 +32,15 @@ int main() {
   context->init(contextInfo);
   Renderer renderer;
   renderer.init(context);
-  //renderer.loadFromPath("./models/nanosuit/nanosuit.obj");
-  renderer.loadFromPath("./models/duck/12248_Bird_v1_L2.obj");
+  renderer.loadFromPath("./models/nanosuit/nanosuit.obj");
+  renderer.loadFromPath("./models/Sponza/sponza.obj");
+  //renderer.loadFromPath("./models/duck/12248_Bird_v1_L2.obj");
   renderer.executeScene();
 
   while(!glfwWindowShouldClose(context->m_window)){
     glfwPollEvents();
     keycallback(context->m_window);
+    if(isMinimized) continue;
     renderer.newFrame();
     renderer.drawScene();
     renderer.drawUI();
@@ -38,5 +50,7 @@ int main() {
 
 // context的销毁还没有实现完。
   renderer.destroy();
+  glfwDestroyWindow(window);
+  glfwTerminate();
   return 0;
 }

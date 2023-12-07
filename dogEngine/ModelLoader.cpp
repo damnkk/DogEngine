@@ -4,8 +4,7 @@
 #include "stb_image.h"
 #include "tiny_gltf.h"
 #include "CommandBuffer.h"
-
-
+#include "Renderer.h"
 namespace dg{
     std::array<glm::vec3, 2> SceneNode::getAABB(){
         std::array<glm::vec3, 2> temp;
@@ -17,7 +16,7 @@ namespace dg{
     }
     
     template<typename T>
-    BufferHandle upLoadBufferToGPU(std::shared_ptr<DeviceContext> context, std::vector<T>& bufferData){
+    BufferHandle upLoadBufferToGPU(Renderer* renderer, std::vector<T>& bufferData, const char* meshName){
         if(bufferData.size()==0) return {k_invalid_index};
         VkDeviceSize BufSize = bufferData.size()*sizeof(T);
         BufferCreateInfo bufferInfo;
@@ -25,17 +24,21 @@ namespace dg{
         bufferInfo.setData(bufferData.data());
         bufferInfo.setDeviceOnly(true);
         if(std::is_same<T, Vertex>::value){
+            std::string vertexBufferName = "vt";
+            vertexBufferName +=meshName;
             bufferInfo.setUsageSize(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, BufSize);
-            bufferInfo.setName("VertexBuffer");
+            bufferInfo.setName(vertexBufferName.c_str());
         }else if(std::is_same<T,u32>::value){
+            std::string IndexBufferName = "id";
+            IndexBufferName +=meshName;
             bufferInfo.setUsageSize(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, BufSize);\
-            bufferInfo.setName("IndexBuffer");
+            bufferInfo.setName(IndexBufferName.c_str());
         }
-        BufferHandle GPUHandle = context->createBuffer(bufferInfo);
+        BufferHandle GPUHandle = renderer->createBuffer(bufferInfo)->handle;
         return GPUHandle;
     }
 
-    TextureHandle upLoadTextureToGPU(std::shared_ptr<DeviceContext> context, std::string texPath){
+    TextureHandle upLoadTextureToGPU(Renderer* renderer, std::string texPath){
         if(texPath.empty()) return {k_invalid_index};
         int imgWidth,imgHeight,imgChannel; 
         auto ptr = stbi_load(texPath.c_str(),&imgWidth,&imgHeight,&imgChannel,4);
@@ -45,7 +48,7 @@ namespace dg{
         std::string texName = texPath.substr(foundHead+1,foundEnd);
         texInfo.setName(texName.c_str()).setData(ptr).setExtent({(u32)imgWidth,(u32)imgHeight,1})
         .setFormat(VK_FORMAT_R8G8B8A8_SRGB).setMipmapLevel(1).setUsage(VK_IMAGE_USAGE_SAMPLED_BIT);
-        TextureHandle texHandle = context->createTexture(texInfo);
+        TextureHandle texHandle = renderer->createTexture(texInfo)->handle;
         delete ptr;
         ptr = nullptr;
         return texHandle;
@@ -71,22 +74,35 @@ namespace dg{
         if(rootNode.m_meshIndex!=-1){
             Mesh& mesh = m_meshes[rootNode.m_meshIndex];
             RenderObject rj;
-            rj.m_renderPass = m_context->m_swapChainPass;
+            rj.m_renderPass = m_renderer->getContext()->m_swapChainPass;
             if(!mesh.m_diffuseTexturePath.empty()){
-                rj.m_diffuseTex = upLoadTextureToGPU(m_context, mesh.m_diffuseTexturePath);
+                rj.m_diffuseTex = upLoadTextureToGPU(m_renderer, mesh.m_diffuseTexturePath);
             }
             if(!mesh.m_emissiveTexturePath.empty()){
-                rj.m_emissiveTex = upLoadTextureToGPU(m_context, mesh.m_emissiveTexturePath);
+                rj.m_emissiveTex = upLoadTextureToGPU(m_renderer, mesh.m_emissiveTexturePath);
             }
             if(!mesh.m_MRTexturePath.empty()){
-                rj.m_MRTtex = upLoadTextureToGPU(m_context, mesh.m_MRTexturePath);
+                rj.m_MRTtex = upLoadTextureToGPU(m_renderer, mesh.m_MRTexturePath);
             }
             if(!mesh.m_normalTexturePath.empty()){
-                rj.m_normalTex = upLoadTextureToGPU(m_context, mesh.m_normalTexturePath);
+                rj.m_normalTex = upLoadTextureToGPU(m_renderer, mesh.m_normalTexturePath);
             }
             if(!mesh.m_occlusionTexturePath.empty()){
-                rj.m_occlusionTex = upLoadTextureToGPU(m_context, mesh.m_occlusionTexturePath);
+                rj.m_occlusionTex = upLoadTextureToGPU(m_renderer, mesh.m_occlusionTexturePath);
             }
+            //---------+++++++++++++++++++++++++-----------------------
+            //DescriptorSetLayoutHandle slHandle = m_renderer->getContext()->createDescriptorSetLayout(descLayoutInfo);
+            //---------+++++++++++++++++++++++++-----------------------
+
+
+            // del with buffer
+            rj.m_vertexBuffer = upLoadBufferToGPU(m_renderer, mesh.m_vertices, mesh.name.c_str());
+            rj.m_indexBuffer = upLoadBufferToGPU(m_renderer, mesh.m_indeices, mesh.name.c_str());
+            rj.m_indexCount = mesh.m_indeices.size();
+            rj.m_vertexCount = mesh.m_vertices.size();
+            //好像没有卵用;
+            rj.m_uniformBuffer = m_renderer->getContext()->m_viewProjectUniformBuffer;
+
             DescriptorSetLayoutCreateInfo descLayoutInfo;
             descLayoutInfo.reset();
             descLayoutInfo.addBinding({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,0,1,"diffuseTexture"});
@@ -96,42 +112,37 @@ namespace dg{
             descLayoutInfo.addBinding({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,4,1,"occlusionTexture"});
             descLayoutInfo.addBinding({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,5,1,"viewProjectUniform"});
             descLayoutInfo.setName("textureAndUniformBufferDesc");
-            DescriptorSetLayoutHandle slHandle = m_context->createDescriptorSetLayout(descLayoutInfo);
+            pipelineCreateInfo pipelineInfo;
+            //pipelineInfo.addDescriptorSetlayout(slHandle);
+            pipelineInfo.m_renderPassHandle = rj.m_renderPass;
+            pipelineInfo.m_depthStencil.setDepth(true, VK_COMPARE_OP_LESS_OR_EQUAL);
+            pipelineInfo.m_vertexInput.Attrib = Vertex::getAttributeDescriptions();
+            pipelineInfo.m_vertexInput.Binding = Vertex::getBindingDescription();
+            pipelineInfo.m_shaderState.reset();
+            auto vsCode = readFile("./shaders/vert.spv");
+            auto fsCode = readFile("./shaders/frag.spv");
+            pipelineInfo.m_shaderState.addStage(vsCode.data(), vsCode.size(), VK_SHADER_STAGE_VERTEX_BIT);
+            pipelineInfo.m_shaderState.addStage(fsCode.data(), fsCode.size(), VK_SHADER_STAGE_FRAGMENT_BIT);
+            pipelineInfo.m_shaderState.setName("pbrPipeline");
+            pipelineInfo.name = pipelineInfo.m_shaderState.name;
+            ProgramCreateInfo programInfo{};
+            programInfo.pipelineInfo = pipelineInfo;
+            programInfo.dslyaoutInfo = descLayoutInfo;
+            programInfo.setName(pipelineInfo.name.c_str());
+            auto programe = m_renderer->createProgram(programInfo);
+            MaterialCreateInfo matInfo{};
+            matInfo.setProgram(programe);
+            matInfo.name = "pbr_mat";
+            auto material = m_renderer->createMaterial(matInfo);
+            rj.m_material = material;
+
             DescriptorSetCreateInfo descInfo;
             descInfo.setName("base descriptor Set");
-            for(int i = 0;i<k_max_swapchain_images;++i){
-                descInfo.reset().setLayout(slHandle).texture(rj.m_diffuseTex, 0).texture(rj.m_MRTtex,1).texture(rj.m_normalTex,2)
-                .texture(rj.m_emissiveTex,3).texture(rj.m_occlusionTex,4).buffer(m_context->m_viewProjectUniformBuffer[i], 5);
-                rj.m_descriptors[i] =  m_context->createDescriptorSet(descInfo);
-            }
+            descInfo.reset().setLayout(rj.m_material->program->passes[0].descriptorSetLayout).texture(rj.m_diffuseTex, 0).texture(rj.m_MRTtex,1).texture(rj.m_normalTex,2)
+            .texture(rj.m_emissiveTex,3).texture(rj.m_occlusionTex,4).buffer(m_renderer->getContext()->m_viewProjectUniformBuffer, 5);
+            rj.m_descriptors.push_back(m_renderer->getContext()->createDescriptorSet(descInfo));
             // additional descriptors, like HDR env map or sth;
             //-------
-
-            // del with buffer
-            rj.m_vertexBuffer = upLoadBufferToGPU(m_context, mesh.m_vertices);
-            rj.m_indexBuffer = upLoadBufferToGPU(m_context, mesh.m_indeices);
-            rj.m_indexCount = mesh.m_indeices.size();
-            rj.m_vertexCount = mesh.m_vertices.size();
-            //好像没有卵用;
-            rj.m_uniformBuffers.push_back( m_context->m_viewProjectUniformBuffer[m_context->m_currentSwapchainImageIndex]);
-
-            //pipeline creation
-            if(m_context->m_pbrPipeline.index == k_invalid_index){
-                pipelineCreateInfo pipelineInfo;
-                pipelineInfo.addDescriptorSetlayout(slHandle);
-                pipelineInfo.m_renderPassHandle = rj.m_renderPass;
-                pipelineInfo.m_depthStencil.setDepth(true, VK_COMPARE_OP_LESS_OR_EQUAL);
-                pipelineInfo.m_vertexInput.Attrib = Vertex::getAttributeDescriptions();
-                pipelineInfo.m_vertexInput.Binding = Vertex::getBindingDescription();
-                pipelineInfo.m_shaderState.reset();
-                auto vsCode = readFile("./shaders/vert.spv");
-                auto fsCode = readFile("./shaders/frag.spv");
-                pipelineInfo.m_shaderState.addStage(vsCode.data(), vsCode.size(), VK_SHADER_STAGE_VERTEX_BIT);
-                pipelineInfo.m_shaderState.addStage(fsCode.data(), fsCode.size(), VK_SHADER_STAGE_FRAGMENT_BIT);
-                pipelineInfo.m_shaderState.setName("pbrPipeline");
-                m_context->m_pbrPipeline = m_context->createPipeline(pipelineInfo);
-            }
-            rj.m_pipeline = m_context->m_pbrPipeline;
             return {rj};
         }
         else if(!rootNode.m_subNodes.empty()){
@@ -152,14 +163,14 @@ namespace dg{
     }
 
     objLoader::objLoader(){
-        m_context = nullptr;
+        m_renderer = nullptr;
         m_renderObjects.clear();
         m_meshes.clear();
         m_haveContent = false;
     }
 
-    objLoader::objLoader(std::shared_ptr<DeviceContext>context){
-        m_context = context;
+    objLoader::objLoader(Renderer*renderer){
+        m_renderer = renderer;
         m_renderObjects.clear();
         m_meshes.clear();
         m_haveContent = false;
@@ -204,7 +215,7 @@ namespace dg{
                     }
                     if(idx.texcoord_index>=0){
                         vert.texCoord.x = attrib.texcoords[2*size_t(idx.texcoord_index)+0];
-                        vert.texCoord.y = 1.0f - attrib.texcoords[2*size_t(idx.texcoord_index)+1];
+                        vert.texCoord.y = 1.0-attrib.texcoords[2*size_t(idx.texcoord_index)+1];
                     }
                     vertices.push_back(vert);
                 }
@@ -218,6 +229,7 @@ namespace dg{
             mesh.m_MRTexturePath =material.specular_texname.empty() ? "" : basePath + '/' + material.specular_texname;
             mesh.m_vertices = vertices;
             mesh.m_indeices = indices;
+            mesh.name = shapes[s].name;
             meshNode.m_meshIndex = m_meshes.size();
             model.m_subNodes.push_back(meshNode);
             m_meshes.push_back(mesh);
@@ -227,15 +239,29 @@ namespace dg{
         m_haveContent = true;
     }
 
-    gltfLoader::gltfLoader(){
-        m_context = nullptr;
+    void objLoader::destroy(){
+        if(m_renderObjects.empty()) return;
+        for(int i = 0;i<m_renderObjects.size();++i){
+            auto& rj = m_renderObjects[i];
+            for(auto& j:rj.m_descriptors){
+                m_renderer->getContext()->DestroyDescriptorSet(j);
+            }
+        }
     }
 
-    gltfLoader::gltfLoader(std::shared_ptr<DeviceContext> context){
-        m_context = context;
+    gltfLoader::gltfLoader(){
+        m_renderer = nullptr;
+    }
+
+    gltfLoader::gltfLoader(Renderer* renderer){
+        m_renderer = renderer;
     }
 
     void gltfLoader::loadFromPath(std::string path){
         
+    }
+
+    void gltfLoader::destroy(){
+
     }
 }

@@ -17,7 +17,7 @@ namespace dg{
         m_isRecording = false;
         m_pipeline = nullptr;
         m_currentCommand = 0;
-        m_clears[0].color = {{0.0f,0.0f,0.0f,1.0f}};
+        m_clears[0].color = {{0.2f,0.2f,0.2f,1.0f}};
         m_clears[1].depthStencil = {1.0f,0};
     }
 
@@ -27,17 +27,19 @@ namespace dg{
         if(m_currRenderPass&&(m_currRenderPass->m_type!=RenderPassType::Enum::Compute)&&renderpas!=m_currRenderPass){
             vkCmdEndRenderPass(m_commandBuffer);
         }
-
-        VkRenderPassBeginInfo  passBeginInfo{VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
-        passBeginInfo.renderPass = renderpas->m_renderPass;
-        passBeginInfo.renderArea.extent = {renderpas->m_width,renderpas->m_height};
-        passBeginInfo.clearValueCount = m_clears.size();
-        passBeginInfo.pClearValues = m_clears.data();
-        passBeginInfo.framebuffer =renderpas->m_type==RenderPassType::Enum::SwapChain? m_context->m_swapchainFbos[m_context->m_currentSwapchainImageIndex] : m_currFrameBuffer->m_frameBuffer;
-        passBeginInfo.renderArea.offset = {0,0};
-        VkSubpassContents test;
-        vkCmdBeginRenderPass(m_commandBuffer, &passBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+        if(renderpas!=m_currRenderPass&&(renderpas->m_type!=RenderPassType::Enum::Compute)){
+            VkRenderPassBeginInfo  passBeginInfo{VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
+            passBeginInfo.renderPass = renderpas->m_renderPass;
+            passBeginInfo.renderArea.extent = {renderpas->m_width,renderpas->m_height};
+            passBeginInfo.clearValueCount = m_clears.size();
+            passBeginInfo.pClearValues = m_clears.data();
+            passBeginInfo.framebuffer =renderpas->m_type==RenderPassType::Enum::SwapChain? m_context->m_swapchainFbos[m_context->m_currentSwapchainImageIndex] : m_currFrameBuffer->m_frameBuffer;
+            passBeginInfo.renderArea.offset = {0,0};
+            VkSubpassContents test;
+            vkCmdBeginRenderPass(m_commandBuffer, &passBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+        }
         m_currRenderPass = renderpas;
+
     }   
 
     void CommandBuffer::bindPipeline(PipelineHandle pip){

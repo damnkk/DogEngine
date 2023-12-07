@@ -72,37 +72,7 @@ struct Resource{
     void                        addReference(){++references;}
     void                        removeReference(){DGASSERT(references==0); --references;}
     u64                         references = 0;
-    const  char*                name = nullptr;
-};
-
-struct TextureResource:public Resource{
-    TextureHandle                       handle;
-    u32                                 poolIdx;
-    static constexpr const char*        k_type = "texture_resource";
-};
-
-struct BufferResource:public Resource{
-    BufferHandle                        handle;
-    u32                                 poolIdx;
-    static constexpr const char*        k_type = "buffer_resource";
-};
-
-struct SamplerResource:public Resource{
-    SamplerHandle                       handle;
-    u32                                 poolIdx;
-    static constexpr const char*        k_type = "sampler_resource";
-};
-
-struct DescriptorSetLayoutResource:public Resource{
-    DescriptorSetLayoutHandle           handle;
-    u32                                 poolIdx;
-    static constexpr const char*        k_type = "descriptorSet_layout_resource";
-};
-
-struct DescriptorSetResource:public Resource{
-    DescriptorSetHandle                 handle;
-    u32                                 poolIdx;
-    static constexpr const char*        k_type = "descriptor_set_resource";
+    std::string                 name;
 };
 
 struct Texture{
@@ -113,7 +83,7 @@ struct Texture{
     TextureHandle                       m_handle;
     
     TextureType::Enum                   m_type;
-    const char*                         m_name;
+    std::string                         m_name;
     VkExtent3D                          m_extent= {1,1,1};
     u16                                 m_mipLevel;
     VkImageUsageFlags                   m_usage;
@@ -128,7 +98,7 @@ struct Buffer{
     VkBufferUsageFlags                  m_bufferUsage;
     u32                                 m_size = 0;
     u32                                 m_globalOffset = 0;
-    const char *                        name = nullptr;
+    std::string                         name;
     BufferHandle                        m_handle;
     BufferHandle                        m_parentHandle;
     void*                               m_mappedMemory;
@@ -143,7 +113,7 @@ struct Sampler{
     VkSamplerAddressMode                m_addressU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
     VkSamplerAddressMode                m_addressV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
     VkSamplerAddressMode                m_addressW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    const char*                         name = nullptr;
+    std::string                         name;
 };
 
 struct DescriptorBinding {
@@ -153,14 +123,14 @@ struct DescriptorBinding {
     u16                                 count   = 0;
     u16                                 set     = 0;
 
-    const char*                         name    = nullptr;
+    std::string                         name;
 }; // struct ResourceBindingVulkan
 
 struct DescriptorSetLayout{
     VkDescriptorSetLayout               m_descriptorSetLayout;
 
     std::vector<VkDescriptorSetLayoutBinding>       m_vkBindings;
-    DescriptorBinding*                  m_bindings = nullptr;
+    std::vector<DescriptorBinding>                  m_bindings;
     u32                                 m_numBindings = 0;
     u32                                 m_setIndex = 0;
 
@@ -198,7 +168,7 @@ struct RenderPass{
 
     u32                                 m_resize    = 0;
     u32                                 m_numRenderTarget = 0;
-    const char*                         name;
+    std::string                         name;
 };
 
 struct FrameBuffer{
@@ -212,12 +182,12 @@ struct FrameBuffer{
     u32                                 m_numRenderTargets = 0;
     TextureHandle                       m_depthStencilAttachment = {k_invalid_index};
     bool                                m_resize = 0;
-    const char*                         name;
+    std::string                         name;
 };
 
 struct ShaderState{
     VkPipelineShaderStageCreateInfo     m_shaderStateInfo[k_max_shader_stages];
-    const char*                         m_name = nullptr;
+    std::string                         m_name;
     u32                                 m_activeShaders = 0;
     bool                                m_isInGraphicsPipelie = true;
 };
@@ -228,7 +198,7 @@ struct TextureCreateInfo{
     u32                                 m_mipmapLevel;
     VkFormat                            m_imageFormat;
     TextureType::Enum                   m_imageType = TextureType::Enum::Texture2D;
-    const char*                         name;
+    std::string                         name;
     VkImageUsageFlags                   m_imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT;
     
     TextureCreateInfo&                  setName(const char* neme);
@@ -243,7 +213,7 @@ struct BufferCreateInfo{
     VkDeviceSize                        m_bufferSize;
     VkBufferUsageFlags                  m_bufferUsage;
     void*                               m_sourceData = nullptr;
-    const char*                         name= nullptr;
+    std::string                         name;
     bool                                m_deviceOnly= true;
     bool                                m_presistent = false;
 
@@ -262,7 +232,7 @@ struct SamplerCreateInfo{
     VkSamplerAddressMode                m_addressV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
     VkSamplerAddressMode                m_addressW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 
-    const char*                         name = nullptr;
+    std::string                         name;
 
     SamplerCreateInfo&                  set_min_mag_mip(VkFilter min, VkFilter max, VkSamplerMipmapMode mipMode);
     SamplerCreateInfo&                  set_address_u(VkSamplerAddressMode u);
@@ -328,7 +298,7 @@ struct BlendStateCreation{
     BlendState                          m_blendStates[k_max_image_outputs];
     u32                                 m_activeStates = 0;
     BlendStateCreation&                 reset();
-    BlendState&                 add_blend_state();
+    BlendState&                         add_blend_state();
 };
 
 struct VertexStream{
@@ -356,7 +326,7 @@ struct ShaderStage{
 
 struct ShaderStateCreation{
     ShaderStage                         m_stages[k_max_shader_stages];
-    const char*                         name;
+    std::string                         name;
     u32                                 m_stageCount;
     u32                                 m_spvInput;
 
@@ -416,7 +386,7 @@ struct pipelineCreateInfo{
     const ViewPortState*                m_viewport = nullptr;
 
     u32                                 m_numActivateLayouts = 0;
-    const char*                         name = 0;
+    std::string                         name;
     pipelineCreateInfo&                 addDescriptorSetlayout(DescriptorSetLayoutHandle handle);
     RenderPassOutput&                   renderPassOutput();
 
@@ -428,7 +398,7 @@ struct DescriptorSetCreateInfo{
 
     DescriptorSetLayoutHandle           m_layout;
     u32                                 m_resourceNums = 0;
-    const char*                         name;
+    std::string                         name;
 
     DescriptorSetCreateInfo&            reset();
     DescriptorSetCreateInfo&            setName(const char* name);
@@ -442,13 +412,13 @@ struct DescriptorSetLayoutCreateInfo{
         VkDescriptorType                m_type = VK_DESCRIPTOR_TYPE_MAX_ENUM;
         u32                             m_start;
         u32                             m_count;
-        const char*                     name;
+        std::string                     name;
 
     };
     Binding                             m_bindings[k_max_discriptor_nums_per_set];
     u32                                 m_bindingNum;
     u32                                 m_setIndex;
-    const char*                         name;
+    std::string                         name;
 
     DescriptorSetLayoutCreateInfo&      reset();
     DescriptorSetLayoutCreateInfo&      setName(const char* name);
@@ -472,7 +442,7 @@ struct RenderPassCreateInfo{
     RenderPassOperation::Enum           m_depth             = RenderPassOperation::Enum::DontCare;
     RenderPassOperation::Enum           m_stencil           = RenderPassOperation::Enum::DontCare;
 
-    const char*                         name; 
+    std::string                         name; 
     RenderPassCreateInfo&               setName(const char* name);
     RenderPassCreateInfo&               addRenderTexture(TextureHandle handle);
     RenderPassCreateInfo&               setScale(float x,float y, u32 resize);
@@ -492,7 +462,7 @@ struct FrameBufferCreateInfo{
     float                               m_scaleX = 1.0f;
     float                               m_scaleY = 1.0f;
     u8                                  resize = 1;
-    const char*                         name = nullptr;
+    std::string                         name = nullptr;
 
     FrameBufferCreateInfo&              reset();
     FrameBufferCreateInfo&              addRenderTarget(TextureHandle texture);

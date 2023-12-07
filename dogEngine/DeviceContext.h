@@ -130,7 +130,7 @@ struct DeviceContext{
     VkSemaphore                                 m_render_complete_semaphore[k_max_swapchain_images];
     VkSemaphore                                 m_image_acquired_semaphore;
     VkFence                                     m_render_queue_complete_fence[k_max_swapchain_images];
-    BufferHandle                                m_viewProjectUniformBuffer[k_max_swapchain_images];
+    BufferHandle                                m_viewProjectUniformBuffer;
 
     u32                                         m_swapChainWidth;
     u32                                         m_swapChainHeight;

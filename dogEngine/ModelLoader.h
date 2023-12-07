@@ -1,12 +1,12 @@
 #ifndef MODELLOADER_H
 #define MODELLOADER_H
-#include "dgpch.h"
-#include "glm/glm.hpp"
 #include "gpuResource.hpp"
 #include "Vertex.h"
 
 namespace dg{
 struct DeviceContext;
+struct Renderer;
+struct Material;
 
 struct AABBbox{
     glm::vec3 aa = glm::vec3(0.0f);
@@ -24,6 +24,7 @@ struct SceneNode{
 };
 
 struct Mesh{
+    std::string                         name;
     std::vector<Vertex>                 m_vertices;
     std::vector<u32>                    m_indeices;
     std::string                         m_diffuseTexturePath;
@@ -35,12 +36,12 @@ struct Mesh{
 
 struct RenderObject{
     RenderPassHandle                    m_renderPass;
-    PipelineHandle                      m_pipeline;
-    std::vector<DescriptorSetHandle>    m_descriptors = std::vector<DescriptorSetHandle>(k_max_swapchain_images);
+    Material*                           m_material;
+    std::vector<DescriptorSetHandle>    m_descriptors;
     glm::mat4                           m_modelMatrix = {glm::vec4(1, 0, 0, 0), glm::vec4(0, 1, 0, 0), glm::vec4(0, 0, 1, 0), glm::vec4(0, 0, 0, 1)};
     BufferHandle                        m_vertexBuffer;
     BufferHandle                        m_indexBuffer;
-    std::vector<BufferHandle>           m_uniformBuffers;
+    BufferHandle                        m_uniformBuffer;
     u32                                 m_vertexCount = 0;
     u32                                 m_indexCount = 0;
     TextureHandle                       m_diffuseTex = {k_invalid_index};
@@ -53,7 +54,7 @@ struct RenderObject{
 class BaseLoader{
 public:
     BaseLoader(){};
-    BaseLoader(std::shared_ptr<DeviceContext> context);
+    BaseLoader(Renderer* renderer);
     virtual void destroy();
     virtual ~BaseLoader() {};
     virtual void                        loadFromPath(std::string path) = 0; 
@@ -66,24 +67,26 @@ protected:
     SceneNode                           m_sceneRoot;
     std::vector<RenderObject>           m_renderObjects;
     std::vector<Mesh>                   m_meshes;
-    std::shared_ptr<DeviceContext>      m_context;
+    Renderer*                           m_renderer;
     bool                                m_haveContent = false;
 };
 
 class objLoader: public BaseLoader{
 public:
     objLoader();
-    objLoader(std::shared_ptr<DeviceContext> context);
+    objLoader(Renderer* renderer);
     ~objLoader(){};
     void                                loadFromPath(std::string path);
+    void                                destroy() override;
 };
 
 class gltfLoader: public BaseLoader{
 public:
     gltfLoader();
-    gltfLoader(std::shared_ptr<DeviceContext> context);
+    gltfLoader(Renderer* renderer);
     ~gltfLoader(){};
     void                                loadFromPath(std::string path);
+    void                                destroy() override;
 };
 
 }

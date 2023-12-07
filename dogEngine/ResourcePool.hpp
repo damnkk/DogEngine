@@ -7,7 +7,7 @@ namespace dg{
     static const u32                    INVALID_INDEX = 0xffffffff;
     template<typename T>
     struct ResourcePool{
-        void init(u32 poolsize);
+        void                        init(u32 poolsize);
         
         u32                         obtainResource();
         
@@ -87,6 +87,41 @@ namespace dg{
             return nullptr;
         }
         return &m_objectArray[handle];
+    }
+
+    template<typename T>
+    struct RenderResourcePool:public ResourcePool<T>{
+        T*                      obtain();
+        void                    release(T*);
+
+        T*                      get(u32 idx);
+        const T*                get(u32 idx) const;
+    };
+
+    template <typename T>
+    T* RenderResourcePool<T>::obtain(){
+        u32 resource_index = ResourcePool<T>::obtainResource();
+        if(resource_index!=UINT_MAX){
+            T* resource = get(resource_index);
+            resource->poolIdx = resource_index;
+            return resource;
+        }
+        return nullptr;
+    }
+
+    template <typename T>
+    void RenderResourcePool<T>::release(T* resPtr){
+        ResourcePool<T>::releaseResource(resPtr->poolIdx);
+    }
+
+    template<typename T>
+    T* RenderResourcePool<T>::get(u32 idx){
+        return (T*)ResourcePool<T>::accessResource(idx);
+    }
+
+    template<typename T>
+    const T* RenderResourcePool<T>::get(u32 idx) const {
+        return (T*)ResourcePool<T>::accessResource(idx);
     }
 }
 
