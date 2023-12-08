@@ -319,7 +319,8 @@ void Renderer::drawScene(){
       auto endTime = std::chrono::high_resolution_clock::now();
       float time = std::chrono::duration<float, std::chrono::seconds::period>(endTime-startTime).count();
       udata.modelMatrix = currRenderObject.m_modelMatrix;
-      udata.modelMatrix = glm::rotate(glm::mat4(1.0f), time *glm::radians(90.0f), glm::vec3(0.0f,0.0f,1.0f));
+      udata.modelMatrix = glm::scale(udata.modelMatrix,glm::vec3(10.0f,10.0f,10.0f));
+      //udata.modelMatrix = glm::rotate(glm::mat4(1.0f), time *glm::radians(90.0f), glm::vec3(0.0f,0.0f,1.0f));
       udata.projectMatrix = m_context->m_camera->getProjectMatrix();
       udata.viewMatrix = m_context->m_camera->getViewMatrix();
       u32 test = sizeof(UniformData);

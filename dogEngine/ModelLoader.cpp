@@ -1,8 +1,6 @@
 #include "ModelLoader.h"
 #include "DeviceContext.h"
 #include "tiny_obj_loader.h"
-#include "stb_image.h"
-#include "tiny_gltf.h"
 #include "CommandBuffer.h"
 #include "Renderer.h"
 namespace dg{
@@ -71,6 +69,7 @@ namespace dg{
     //再创建描述符集和描述符集布局,有了这些再去创建管线(后期学习一下管线缓存)
     std::vector<RenderObject> BaseLoader::Execute(const SceneNode& rootNode){
         if(rootNode.m_subNodes.empty()&&rootNode.m_meshIndex==-1) return {};
+        std::vector<RenderObject> renderobjects;
         if(rootNode.m_meshIndex!=-1){
             Mesh& mesh = m_meshes[rootNode.m_meshIndex];
             RenderObject rj;
@@ -90,17 +89,13 @@ namespace dg{
             if(!mesh.m_occlusionTexturePath.empty()){
                 rj.m_occlusionTex = upLoadTextureToGPU(m_renderer, mesh.m_occlusionTexturePath);
             }
-            //---------+++++++++++++++++++++++++-----------------------
-            //DescriptorSetLayoutHandle slHandle = m_renderer->getContext()->createDescriptorSetLayout(descLayoutInfo);
-            //---------+++++++++++++++++++++++++-----------------------
-
 
             // del with buffer
             rj.m_vertexBuffer = upLoadBufferToGPU(m_renderer, mesh.m_vertices, mesh.name.c_str());
-            rj.m_indexBuffer = upLoadBufferToGPU(m_renderer, mesh.m_indeices, mesh.name.c_str());
-            rj.m_indexCount = mesh.m_indeices.size();
+            rj.m_indexBuffer = upLoadBufferToGPU(m_renderer, mesh.m_indices, mesh.name.c_str());
+            rj.m_indexCount = mesh.m_indices.size();
             rj.m_vertexCount = mesh.m_vertices.size();
-            //好像没有卵用;
+            //下面这行好像没有什么卵用;
             rj.m_uniformBuffer = m_renderer->getContext()->m_viewProjectUniformBuffer;
 
             DescriptorSetLayoutCreateInfo descLayoutInfo;
@@ -143,18 +138,19 @@ namespace dg{
             rj.m_descriptors.push_back(m_renderer->getContext()->createDescriptorSet(descInfo));
             // additional descriptors, like HDR env map or sth;
             //-------
-            return {rj};
+            renderobjects.push_back(rj);
         }
-        else if(!rootNode.m_subNodes.empty()){
-            std::vector<RenderObject> renderobjects;
+        if(!rootNode.m_subNodes.empty()){
+            std::vector<RenderObject> subNodeRenderobjects;
             for(auto& i: rootNode.m_subNodes){
                 auto subRenderObjects = Execute(i);
-                renderobjects.insert(renderobjects.end(),subRenderObjects.begin(),subRenderObjects.end());
+                subNodeRenderobjects.insert(subNodeRenderobjects.end(),subRenderObjects.begin(),subRenderObjects.end());
             }
-            m_renderObjects = renderobjects;
-            return m_renderObjects;
+            renderobjects.insert(renderobjects.end(),subNodeRenderobjects.begin(),subNodeRenderobjects.end());
         }
-        DG_WARN("There is an empty node in your Scene Tree!");
+        if(renderobjects.empty()) DG_WARN("There is an empty node in your Scene Tree!");
+        m_renderObjects = renderobjects;
+        return m_renderObjects;
         return {};
     }
 
@@ -228,9 +224,10 @@ namespace dg{
             mesh.m_diffuseTexturePath = basePath + '/' + material.diffuse_texname;
             mesh.m_MRTexturePath =material.specular_texname.empty() ? "" : basePath + '/' + material.specular_texname;
             mesh.m_vertices = vertices;
-            mesh.m_indeices = indices;
+            mesh.m_indices = indices;
             mesh.name = shapes[s].name;
             meshNode.m_meshIndex = m_meshes.size();
+            meshNode.m_parentNodePtr= &model;
             model.m_subNodes.push_back(meshNode);
             m_meshes.push_back(mesh);
         }
@@ -257,8 +254,158 @@ namespace dg{
         m_renderer = renderer;
     }
 
+    void gltfLoader::loadNode(tinygltf::Node& inputNode, tinygltf::Model& model, SceneNode* parent){
+        parent->m_subNodes.push_back({});
+        auto& currNode = parent->m_subNodes.back();
+        currNode.m_parentNodePtr = parent;
+        if(inputNode.translation.size()==3){
+            currNode.m_modelMatrix = glm::translate(currNode.m_modelMatrix, glm::vec3(glm::make_vec3(inputNode.translation.data())));
+        }
+
+        if(inputNode.rotation.size()==4){
+            glm::quat q = glm::make_quat(inputNode.rotation.data());
+            currNode.m_modelMatrix *=glm::mat4(q);
+        }
+    
+        if(inputNode.scale.size()==3){
+            currNode.m_modelMatrix = glm::scale(currNode.m_modelMatrix,glm::vec3(glm::make_vec3(inputNode.scale.data())));
+        }
+        if(inputNode.matrix.size()==16){
+            currNode.m_modelMatrix = glm::make_mat4x4(inputNode.matrix.data());
+        }
+        if(inputNode.children.size()>0){
+            for(int i = 0;i<inputNode.children.size();++i){
+                loadNode(model.nodes[inputNode.children[i]], model, &currNode);
+            }
+        }
+
+        if(inputNode.mesh>-1){
+            const tinygltf::Mesh gltfMesh = model.meshes[inputNode.mesh];
+            for(int i = 0;i<gltfMesh.primitives.size();++i){
+                currNode.m_subNodes.push_back({});
+                auto& primitiveNode = currNode.m_subNodes.back();
+                primitiveNode.m_parentNodePtr = &currNode;
+                Mesh mesh;
+                mesh.name = gltfMesh.name;
+                auto& primitive = gltfMesh.primitives[i];
+                u32 indexCount = 0;
+                //vertices
+                {
+                    const float* positionBuffer = nullptr;
+                    const float* normalBuffer = nullptr;
+                    const float* texcoordsBuffer = nullptr;
+                    u32 vertexCount = 0;
+                    //get the position data
+                    if(primitive.attributes.find("POSITION") != primitive.attributes.end()){
+                        const tinygltf::Accessor& accessor = model.accessors[primitive.attributes.find("POSITION")->second];
+                        const tinygltf::BufferView& view = model.bufferViews[accessor.bufferView];
+                        positionBuffer = reinterpret_cast<const float*>(&(model.buffers[view.buffer].data[view.byteOffset + accessor.byteOffset]));
+                        vertexCount = accessor.count;
+                    }
+
+                    // get the normal data
+                    if(primitive.attributes.find("NORMAL") != primitive.attributes.end()){
+                        const tinygltf::Accessor& accessor = model.accessors[primitive.attributes.find("NORMAL")->second];
+                        const tinygltf::BufferView& view = model.bufferViews[accessor.bufferView];
+                        normalBuffer = reinterpret_cast<float*>(&(model.buffers[view.buffer].data[view.byteOffset + accessor.byteOffset]));
+                    }
+
+                    //get the texcoord data
+                    if(primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end()){
+                        const tinygltf::Accessor& accessor = model.accessors[primitive.attributes.find("TEXCOORD_0")->second];
+                        const tinygltf::BufferView& view = model.bufferViews[accessor.bufferView];
+                        texcoordsBuffer = reinterpret_cast<float*>(&(model.buffers[view.buffer].data[view.byteOffset + accessor.byteOffset]));
+                    }
+
+                    for(size_t v = 0;v<vertexCount;++v){
+                        Vertex vt;
+                        vt.pos = glm::vec3(glm::make_vec3(&positionBuffer[v*3]));
+                        vt.normal = glm::vec3(glm::make_vec3(&normalBuffer[v*3]));
+                        vt.texCoord = glm::vec2(glm::make_vec2(&texcoordsBuffer[v*2]));
+                        mesh.m_vertices.push_back(vt);
+                    }
+                }
+                //indices
+                {
+                    const tinygltf::Accessor& accessor = model.accessors[primitive.indices];
+                    const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
+                    const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
+                    switch (accessor.componentType) {
+					case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT: {
+						const uint32_t* buf = reinterpret_cast<const uint32_t*>(&buffer.data[accessor.byteOffset + bufferView.byteOffset]);
+						for (size_t index = 0; index < accessor.count; index++) {
+							mesh.m_indices.push_back(buf[index]);
+						}
+						break;
+					}
+					case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT: {
+						const uint16_t* buf = reinterpret_cast<const uint16_t*>(&buffer.data[accessor.byteOffset + bufferView.byteOffset]);
+						for (size_t index = 0; index < accessor.count; index++) {
+							mesh.m_indices.push_back(buf[index]);
+						}
+						break;
+					}
+					case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE: {
+						const uint8_t* buf = reinterpret_cast<const uint8_t*>(&buffer.data[accessor.byteOffset + bufferView.byteOffset]);
+						for (size_t index = 0; index < accessor.count; index++) {
+							mesh.m_indices.push_back(buf[index]);
+						}
+						break;
+					}
+					default:
+						std::cerr << "Index component type " << accessor.componentType << " not supported!" << std::endl;
+						return;
+					}
+                }
+
+                if(primitive.material>-1){
+                    tinygltf::Material& material = model.materials[primitive.material];
+                    mesh.m_diffuseTexturePath =model.extras_json_string + model.textures[material.values["baseColorTexture"].TextureIndex()].name;
+                    mesh.m_emissiveTexturePath = material.emissiveTexture.index==-1?"":model.extras_json_string + model.textures[material.emissiveTexture.index].name;
+                    mesh.m_occlusionTexturePath = material.occlusionTexture.index==-1?"":model.extras_json_string+ model.textures[material.occlusionTexture.index].name;
+                    mesh.m_MRTexturePath = material.pbrMetallicRoughness.metallicRoughnessTexture.index ==-1?"":model.extras_json_string+model.textures[material.pbrMetallicRoughness.metallicRoughnessTexture.index].name;
+                    mesh.m_normalTexturePath = material.normalTexture.index==-1?"":model.extras_json_string + model.textures[material.normalTexture.index].name;
+                }
+                primitiveNode.m_meshIndex = m_meshes.size();
+                m_meshes.push_back(mesh);
+                m_haveContent = true;
+            }
+            
+        }
+
+    }
+
     void gltfLoader::loadFromPath(std::string path){
+        tinygltf::Model model;
+        tinygltf::TinyGLTF loader;
+        std::string err;
+        std::string warn;
+        bool res = loader.LoadASCIIFromFile(&model, &err, &warn, path);
+        if(!warn.empty()){
+            DG_WARN(warn);
+        }
+        if(!err.empty()){
+            DG_ERROR(err);
+        }
+        if(!res){
+            DG_ERROR("Failed to load gltf model, name: ", path);
+            exit(-1);
+        }
+        u32 found = path.find_last_of("/\\");
         
+        model.extras_json_string = path.substr(0, found+1);
+        auto& nodes = model.nodes;
+        auto& scenes = model.scenes;
+        for(int sce = 0;sce<scenes.size();++sce){
+            auto& scene = scenes[sce];
+            m_sceneRoot.m_subNodes.push_back({});
+            m_sceneRoot.m_subNodes.back().m_parentNodePtr = &m_sceneRoot;
+            auto& sceneNode = m_sceneRoot.m_subNodes.back();
+            for(int nd = 0;nd<scene.nodes.size();++nd){
+                auto& inputNode = nodes[scene.nodes[nd]];
+                loadNode(inputNode, model, &sceneNode);
+            }
+        }
     }
 
     void gltfLoader::destroy(){

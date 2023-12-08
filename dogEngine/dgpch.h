@@ -22,8 +22,4 @@
 
 #include "dgplatform.h"
 
-const uint32_t WIDTH = 1920;
-const uint32_t HEIGHT = 1080;
-
-
 #endif //DGPCH_H

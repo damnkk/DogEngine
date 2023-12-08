@@ -32,9 +32,11 @@ int main() {
   context->init(contextInfo);
   Renderer renderer;
   renderer.init(context);
-  renderer.loadFromPath("./models/nanosuit/nanosuit.obj");
-  renderer.loadFromPath("./models/Sponza/sponza.obj");
+  //renderer.loadFromPath("./models/nanosuit/nanosuit.obj");
+  //renderer.loadFromPath("./models/Sponza/sponza.obj");
   //renderer.loadFromPath("./models/duck/12248_Bird_v1_L2.obj");
+  renderer.loadFromPath("./models/FlightHelmet/FlightHelmet.gltf");
+  //renderer.loadFromPath("./models/gltfSponza/sponza.gltf");
   renderer.executeScene();
 
   while(!glfwWindowShouldClose(context->m_window)){

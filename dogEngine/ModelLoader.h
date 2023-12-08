@@ -2,6 +2,10 @@
 #define MODELLOADER_H
 #include "gpuResource.hpp"
 #include "Vertex.h"
+#include "stb_image.h"
+#include "stb_image_write.h"
+#include "json.hpp"
+#include "tiny_gltf.h"
 
 namespace dg{
 struct DeviceContext;
@@ -15,6 +19,7 @@ struct AABBbox{
 
 struct SceneNode{
     bool                                m_isUpdate = false;
+    SceneNode*                          m_parentNodePtr = nullptr;
     glm::mat4                           m_modelMatrix = {glm::vec4(1, 0, 0, 0), glm::vec4(0, 1, 0, 0), glm::vec4(0, 0, 1, 0), glm::vec4(0, 0, 0, 1)};
     int                                 m_meshIndex = -1;
     std::vector<SceneNode>              m_subNodes;
@@ -26,7 +31,7 @@ struct SceneNode{
 struct Mesh{
     std::string                         name;
     std::vector<Vertex>                 m_vertices;
-    std::vector<u32>                    m_indeices;
+    std::vector<u32>                    m_indices;
     std::string                         m_diffuseTexturePath;
     std::string                         m_MRTexturePath;
     std::string                         m_normalTexturePath;
@@ -84,6 +89,7 @@ class gltfLoader: public BaseLoader{
 public:
     gltfLoader();
     gltfLoader(Renderer* renderer);
+    void loadNode(tinygltf::Node& inputNode, tinygltf::Model& model, SceneNode* parent);
     ~gltfLoader(){};
     void                                loadFromPath(std::string path);
     void                                destroy() override;
