@@ -10,7 +10,11 @@ const std::string                       ProgramResource::k_type = "program_resou
 
 void keycallback(GLFWwindow *window)
 {
-  float sensitivity = 0.7;
+  float sensitivity = 0.07;
+  
+  if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+    sensitivity = 1.0;
+  }
   if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
     glfwSetWindowShouldClose(window, true);
   }
@@ -315,12 +319,13 @@ void Renderer::drawScene(){
       vmaMapMemory(m_context->m_vma, uniformBuffer->m_allocation, &data);
       UniformData udata{};
       udata.cameraPos = m_context->m_camera->pos;
+      udata.cameraDirectory = m_context->m_camera->direction;
       static auto startTime = std::chrono::high_resolution_clock::now();
       auto endTime = std::chrono::high_resolution_clock::now();
       float time = std::chrono::duration<float, std::chrono::seconds::period>(endTime-startTime).count();
       udata.modelMatrix = currRenderObject.m_modelMatrix;
-      udata.modelMatrix = glm::scale(udata.modelMatrix,glm::vec3(10.0f,10.0f,10.0f));
-      //udata.modelMatrix = glm::rotate(glm::mat4(1.0f), time *glm::radians(90.0f), glm::vec3(0.0f,0.0f,1.0f));
+      udata.modelMatrix = glm::scale(udata.modelMatrix,glm::vec3(0.5f,0.5f,0.5f));
+      //udata.modelMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f,0.0f,0.0f));
       udata.projectMatrix = m_context->m_camera->getProjectMatrix();
       udata.viewMatrix = m_context->m_camera->getViewMatrix();
       u32 test = sizeof(UniformData);
@@ -335,6 +340,18 @@ void Renderer::drawScene(){
       //cmd->draw(TopologyType::Enum::Triangle, 0, currRenderObject.m_vertexCount, 0, 0);
       cmd->drawIndexed(TopologyType::Enum::Triangle, currRenderObject.m_indexCount, 1, 0, 0, 0);
     }
+}
+
+void Renderer::setCurrentMaterial(Material* mat){
+  if(!mat){
+    DG_WARN("You are implementing a invalid material as current material, check again");
+    return ;
+  }
+  m_currentMaterial = mat;
+}
+
+Material* Renderer::getCurrentMaterial(){
+  return m_currentMaterial;
 }
 
 void Renderer::drawUI(){

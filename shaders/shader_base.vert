@@ -2,6 +2,7 @@
 
 layout(binding=5)uniform UniformBufferObject{
     vec3 cameraPos;
+    vec3 cameraDirectory;
     mat4 model;
     mat4 view;
     mat4 proj;
@@ -18,6 +19,6 @@ layout(location=2)out vec3 worldPos;
 void main(){
     gl_Position=ubo.proj*ubo.view*ubo.model*vec4(inPosition,1.);
     worldPos=vec3(ubo.model*vec4(inPosition,1.));
-    fragNormal=inNormal;
+    fragNormal=normalize(mat3(transpose(inverse(ubo.model)))*inNormal);
     fragTexCoord=inTexCoord;
 }

@@ -26,6 +26,7 @@ const int MAX_FRAMES_IN_FLIGHT = 3;
 
 struct UniformData{
     alignas(16) glm::vec3                           cameraPos;
+    alignas(16) glm::vec3                           cameraDirectory;
     alignas(16) glm::mat4                           modelMatrix;
     alignas(16) glm::mat4                           viewMatrix;
     alignas(16) glm::mat4                           projectMatrix;

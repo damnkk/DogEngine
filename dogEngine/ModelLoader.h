@@ -81,7 +81,7 @@ public:
     objLoader();
     objLoader(Renderer* renderer);
     ~objLoader(){};
-    void                                loadFromPath(std::string path);
+    void                                loadFromPath(std::string path) override;
     void                                destroy() override;
 };
 
@@ -91,7 +91,7 @@ public:
     gltfLoader(Renderer* renderer);
     void loadNode(tinygltf::Node& inputNode, tinygltf::Model& model, SceneNode* parent);
     ~gltfLoader(){};
-    void                                loadFromPath(std::string path);
+    void                                loadFromPath(std::string path) override;
     void                                destroy() override;
 };
 

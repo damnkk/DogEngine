@@ -97,48 +97,20 @@ namespace dg{
             rj.m_vertexCount = mesh.m_vertices.size();
             //下面这行好像没有什么卵用;
             rj.m_uniformBuffer = m_renderer->getContext()->m_viewProjectUniformBuffer;
+            Material* matPtr = m_renderer->getCurrentMaterial();
+            if(matPtr!=nullptr){
 
-            DescriptorSetLayoutCreateInfo descLayoutInfo;
-            descLayoutInfo.reset();
-            descLayoutInfo.addBinding({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,0,1,"diffuseTexture"});
-            descLayoutInfo.addBinding({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,1,1,"MRTTexture"});
-            descLayoutInfo.addBinding({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,2,1,"normalTexture"});
-            descLayoutInfo.addBinding({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,3,1,"emissiveTexture"});
-            descLayoutInfo.addBinding({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,4,1,"occlusionTexture"});
-            descLayoutInfo.addBinding({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,5,1,"viewProjectUniform"});
-            descLayoutInfo.setName("textureAndUniformBufferDesc");
-            pipelineCreateInfo pipelineInfo;
-            //pipelineInfo.addDescriptorSetlayout(slHandle);
-            pipelineInfo.m_renderPassHandle = rj.m_renderPass;
-            pipelineInfo.m_depthStencil.setDepth(true, VK_COMPARE_OP_LESS_OR_EQUAL);
-            pipelineInfo.m_vertexInput.Attrib = Vertex::getAttributeDescriptions();
-            pipelineInfo.m_vertexInput.Binding = Vertex::getBindingDescription();
-            pipelineInfo.m_shaderState.reset();
-            auto vsCode = readFile("./shaders/vert.spv");
-            auto fsCode = readFile("./shaders/frag.spv");
-            pipelineInfo.m_shaderState.addStage(vsCode.data(), vsCode.size(), VK_SHADER_STAGE_VERTEX_BIT);
-            pipelineInfo.m_shaderState.addStage(fsCode.data(), fsCode.size(), VK_SHADER_STAGE_FRAGMENT_BIT);
-            pipelineInfo.m_shaderState.setName("pbrPipeline");
-            pipelineInfo.name = pipelineInfo.m_shaderState.name;
-            ProgramCreateInfo programInfo{};
-            programInfo.pipelineInfo = pipelineInfo;
-            programInfo.dslyaoutInfo = descLayoutInfo;
-            programInfo.setName(pipelineInfo.name.c_str());
-            auto programe = m_renderer->createProgram(programInfo);
-            MaterialCreateInfo matInfo{};
-            matInfo.setProgram(programe);
-            matInfo.name = "pbr_mat";
-            auto material = m_renderer->createMaterial(matInfo);
-            rj.m_material = material;
+                rj.m_material = matPtr;
 
-            DescriptorSetCreateInfo descInfo;
-            descInfo.setName("base descriptor Set");
-            descInfo.reset().setLayout(rj.m_material->program->passes[0].descriptorSetLayout).texture(rj.m_diffuseTex, 0).texture(rj.m_MRTtex,1).texture(rj.m_normalTex,2)
-            .texture(rj.m_emissiveTex,3).texture(rj.m_occlusionTex,4).buffer(m_renderer->getContext()->m_viewProjectUniformBuffer, 5);
-            rj.m_descriptors.push_back(m_renderer->getContext()->createDescriptorSet(descInfo));
-            // additional descriptors, like HDR env map or sth;
-            //-------
-            renderobjects.push_back(rj);
+                DescriptorSetCreateInfo descInfo;
+                descInfo.setName("base descriptor Set");
+                descInfo.reset().setLayout(rj.m_material->program->passes[0].descriptorSetLayout).texture(rj.m_diffuseTex, 0).texture(rj.m_MRTtex,1).texture(rj.m_normalTex,2)
+                .texture(rj.m_emissiveTex,3).texture(rj.m_occlusionTex,4).buffer(m_renderer->getContext()->m_viewProjectUniformBuffer, 5);
+                rj.m_descriptors.push_back(m_renderer->getContext()->createDescriptorSet(descInfo));
+                // additional descriptors, like HDR env map or sth;
+                //-------
+                renderobjects.push_back(rj);
+            }
         }
         if(!rootNode.m_subNodes.empty()){
             std::vector<RenderObject> subNodeRenderobjects;
@@ -264,7 +236,7 @@ namespace dg{
 
         if(inputNode.rotation.size()==4){
             glm::quat q = glm::make_quat(inputNode.rotation.data());
-            currNode.m_modelMatrix *=glm::mat4(q);
+            //currNode.m_modelMatrix *=glm::mat4(q);
         }
     
         if(inputNode.scale.size()==3){
@@ -286,7 +258,8 @@ namespace dg{
                 auto& primitiveNode = currNode.m_subNodes.back();
                 primitiveNode.m_parentNodePtr = &currNode;
                 Mesh mesh;
-                mesh.name = gltfMesh.name;
+                if(!gltfMesh.name.empty()) mesh.name = gltfMesh.name;
+                else mesh.name = "mesh"+std::to_string(m_meshes.size());
                 auto& primitive = gltfMesh.primitives[i];
                 u32 indexCount = 0;
                 //vertices
@@ -360,11 +333,11 @@ namespace dg{
 
                 if(primitive.material>-1){
                     tinygltf::Material& material = model.materials[primitive.material];
-                    mesh.m_diffuseTexturePath =model.extras_json_string + model.textures[material.values["baseColorTexture"].TextureIndex()].name;
-                    mesh.m_emissiveTexturePath = material.emissiveTexture.index==-1?"":model.extras_json_string + model.textures[material.emissiveTexture.index].name;
-                    mesh.m_occlusionTexturePath = material.occlusionTexture.index==-1?"":model.extras_json_string+ model.textures[material.occlusionTexture.index].name;
-                    mesh.m_MRTexturePath = material.pbrMetallicRoughness.metallicRoughnessTexture.index ==-1?"":model.extras_json_string+model.textures[material.pbrMetallicRoughness.metallicRoughnessTexture.index].name;
-                    mesh.m_normalTexturePath = material.normalTexture.index==-1?"":model.extras_json_string + model.textures[material.normalTexture.index].name;
+                    mesh.m_diffuseTexturePath =model.extras_json_string + model.images[model.textures[material.values["baseColorTexture"].TextureIndex()].source].uri;
+                    mesh.m_emissiveTexturePath = material.emissiveTexture.index==-1?"":model.extras_json_string + model.images[model.textures[material.emissiveTexture.index].source].uri;
+                    mesh.m_occlusionTexturePath = material.occlusionTexture.index==-1?"":model.extras_json_string+ model.images[model.textures[material.occlusionTexture.index].source].uri;
+                    mesh.m_MRTexturePath = material.pbrMetallicRoughness.metallicRoughnessTexture.index ==-1?"":model.extras_json_string+model.images[model.textures[material.pbrMetallicRoughness.metallicRoughnessTexture.index].source].uri;
+                    mesh.m_normalTexturePath = material.normalTexture.index==-1?"":model.extras_json_string + model.images[model.textures[material.normalTexture.index].source].uri;
                 }
                 primitiveNode.m_meshIndex = m_meshes.size();
                 m_meshes.push_back(mesh);

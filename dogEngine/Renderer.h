@@ -8,6 +8,7 @@
 namespace dg{
 
 void keycallback(GLFWwindow *window);
+std::vector<char> readFile(const std::string& filename);
 
 struct Renderer;
 struct objLoader;
@@ -52,10 +53,18 @@ struct MaterialCreateInfo{
     u32                                 renderOrder = -1;
 };
 
+struct uniformRenderData{
+    alignas(16)glm::vec3                lightDirection;
+};
+
 struct Material:public Resource{
+    void                                addTexture(Renderer* renderer, std::string path);
     u32                                 poolIdx;
     ProgramResource*                    program;
     u32                                 renderOrder;
+    TextureResource*                    LUTTexture;
+    TextureResource*                    radianceTexture;
+    TextureResource*                    iradianceTexture;
 };
 
 struct ProgramCreateInfo{
@@ -101,6 +110,8 @@ public:
     void                                        loadFromPath(const std::string& path);
     void                                        executeScene();
     CommandBuffer*                              getCommandBuffer();
+    void                                        setCurrentMaterial(Material* material);
+    Material*                                   getCurrentMaterial();
 
 private:
     ResourceCache                               m_resourceCache;
@@ -112,6 +123,7 @@ private:
     std::shared_ptr<DeviceContext>              m_context;
     std::shared_ptr<objLoader>                  m_objLoader;
     std::shared_ptr<gltfLoader>                 m_gltfLoader;
+    Material*                                   m_currentMaterial = nullptr;
 
 };
 

@@ -1603,6 +1603,7 @@ void DeviceContext::init(const ContextCreateInfo& DeviceInfo){
 
     m_window = window;
     m_camera = std::make_shared<Camera>();
+    m_camera->aspect = float((float)DeviceInfo.m_windowWidth/(float)DeviceInfo.m_windowHeight);
     glfwSetMouseButtonCallback(m_window, mouseButtonCallback);
     glfwSetCursorPosCallback(m_window, mouseCallback);
     glfwSetWindowUserPointer(m_window, this);
@@ -1770,6 +1771,7 @@ void DeviceContext::init(const ContextCreateInfo& DeviceInfo){
     m_descriptorSetUpdateQueue.resize(32);
 
     SamplerCreateInfo sc{};
+    
     sc.set_address_uvw(VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_SAMPLER_ADDRESS_MODE_REPEAT).set_name("Default sampler");
     sc.set_min_mag_mip(VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_LINEAR);
     m_defaultSampler = createSampler(sc);
@@ -1781,9 +1783,12 @@ void DeviceContext::init(const ContextCreateInfo& DeviceInfo){
     tc.setUsage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
     m_depthTexture = createTexture(tc);
 
-    TextureCreateInfo dt{nullptr,{20,20,1},1,VK_FORMAT_R8G8B8A8_UNORM,TextureType::Enum::Texture2D,"default name",VK_IMAGE_USAGE_SAMPLED_BIT};
-    dt.setUsage(VK_IMAGE_USAGE_SAMPLED_BIT);
+    TextureCreateInfo dt{nullptr,{20,20,1},1,VK_FORMAT_R8G8B8A8_UNORM,TextureType::Enum::Texture2D,"default texture",VK_IMAGE_USAGE_SAMPLED_BIT|VK_IMAGE_USAGE_TRANSFER_DST_BIT};
+    auto ptr = new uint8_t(0);
+    dt.setData(ptr);
     m_defaultTexture = createTexture(dt);
+    delete ptr;
+    ptr = nullptr;
     //RenderPassCreat
     RenderPassCreateInfo renderpassInfo{};
     renderpassInfo.setName("SwapChain pass").setType(RenderPassType::Enum::SwapChain).setOperations(RenderPassOperation::Enum::Clear, RenderPassOperation::Enum::Clear, RenderPassOperation::Clear);
