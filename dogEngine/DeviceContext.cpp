@@ -1,5 +1,7 @@
 #include "DeviceContext.h"
 #include "CommandBuffer.h"
+#include "ktx.h"
+#include "ktxvulkan.h"
 
 #define VULKAN_DEBUG
 //#undef  VULKAN_DEBUG
@@ -525,7 +527,8 @@ static void vulkanCreateTexture(DeviceContext* context, const TextureCreateInfo&
 
     VmaAllocationCreateInfo imageAllocInfo{};
     imageAllocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-    DGASSERT(vmaCreateImage(context->m_vma, &imgCreateInfo, &imageAllocInfo, &texture->m_image, &texture->m_vma, nullptr)==VK_SUCCESS);
+    auto res = vmaCreateImage(context->m_vma, &imgCreateInfo, &imageAllocInfo, &texture->m_image, &texture->m_vma, nullptr);
+    DGASSERT(res==VK_SUCCESS)
     context->setResourceName(VK_OBJECT_TYPE_IMAGE, (uint64_t)texture->m_image, tc.name.c_str());
     //create image view
     VkImageViewCreateInfo viewInfo{VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
@@ -834,7 +837,7 @@ void DeviceContext::updateDescriptorSet(DescriptorSetHandle set){
 }
 
 //obtain一个对象,把索引也就是句柄返回出来
-SamplerHandle DeviceContext::createSampler(const SamplerCreateInfo& scf){
+SamplerHandle DeviceContext::createSampler(SamplerCreateInfo& scf){
     SamplerHandle sh = {m_samplers.obtainResource()};
     if(sh.index==k_invalid_index){
         return sh;
@@ -862,7 +865,7 @@ SamplerHandle DeviceContext::createSampler(const SamplerCreateInfo& scf){
     return sh;
 }
 
-BufferHandle DeviceContext::createBuffer(const BufferCreateInfo& bufferInfo){
+BufferHandle DeviceContext::createBuffer( BufferCreateInfo& bufferInfo){
     BufferHandle handle = {m_buffers.obtainResource()};
     if(handle.index == k_invalid_index) return handle;
     Buffer* buffer = accessBuffer(handle);
@@ -926,18 +929,14 @@ BufferHandle DeviceContext::createBuffer(const BufferCreateInfo& bufferInfo){
     return handle;
 }
 
-static void transitionImageLayout(VkCommandBuffer cmdBuffer,VkImage image, VkFormat format,VkImageLayout oldLayout, VkImageLayout newLayout, bool isDepth){
+static void transitionImageLayout(VkCommandBuffer cmdBuffer,VkImage image, VkFormat format,VkImageLayout oldLayout, VkImageLayout newLayout,VkImageSubresourceRange subRange){
     VkImageMemoryBarrier imageBarrier{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
     imageBarrier.image = image;
     imageBarrier.newLayout = newLayout;
     imageBarrier.oldLayout = oldLayout;
     imageBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     imageBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    imageBarrier.subresourceRange.aspectMask = isDepth?VK_IMAGE_ASPECT_DEPTH_BIT:VK_IMAGE_ASPECT_COLOR_BIT;
-    imageBarrier.subresourceRange.baseArrayLayer = 0;
-    imageBarrier.subresourceRange.baseMipLevel = 0;
-    imageBarrier.subresourceRange.layerCount = 1;
-    imageBarrier.subresourceRange.levelCount = 1;
+    imageBarrier.subresourceRange = subRange;
 
     VkPipelineStageFlags sourceFlag = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
     VkPipelineStageFlags dstFlag = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
@@ -989,10 +988,128 @@ static void transitionImageLayoutOverQueue(VkCommandBuffer cmdBuffer,VkImage ima
     vkCmdPipelineBarrier(cmdBuffer, sourceFlag, dstFlag, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier);
 }
 
-TextureHandle   DeviceContext::createTexture(const TextureCreateInfo& tc){
+static void vulkanCreateCubeTexture(DeviceContext* context, TextureCreateInfo& tc, TextureHandle& handle, Texture* tex){
+    tex->m_extent = tc.m_textureExtent;
+    tex->m_format = tc.m_imageFormat;
+    tex->m_mipLevel = tc.m_mipmapLevel;
+    tex->m_name = tc.name;
+    tex->m_type = tc.m_imageType;
+    tex->m_handle = handle;
+    tex->m_imageInfo.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    Sampler* sampler = context->accessSampler(context->m_defaultSampler);
+    tex->m_imageInfo.sampler = sampler->m_sampler;
+    tex->m_usage = tc.m_imageUsage;
+
+    //create cube image
+    VkImageCreateInfo imageInfo = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
+    imageInfo.imageType = to_vk_image_type(TextureType::Enum::TextureCube);
+    imageInfo.format = tc.m_imageFormat;
+    imageInfo.mipLevels = tc.m_mipmapLevel;
+    imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+    imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    imageInfo.extent = tc.m_textureExtent;
+    imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT|VK_IMAGE_USAGE_SAMPLED_BIT;
+    imageInfo.arrayLayers = 6;
+    imageInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+    VmaAllocationCreateInfo imageAllocInfo{};
+    imageAllocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+    VkResult res = vmaCreateImage(context->m_vma, &imageInfo, &imageAllocInfo, &tex->m_image,&tex->m_vma,nullptr);
+    context->setResourceName(VK_OBJECT_TYPE_IMAGE, (u64)tex->m_image, tc.name.c_str());
+    ktxTexture* ktxTexture =static_cast<::ktxTexture*>( tc.m_sourceData);
+    
+    VmaAllocationCreateInfo memory_info{};
+    memory_info.flags = VMA_ALLOCATION_CREATE_STRATEGY_BEST_FIT_BIT;
+    memory_info.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+    VmaAllocationInfo allocation_info{};
+
+    VkBufferCreateInfo stagineInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+    stagineInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    stagineInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    stagineInfo.size = ktxTexture_GetSize(ktxTexture);
+    VkBuffer stagingBuffer;
+    VmaAllocation   stagingAllocation;
+    res = vmaCreateBuffer(context->m_vma, &stagineInfo,&memory_info,&stagingBuffer,&stagingAllocation,nullptr);
+    DGASSERT(res==VK_SUCCESS);
+
+    void* destination_data;
+    vmaMapMemory(context->m_vma, stagingAllocation, &destination_data);
+    memcpy(destination_data, ktxTexture_GetData(ktxTexture), ktxTexture_GetSize(ktxTexture));
+    vmaUnmapMemory(context->m_vma, stagingAllocation);
+
+    auto cmd = context->getInstantCommandBuffer();
+    std::vector<VkBufferImageCopy> bufferCopyResgions;
+    uint32_t offset = 0;
+    for(uint32_t face = 0;face<6;++face){
+        for(uint32_t level = 0;level <tc.m_mipmapLevel;++level){
+            ktx_size_t offset;
+            KTX_error_code ret = ktxTexture_GetImageOffset(ktxTexture, level, 0, face, &offset);
+            DGASSERT(ret == KTX_SUCCESS)
+            VkBufferImageCopy bufferCopyRegion{};
+            bufferCopyRegion.imageSubresource.aspectMask= VK_IMAGE_ASPECT_COLOR_BIT;
+            bufferCopyRegion.imageSubresource.baseArrayLayer = face;
+            bufferCopyRegion.imageSubresource.layerCount = 1;
+            bufferCopyRegion.imageSubresource.mipLevel = level;
+            bufferCopyRegion.imageExtent.width = ktxTexture->baseWidth>>level;
+            bufferCopyRegion.imageExtent.height = ktxTexture->baseHeight>>level;
+            bufferCopyRegion.imageExtent.depth = 1;
+            bufferCopyRegion.bufferOffset = offset;
+            bufferCopyResgions.push_back(bufferCopyRegion);
+        }
+    }
+
+    VkImageSubresourceRange subResource{};
+    subResource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    subResource.baseArrayLayer = 0;
+    subResource.baseMipLevel = 0;
+    subResource.layerCount = 6;
+    subResource.levelCount = tc.m_mipmapLevel;
+
+    VkCommandBufferBeginInfo cmdBeginInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
+    cmdBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    vkBeginCommandBuffer(cmd->m_commandBuffer, &cmdBeginInfo);
+    VkImageSubresourceRange subresourceRange = {};
+		subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		subresourceRange.baseMipLevel = 0;
+		subresourceRange.levelCount = tc.m_mipmapLevel;
+		subresourceRange.layerCount = 6;
+    transitionImageLayout(cmd->m_commandBuffer, tex->m_image, tc.m_imageFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, subresourceRange);
+    vkCmdCopyBufferToImage(cmd->m_commandBuffer, stagingBuffer, tex->m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, bufferCopyResgions.size(), bufferCopyResgions.data());
+    tex->m_imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    transitionImageLayout(cmd->m_commandBuffer, tex->m_image, tc.m_imageFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, tex->m_imageInfo.imageLayout, subresourceRange);
+    vkEndCommandBuffer(cmd->m_commandBuffer);
+    VkSubmitInfo subInfo{VK_STRUCTURE_TYPE_SUBMIT_INFO};
+    subInfo.commandBufferCount = 1;
+    subInfo.pCommandBuffers = &cmd->m_commandBuffer;
+    subInfo.signalSemaphoreCount = 0;
+    subInfo.pSignalSemaphores = nullptr;
+    subInfo.waitSemaphoreCount = 0;
+    subInfo.pWaitSemaphores = nullptr;
+    vkQueueSubmit(context->m_graphicsQueue, 1, &subInfo, VK_NULL_HANDLE);
+    vkQueueWaitIdle(context->m_graphicsQueue);
+    //create image view
+    VkImageViewCreateInfo imageViewInfo = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
+    imageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+    imageViewInfo.format = tc.m_imageFormat;
+    imageViewInfo.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT,0,1,0,1};
+    imageViewInfo.subresourceRange.layerCount = 6;
+    imageViewInfo.subresourceRange.levelCount = tc.m_mipmapLevel;
+    imageViewInfo.image = tex->m_image;
+    res = vkCreateImageView(context->m_logicDevice, &imageViewInfo, nullptr, &tex->m_imageInfo.imageView);
+    DGASSERT(res == VK_SUCCESS)
+    vmaDestroyBuffer(context->m_vma, stagingBuffer, stagingAllocation);
+}
+
+
+TextureHandle   DeviceContext::createTexture(TextureCreateInfo& tc){
     TextureHandle handle = {m_textures.obtainResource()};
     if(handle.index == k_invalid_index) return handle;
     Texture* texture = accessTexture(handle);
+    if(tc.m_imageType==TextureType::TextureCube){
+        vulkanCreateCubeTexture(this, tc, handle, texture);
+        return handle;
+    }
     vulkanCreateTexture(this, tc, handle, texture);
     if(tc.m_sourceData){
         VkBufferCreateInfo stagingBufferInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
@@ -1027,9 +1144,16 @@ TextureHandle   DeviceContext::createTexture(const TextureCreateInfo& tc){
         bufferImagecp.imageSubresource.baseArrayLayer = 0;
         bufferImagecp.imageSubresource.layerCount = 1;
         bufferImagecp.imageSubresource.mipLevel = 0;
-        transitionImageLayout(tempCommandBuffer->m_commandBuffer, texture->m_image, texture->m_format, texture->m_imageInfo.imageLayout, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, false);
+
+        VkImageSubresourceRange subRange{};
+        subRange.aspectMask = TextureFormat::has_depth(texture->m_format)?VK_IMAGE_ASPECT_DEPTH_BIT:VK_IMAGE_ASPECT_COLOR_BIT;
+        subRange.baseArrayLayer = 0;
+        subRange.baseMipLevel =0;
+        subRange.layerCount = 1;
+        subRange.levelCount = 1;
+        transitionImageLayout(tempCommandBuffer->m_commandBuffer, texture->m_image, texture->m_format, texture->m_imageInfo.imageLayout, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, subRange);
         vkCmdCopyBufferToImage(tempCommandBuffer->m_commandBuffer, stagingBuffer, texture->m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &bufferImagecp);
-        transitionImageLayout(tempCommandBuffer->m_commandBuffer, texture->m_image, texture->m_format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, false);
+        transitionImageLayout(tempCommandBuffer->m_commandBuffer, texture->m_image, texture->m_format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, subRange);
 
         vkEndCommandBuffer(tempCommandBuffer->m_commandBuffer);
         VkSubmitInfo submitInfo{VK_STRUCTURE_TYPE_SUBMIT_INFO};
@@ -1108,7 +1232,7 @@ void DeviceContext::resizeOutputTextures(FrameBufferHandle frameBuffer, u32 widt
     }
 }
 
-RenderPassHandle DeviceContext::createRenderPass(const RenderPassCreateInfo& ri){
+RenderPassHandle DeviceContext::createRenderPass( RenderPassCreateInfo& ri){
     RenderPassHandle handle = {m_renderPasses.obtainResource()};
     if(handle.index == k_invalid_index) return handle;
 
@@ -1155,7 +1279,7 @@ RenderPassHandle DeviceContext::createRenderPass(const RenderPassCreateInfo& ri)
     return handle;
 }
 
-FrameBufferHandle DeviceContext::createFrameBuffer(const FrameBufferCreateInfo& fcf){
+FrameBufferHandle DeviceContext::createFrameBuffer( FrameBufferCreateInfo& fcf){
     FrameBufferHandle  handle = {m_frameBuffers.obtainResource()};
     FrameBuffer* fbo = accessFrameBuffer(handle);
     fbo->m_renderPassHandle = fcf.m_renderPassHandle;
@@ -1175,7 +1299,7 @@ FrameBufferHandle DeviceContext::createFrameBuffer(const FrameBufferCreateInfo& 
     return handle;
 }
 
-DescriptorSetLayoutHandle DeviceContext::createDescriptorSetLayout(const DescriptorSetLayoutCreateInfo& dcinfo){
+DescriptorSetLayoutHandle DeviceContext::createDescriptorSetLayout( DescriptorSetLayoutCreateInfo& dcinfo){
     DescriptorSetLayoutHandle handle = {m_descriptorSetLayouts.obtainResource()};
     if(handle.index == k_invalid_index) return handle;
     DescriptorSetLayout* setLayout = accessDescriptorSetLayout(handle);
@@ -1210,6 +1334,7 @@ DescriptorSetLayoutHandle DeviceContext::createDescriptorSetLayout(const Descrip
     setinfo.pBindings = setLayout->m_vkBindings.data();
     vkCreateDescriptorSetLayout(m_logicDevice, &setinfo, nullptr, &setLayout->m_descriptorSetLayout);
     setResourceName(VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (uint64_t)setLayout->m_descriptorSetLayout, dcinfo.name.c_str());
+    setLayout->m_handle = handle;
     return handle;
 }
 
@@ -1240,13 +1365,12 @@ static void vk_fill_write_descriptor_sets(DeviceContext* context, const Descript
                 if(texture->m_imageInfo.sampler!= VK_NULL_HANDLE){
                     iinfo.sampler = texture->m_imageInfo.sampler;
                 }
-                if(samplers[i].index != k_invalid_index){
+                else if(samplers[i].index != k_invalid_index){
                     Sampler* samp = context->accessSampler(samplers[i]);
                     iinfo.sampler = samp->m_sampler;
                 }else{
                     samplers[i] = context->m_defaultSampler;
                 }
-                
                 iinfo.imageLayout = TextureFormat::has_depth_or_stencil(texture->m_format)?VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL:VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
                 iinfo.imageView = texture->m_imageInfo.imageView;
                 descriptorWrite[i].descriptorType = binding.descriptorType;
@@ -1337,7 +1461,7 @@ DescriptorSetHandle DeviceContext::createDescriptorSet(DescriptorSetCreateInfo& 
     return handle;
 }
 
-ShaderStateHandle DeviceContext::createShaderState(const ShaderStateCreation& shaderInfo){
+ShaderStateHandle DeviceContext::createShaderState( ShaderStateCreation& shaderInfo){
     ShaderStateHandle handle = {m_shaderStates.obtainResource()};
     if(handle.index==k_invalid_index) return handle;
     ShaderState* state = accessShaderState(handle);
@@ -1382,7 +1506,7 @@ ShaderStateHandle DeviceContext::createShaderState(const ShaderStateCreation& sh
     return handle;
 }
 
-PipelineHandle DeviceContext::createPipeline(const pipelineCreateInfo& pipelineInfo){
+PipelineHandle DeviceContext::createPipeline( pipelineCreateInfo& pipelineInfo){
     PipelineHandle handle ={m_pipelines.obtainResource()};
     if(handle.index== k_invalid_index) return handle;
     ShaderStateHandle shaderState = createShaderState(pipelineInfo.m_shaderState);

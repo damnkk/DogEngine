@@ -1,0 +1,314 @@
+[
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -DSPDLOG_COMPILED_LIB -IE:\\repository\\Vulkan_learn\\dogEngine -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\VMA\\include -IE:\\repository\\Vulkan_learn\\external\\glm\\include -IE:\\repository\\Vulkan_learn\\external\\spdlog\\include -IE:\\repository\\Vulkan_learn\\external\\tinyobjloader -IE:\\repository\\Vulkan_learn\\external\\tinygltf -IE:\\repository\\Vulkan_learn\\dogEngine\\.\\ktx\\include -IE:\\repository\\Vulkan_learn\\external\\stb -IE:\\repository\\Vulkan_learn\\dogEngine\\GUI -external:IE:\\Vulkan\\Include -external:W0 /DWIN32 /D_WINDOWS /EHsc /Zi /Ob0 /Od /RTC1 -std:c++17 -MDd /FoCMakeFiles\\vulkan_learning.dir\\Vulkan.cpp.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\Vulkan.cpp",
+  "file": "E:\\repository\\Vulkan_learn\\Vulkan.cpp",
+  "output": "CMakeFiles\\vulkan_learning.dir\\Vulkan.cpp.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -DSPDLOG_COMPILED_LIB -IE:\\repository\\Vulkan_learn\\external\\stb -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\glm\\glm -IE:\\repository\\Vulkan_learn\\external\\spdlog\\include -IE:\\repository\\Vulkan_learn\\external\\tinyobjloader -IE:\\repository\\Vulkan_learn\\external\\tinygltf -IE:\\repository\\Vulkan_learn -IE:\\repository\\Vulkan_learn\\GUI -external:IE:\\Vulkan\\Include -external:W0 /DWIN32 /D_WINDOWS /EHsc /Zi /Ob0 /Od /RTC1 -std:c++17 -MDd /FoCMakeFiles\\vktu.dir\\vktu.cpp.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\vktu.cpp",
+  "file": "E:\\repository\\Vulkan_learn\\vktu.cpp",
+  "output": "CMakeFiles\\vktu.dir\\vktu.cpp.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -IE:\\Vulkan\\Include -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\VMA\\include -IE:\\repository\\Vulkan_learn\\external\\glm\\include -IE:\\repository\\Vulkan_learn\\external\\spdlog\\include -IE:\\repository\\Vulkan_learn\\external\\tinyobjloader -IE:\\repository\\Vulkan_learn\\external\\tinygltf -IE:\\repository\\Vulkan_learn\\dogEngine\\.\\ktx\\include -IE:\\repository\\Vulkan_learn\\external\\stb -IE:\\repository\\Vulkan_learn\\dogEngine -IE:\\repository\\Vulkan_learn\\dogEngine\\GUI /DWIN32 /D_WINDOWS /EHsc /Zi /Ob0 /Od /RTC1 -std:c++17 -MDd /FodogEngine\\CMakeFiles\\dogEngine.dir\\Camera.cpp.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\dogEngine\\Camera.cpp",
+  "file": "E:\\repository\\Vulkan_learn\\dogEngine\\Camera.cpp",
+  "output": "dogEngine\\CMakeFiles\\dogEngine.dir\\Camera.cpp.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -IE:\\Vulkan\\Include -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\VMA\\include -IE:\\repository\\Vulkan_learn\\external\\glm\\include -IE:\\repository\\Vulkan_learn\\external\\spdlog\\include -IE:\\repository\\Vulkan_learn\\external\\tinyobjloader -IE:\\repository\\Vulkan_learn\\external\\tinygltf -IE:\\repository\\Vulkan_learn\\dogEngine\\.\\ktx\\include -IE:\\repository\\Vulkan_learn\\external\\stb -IE:\\repository\\Vulkan_learn\\dogEngine -IE:\\repository\\Vulkan_learn\\dogEngine\\GUI /DWIN32 /D_WINDOWS /EHsc /Zi /Ob0 /Od /RTC1 -std:c++17 -MDd /FodogEngine\\CMakeFiles\\dogEngine.dir\\CommandBuffer.cpp.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\dogEngine\\CommandBuffer.cpp",
+  "file": "E:\\repository\\Vulkan_learn\\dogEngine\\CommandBuffer.cpp",
+  "output": "dogEngine\\CMakeFiles\\dogEngine.dir\\CommandBuffer.cpp.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -IE:\\Vulkan\\Include -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\VMA\\include -IE:\\repository\\Vulkan_learn\\external\\glm\\include -IE:\\repository\\Vulkan_learn\\external\\spdlog\\include -IE:\\repository\\Vulkan_learn\\external\\tinyobjloader -IE:\\repository\\Vulkan_learn\\external\\tinygltf -IE:\\repository\\Vulkan_learn\\dogEngine\\.\\ktx\\include -IE:\\repository\\Vulkan_learn\\external\\stb -IE:\\repository\\Vulkan_learn\\dogEngine -IE:\\repository\\Vulkan_learn\\dogEngine\\GUI /DWIN32 /D_WINDOWS /EHsc /Zi /Ob0 /Od /RTC1 -std:c++17 -MDd /FodogEngine\\CMakeFiles\\dogEngine.dir\\DebugMessanger.cpp.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\dogEngine\\DebugMessanger.cpp",
+  "file": "E:\\repository\\Vulkan_learn\\dogEngine\\DebugMessanger.cpp",
+  "output": "dogEngine\\CMakeFiles\\dogEngine.dir\\DebugMessanger.cpp.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -IE:\\Vulkan\\Include -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\VMA\\include -IE:\\repository\\Vulkan_learn\\external\\glm\\include -IE:\\repository\\Vulkan_learn\\external\\spdlog\\include -IE:\\repository\\Vulkan_learn\\external\\tinyobjloader -IE:\\repository\\Vulkan_learn\\external\\tinygltf -IE:\\repository\\Vulkan_learn\\dogEngine\\.\\ktx\\include -IE:\\repository\\Vulkan_learn\\external\\stb -IE:\\repository\\Vulkan_learn\\dogEngine -IE:\\repository\\Vulkan_learn\\dogEngine\\GUI /DWIN32 /D_WINDOWS /EHsc /Zi /Ob0 /Od /RTC1 -std:c++17 -MDd /FodogEngine\\CMakeFiles\\dogEngine.dir\\DeviceContext.cpp.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\dogEngine\\DeviceContext.cpp",
+  "file": "E:\\repository\\Vulkan_learn\\dogEngine\\DeviceContext.cpp",
+  "output": "dogEngine\\CMakeFiles\\dogEngine.dir\\DeviceContext.cpp.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -IE:\\Vulkan\\Include -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\VMA\\include -IE:\\repository\\Vulkan_learn\\external\\glm\\include -IE:\\repository\\Vulkan_learn\\external\\spdlog\\include -IE:\\repository\\Vulkan_learn\\external\\tinyobjloader -IE:\\repository\\Vulkan_learn\\external\\tinygltf -IE:\\repository\\Vulkan_learn\\dogEngine\\.\\ktx\\include -IE:\\repository\\Vulkan_learn\\external\\stb -IE:\\repository\\Vulkan_learn\\dogEngine -IE:\\repository\\Vulkan_learn\\dogEngine\\GUI /DWIN32 /D_WINDOWS /EHsc /Zi /Ob0 /Od /RTC1 -std:c++17 -MDd /FodogEngine\\CMakeFiles\\dogEngine.dir\\GUI\\GUI.cpp.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\dogEngine\\GUI\\GUI.cpp",
+  "file": "E:\\repository\\Vulkan_learn\\dogEngine\\GUI\\GUI.cpp",
+  "output": "dogEngine\\CMakeFiles\\dogEngine.dir\\GUI\\GUI.cpp.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -IE:\\Vulkan\\Include -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\VMA\\include -IE:\\repository\\Vulkan_learn\\external\\glm\\include -IE:\\repository\\Vulkan_learn\\external\\spdlog\\include -IE:\\repository\\Vulkan_learn\\external\\tinyobjloader -IE:\\repository\\Vulkan_learn\\external\\tinygltf -IE:\\repository\\Vulkan_learn\\dogEngine\\.\\ktx\\include -IE:\\repository\\Vulkan_learn\\external\\stb -IE:\\repository\\Vulkan_learn\\dogEngine -IE:\\repository\\Vulkan_learn\\dogEngine\\GUI /DWIN32 /D_WINDOWS /EHsc /Zi /Ob0 /Od /RTC1 -std:c++17 -MDd /FodogEngine\\CMakeFiles\\dogEngine.dir\\GUI\\imguiBase\\imgui.cpp.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\dogEngine\\GUI\\imguiBase\\imgui.cpp",
+  "file": "E:\\repository\\Vulkan_learn\\dogEngine\\GUI\\imguiBase\\imgui.cpp",
+  "output": "dogEngine\\CMakeFiles\\dogEngine.dir\\GUI\\imguiBase\\imgui.cpp.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -IE:\\Vulkan\\Include -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\VMA\\include -IE:\\repository\\Vulkan_learn\\external\\glm\\include -IE:\\repository\\Vulkan_learn\\external\\spdlog\\include -IE:\\repository\\Vulkan_learn\\external\\tinyobjloader -IE:\\repository\\Vulkan_learn\\external\\tinygltf -IE:\\repository\\Vulkan_learn\\dogEngine\\.\\ktx\\include -IE:\\repository\\Vulkan_learn\\external\\stb -IE:\\repository\\Vulkan_learn\\dogEngine -IE:\\repository\\Vulkan_learn\\dogEngine\\GUI /DWIN32 /D_WINDOWS /EHsc /Zi /Ob0 /Od /RTC1 -std:c++17 -MDd /FodogEngine\\CMakeFiles\\dogEngine.dir\\GUI\\imguiBase\\imgui_draw.cpp.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\dogEngine\\GUI\\imguiBase\\imgui_draw.cpp",
+  "file": "E:\\repository\\Vulkan_learn\\dogEngine\\GUI\\imguiBase\\imgui_draw.cpp",
+  "output": "dogEngine\\CMakeFiles\\dogEngine.dir\\GUI\\imguiBase\\imgui_draw.cpp.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -IE:\\Vulkan\\Include -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\VMA\\include -IE:\\repository\\Vulkan_learn\\external\\glm\\include -IE:\\repository\\Vulkan_learn\\external\\spdlog\\include -IE:\\repository\\Vulkan_learn\\external\\tinyobjloader -IE:\\repository\\Vulkan_learn\\external\\tinygltf -IE:\\repository\\Vulkan_learn\\dogEngine\\.\\ktx\\include -IE:\\repository\\Vulkan_learn\\external\\stb -IE:\\repository\\Vulkan_learn\\dogEngine -IE:\\repository\\Vulkan_learn\\dogEngine\\GUI /DWIN32 /D_WINDOWS /EHsc /Zi /Ob0 /Od /RTC1 -std:c++17 -MDd /FodogEngine\\CMakeFiles\\dogEngine.dir\\GUI\\imguiBase\\imgui_impl_glfw.cpp.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\dogEngine\\GUI\\imguiBase\\imgui_impl_glfw.cpp",
+  "file": "E:\\repository\\Vulkan_learn\\dogEngine\\GUI\\imguiBase\\imgui_impl_glfw.cpp",
+  "output": "dogEngine\\CMakeFiles\\dogEngine.dir\\GUI\\imguiBase\\imgui_impl_glfw.cpp.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -IE:\\Vulkan\\Include -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\VMA\\include -IE:\\repository\\Vulkan_learn\\external\\glm\\include -IE:\\repository\\Vulkan_learn\\external\\spdlog\\include -IE:\\repository\\Vulkan_learn\\external\\tinyobjloader -IE:\\repository\\Vulkan_learn\\external\\tinygltf -IE:\\repository\\Vulkan_learn\\dogEngine\\.\\ktx\\include -IE:\\repository\\Vulkan_learn\\external\\stb -IE:\\repository\\Vulkan_learn\\dogEngine -IE:\\repository\\Vulkan_learn\\dogEngine\\GUI /DWIN32 /D_WINDOWS /EHsc /Zi /Ob0 /Od /RTC1 -std:c++17 -MDd /FodogEngine\\CMakeFiles\\dogEngine.dir\\GUI\\imguiBase\\imgui_impl_vulkan.cpp.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\dogEngine\\GUI\\imguiBase\\imgui_impl_vulkan.cpp",
+  "file": "E:\\repository\\Vulkan_learn\\dogEngine\\GUI\\imguiBase\\imgui_impl_vulkan.cpp",
+  "output": "dogEngine\\CMakeFiles\\dogEngine.dir\\GUI\\imguiBase\\imgui_impl_vulkan.cpp.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -IE:\\Vulkan\\Include -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\VMA\\include -IE:\\repository\\Vulkan_learn\\external\\glm\\include -IE:\\repository\\Vulkan_learn\\external\\spdlog\\include -IE:\\repository\\Vulkan_learn\\external\\tinyobjloader -IE:\\repository\\Vulkan_learn\\external\\tinygltf -IE:\\repository\\Vulkan_learn\\dogEngine\\.\\ktx\\include -IE:\\repository\\Vulkan_learn\\external\\stb -IE:\\repository\\Vulkan_learn\\dogEngine -IE:\\repository\\Vulkan_learn\\dogEngine\\GUI /DWIN32 /D_WINDOWS /EHsc /Zi /Ob0 /Od /RTC1 -std:c++17 -MDd /FodogEngine\\CMakeFiles\\dogEngine.dir\\GUI\\imguiBase\\imgui_tables.cpp.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\dogEngine\\GUI\\imguiBase\\imgui_tables.cpp",
+  "file": "E:\\repository\\Vulkan_learn\\dogEngine\\GUI\\imguiBase\\imgui_tables.cpp",
+  "output": "dogEngine\\CMakeFiles\\dogEngine.dir\\GUI\\imguiBase\\imgui_tables.cpp.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -IE:\\Vulkan\\Include -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\VMA\\include -IE:\\repository\\Vulkan_learn\\external\\glm\\include -IE:\\repository\\Vulkan_learn\\external\\spdlog\\include -IE:\\repository\\Vulkan_learn\\external\\tinyobjloader -IE:\\repository\\Vulkan_learn\\external\\tinygltf -IE:\\repository\\Vulkan_learn\\dogEngine\\.\\ktx\\include -IE:\\repository\\Vulkan_learn\\external\\stb -IE:\\repository\\Vulkan_learn\\dogEngine -IE:\\repository\\Vulkan_learn\\dogEngine\\GUI /DWIN32 /D_WINDOWS /EHsc /Zi /Ob0 /Od /RTC1 -std:c++17 -MDd /FodogEngine\\CMakeFiles\\dogEngine.dir\\GUI\\imguiBase\\imgui_widgets.cpp.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\dogEngine\\GUI\\imguiBase\\imgui_widgets.cpp",
+  "file": "E:\\repository\\Vulkan_learn\\dogEngine\\GUI\\imguiBase\\imgui_widgets.cpp",
+  "output": "dogEngine\\CMakeFiles\\dogEngine.dir\\GUI\\imguiBase\\imgui_widgets.cpp.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -IE:\\Vulkan\\Include -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\VMA\\include -IE:\\repository\\Vulkan_learn\\external\\glm\\include -IE:\\repository\\Vulkan_learn\\external\\spdlog\\include -IE:\\repository\\Vulkan_learn\\external\\tinyobjloader -IE:\\repository\\Vulkan_learn\\external\\tinygltf -IE:\\repository\\Vulkan_learn\\dogEngine\\.\\ktx\\include -IE:\\repository\\Vulkan_learn\\external\\stb -IE:\\repository\\Vulkan_learn\\dogEngine -IE:\\repository\\Vulkan_learn\\dogEngine\\GUI /DWIN32 /D_WINDOWS /EHsc /Zi /Ob0 /Od /RTC1 -std:c++17 -MDd /FodogEngine\\CMakeFiles\\dogEngine.dir\\ModelLoader.cpp.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\dogEngine\\ModelLoader.cpp",
+  "file": "E:\\repository\\Vulkan_learn\\dogEngine\\ModelLoader.cpp",
+  "output": "dogEngine\\CMakeFiles\\dogEngine.dir\\ModelLoader.cpp.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -IE:\\Vulkan\\Include -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\VMA\\include -IE:\\repository\\Vulkan_learn\\external\\glm\\include -IE:\\repository\\Vulkan_learn\\external\\spdlog\\include -IE:\\repository\\Vulkan_learn\\external\\tinyobjloader -IE:\\repository\\Vulkan_learn\\external\\tinygltf -IE:\\repository\\Vulkan_learn\\dogEngine\\.\\ktx\\include -IE:\\repository\\Vulkan_learn\\external\\stb -IE:\\repository\\Vulkan_learn\\dogEngine -IE:\\repository\\Vulkan_learn\\dogEngine\\GUI /DWIN32 /D_WINDOWS /EHsc /Zi /Ob0 /Od /RTC1 -std:c++17 -MDd /FodogEngine\\CMakeFiles\\dogEngine.dir\\Renderer.cpp.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\dogEngine\\Renderer.cpp",
+  "file": "E:\\repository\\Vulkan_learn\\dogEngine\\Renderer.cpp",
+  "output": "dogEngine\\CMakeFiles\\dogEngine.dir\\Renderer.cpp.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -IE:\\Vulkan\\Include -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\VMA\\include -IE:\\repository\\Vulkan_learn\\external\\glm\\include -IE:\\repository\\Vulkan_learn\\external\\spdlog\\include -IE:\\repository\\Vulkan_learn\\external\\tinyobjloader -IE:\\repository\\Vulkan_learn\\external\\tinygltf -IE:\\repository\\Vulkan_learn\\dogEngine\\.\\ktx\\include -IE:\\repository\\Vulkan_learn\\external\\stb -IE:\\repository\\Vulkan_learn\\dogEngine -IE:\\repository\\Vulkan_learn\\dogEngine\\GUI /DWIN32 /D_WINDOWS /EHsc /Zi /Ob0 /Od /RTC1 -std:c++17 -MDd /FodogEngine\\CMakeFiles\\dogEngine.dir\\Vertex.cpp.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\dogEngine\\Vertex.cpp",
+  "file": "E:\\repository\\Vulkan_learn\\dogEngine\\Vertex.cpp",
+  "output": "dogEngine\\CMakeFiles\\dogEngine.dir\\Vertex.cpp.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -IE:\\Vulkan\\Include -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\VMA\\include -IE:\\repository\\Vulkan_learn\\external\\glm\\include -IE:\\repository\\Vulkan_learn\\external\\spdlog\\include -IE:\\repository\\Vulkan_learn\\external\\tinyobjloader -IE:\\repository\\Vulkan_learn\\external\\tinygltf -IE:\\repository\\Vulkan_learn\\dogEngine\\.\\ktx\\include -IE:\\repository\\Vulkan_learn\\external\\stb -IE:\\repository\\Vulkan_learn\\dogEngine -IE:\\repository\\Vulkan_learn\\dogEngine\\GUI /DWIN32 /D_WINDOWS /EHsc /Zi /Ob0 /Od /RTC1 -std:c++17 -MDd /FodogEngine\\CMakeFiles\\dogEngine.dir\\gpuResource.cpp.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\dogEngine\\gpuResource.cpp",
+  "file": "E:\\repository\\Vulkan_learn\\dogEngine\\gpuResource.cpp",
+  "output": "dogEngine\\CMakeFiles\\dogEngine.dir\\gpuResource.cpp.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -IE:\\Vulkan\\Include -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\VMA\\include -IE:\\repository\\Vulkan_learn\\external\\glm\\include -IE:\\repository\\Vulkan_learn\\external\\spdlog\\include -IE:\\repository\\Vulkan_learn\\external\\tinyobjloader -IE:\\repository\\Vulkan_learn\\external\\tinygltf -IE:\\repository\\Vulkan_learn\\dogEngine\\.\\ktx\\include -IE:\\repository\\Vulkan_learn\\external\\stb -IE:\\repository\\Vulkan_learn\\dogEngine -IE:\\repository\\Vulkan_learn\\dogEngine\\GUI /DWIN32 /D_WINDOWS /EHsc /Zi /Ob0 /Od /RTC1 -std:c++17 -MDd /FodogEngine\\CMakeFiles\\dogEngine.dir\\headerOnly.cpp.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\dogEngine\\headerOnly.cpp",
+  "file": "E:\\repository\\Vulkan_learn\\dogEngine\\headerOnly.cpp",
+  "output": "dogEngine\\CMakeFiles\\dogEngine.dir\\headerOnly.cpp.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo -IE:\\Vulkan\\Include -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\VMA\\include -IE:\\repository\\Vulkan_learn\\external\\glm\\include -IE:\\repository\\Vulkan_learn\\external\\spdlog\\include -IE:\\repository\\Vulkan_learn\\external\\tinyobjloader -IE:\\repository\\Vulkan_learn\\external\\tinygltf -IE:\\repository\\Vulkan_learn\\dogEngine\\.\\ktx\\include -IE:\\repository\\Vulkan_learn\\external\\stb -IE:\\repository\\Vulkan_learn\\dogEngine -IE:\\repository\\Vulkan_learn\\dogEngine\\GUI /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /FodogEngine\\CMakeFiles\\dogEngine.dir\\ktx\\lib\\texture.c.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\dogEngine\\ktx\\lib\\texture.c",
+  "file": "E:\\repository\\Vulkan_learn\\dogEngine\\ktx\\lib\\texture.c",
+  "output": "dogEngine\\CMakeFiles\\dogEngine.dir\\ktx\\lib\\texture.c.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo -IE:\\Vulkan\\Include -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\VMA\\include -IE:\\repository\\Vulkan_learn\\external\\glm\\include -IE:\\repository\\Vulkan_learn\\external\\spdlog\\include -IE:\\repository\\Vulkan_learn\\external\\tinyobjloader -IE:\\repository\\Vulkan_learn\\external\\tinygltf -IE:\\repository\\Vulkan_learn\\dogEngine\\.\\ktx\\include -IE:\\repository\\Vulkan_learn\\external\\stb -IE:\\repository\\Vulkan_learn\\dogEngine -IE:\\repository\\Vulkan_learn\\dogEngine\\GUI /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /FodogEngine\\CMakeFiles\\dogEngine.dir\\ktx\\lib\\hashlist.c.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\dogEngine\\ktx\\lib\\hashlist.c",
+  "file": "E:\\repository\\Vulkan_learn\\dogEngine\\ktx\\lib\\hashlist.c",
+  "output": "dogEngine\\CMakeFiles\\dogEngine.dir\\ktx\\lib\\hashlist.c.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo -IE:\\Vulkan\\Include -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\VMA\\include -IE:\\repository\\Vulkan_learn\\external\\glm\\include -IE:\\repository\\Vulkan_learn\\external\\spdlog\\include -IE:\\repository\\Vulkan_learn\\external\\tinyobjloader -IE:\\repository\\Vulkan_learn\\external\\tinygltf -IE:\\repository\\Vulkan_learn\\dogEngine\\.\\ktx\\include -IE:\\repository\\Vulkan_learn\\external\\stb -IE:\\repository\\Vulkan_learn\\dogEngine -IE:\\repository\\Vulkan_learn\\dogEngine\\GUI /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /FodogEngine\\CMakeFiles\\dogEngine.dir\\ktx\\lib\\checkheader.c.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\dogEngine\\ktx\\lib\\checkheader.c",
+  "file": "E:\\repository\\Vulkan_learn\\dogEngine\\ktx\\lib\\checkheader.c",
+  "output": "dogEngine\\CMakeFiles\\dogEngine.dir\\ktx\\lib\\checkheader.c.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo -IE:\\Vulkan\\Include -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\VMA\\include -IE:\\repository\\Vulkan_learn\\external\\glm\\include -IE:\\repository\\Vulkan_learn\\external\\spdlog\\include -IE:\\repository\\Vulkan_learn\\external\\tinyobjloader -IE:\\repository\\Vulkan_learn\\external\\tinygltf -IE:\\repository\\Vulkan_learn\\dogEngine\\.\\ktx\\include -IE:\\repository\\Vulkan_learn\\external\\stb -IE:\\repository\\Vulkan_learn\\dogEngine -IE:\\repository\\Vulkan_learn\\dogEngine\\GUI /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /FodogEngine\\CMakeFiles\\dogEngine.dir\\ktx\\lib\\swap.c.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\dogEngine\\ktx\\lib\\swap.c",
+  "file": "E:\\repository\\Vulkan_learn\\dogEngine\\ktx\\lib\\swap.c",
+  "output": "dogEngine\\CMakeFiles\\dogEngine.dir\\ktx\\lib\\swap.c.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo -IE:\\Vulkan\\Include -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\VMA\\include -IE:\\repository\\Vulkan_learn\\external\\glm\\include -IE:\\repository\\Vulkan_learn\\external\\spdlog\\include -IE:\\repository\\Vulkan_learn\\external\\tinyobjloader -IE:\\repository\\Vulkan_learn\\external\\tinygltf -IE:\\repository\\Vulkan_learn\\dogEngine\\.\\ktx\\include -IE:\\repository\\Vulkan_learn\\external\\stb -IE:\\repository\\Vulkan_learn\\dogEngine -IE:\\repository\\Vulkan_learn\\dogEngine\\GUI /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /FodogEngine\\CMakeFiles\\dogEngine.dir\\ktx\\lib\\memstream.c.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\dogEngine\\ktx\\lib\\memstream.c",
+  "file": "E:\\repository\\Vulkan_learn\\dogEngine\\ktx\\lib\\memstream.c",
+  "output": "dogEngine\\CMakeFiles\\dogEngine.dir\\ktx\\lib\\memstream.c.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo -IE:\\Vulkan\\Include -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\VMA\\include -IE:\\repository\\Vulkan_learn\\external\\glm\\include -IE:\\repository\\Vulkan_learn\\external\\spdlog\\include -IE:\\repository\\Vulkan_learn\\external\\tinyobjloader -IE:\\repository\\Vulkan_learn\\external\\tinygltf -IE:\\repository\\Vulkan_learn\\dogEngine\\.\\ktx\\include -IE:\\repository\\Vulkan_learn\\external\\stb -IE:\\repository\\Vulkan_learn\\dogEngine -IE:\\repository\\Vulkan_learn\\dogEngine\\GUI /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /FodogEngine\\CMakeFiles\\dogEngine.dir\\ktx\\lib\\filestream.c.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\dogEngine\\ktx\\lib\\filestream.c",
+  "file": "E:\\repository\\Vulkan_learn\\dogEngine\\ktx\\lib\\filestream.c",
+  "output": "dogEngine\\CMakeFiles\\dogEngine.dir\\ktx\\lib\\filestream.c.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\glfw\\src -IE:\\repository\\Vulkan_learn\\cmake-build-debug-visual-studio\\external\\glfw\\src /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /W3 /Foexternal\\glfw\\src\\CMakeFiles\\glfw.dir\\context.c.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\external\\glfw\\src\\context.c",
+  "file": "E:\\repository\\Vulkan_learn\\external\\glfw\\src\\context.c",
+  "output": "external\\glfw\\src\\CMakeFiles\\glfw.dir\\context.c.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\glfw\\src -IE:\\repository\\Vulkan_learn\\cmake-build-debug-visual-studio\\external\\glfw\\src /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /W3 /Foexternal\\glfw\\src\\CMakeFiles\\glfw.dir\\init.c.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\external\\glfw\\src\\init.c",
+  "file": "E:\\repository\\Vulkan_learn\\external\\glfw\\src\\init.c",
+  "output": "external\\glfw\\src\\CMakeFiles\\glfw.dir\\init.c.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\glfw\\src -IE:\\repository\\Vulkan_learn\\cmake-build-debug-visual-studio\\external\\glfw\\src /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /W3 /Foexternal\\glfw\\src\\CMakeFiles\\glfw.dir\\input.c.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\external\\glfw\\src\\input.c",
+  "file": "E:\\repository\\Vulkan_learn\\external\\glfw\\src\\input.c",
+  "output": "external\\glfw\\src\\CMakeFiles\\glfw.dir\\input.c.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\glfw\\src -IE:\\repository\\Vulkan_learn\\cmake-build-debug-visual-studio\\external\\glfw\\src /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /W3 /Foexternal\\glfw\\src\\CMakeFiles\\glfw.dir\\monitor.c.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\external\\glfw\\src\\monitor.c",
+  "file": "E:\\repository\\Vulkan_learn\\external\\glfw\\src\\monitor.c",
+  "output": "external\\glfw\\src\\CMakeFiles\\glfw.dir\\monitor.c.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\glfw\\src -IE:\\repository\\Vulkan_learn\\cmake-build-debug-visual-studio\\external\\glfw\\src /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /W3 /Foexternal\\glfw\\src\\CMakeFiles\\glfw.dir\\platform.c.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\external\\glfw\\src\\platform.c",
+  "file": "E:\\repository\\Vulkan_learn\\external\\glfw\\src\\platform.c",
+  "output": "external\\glfw\\src\\CMakeFiles\\glfw.dir\\platform.c.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\glfw\\src -IE:\\repository\\Vulkan_learn\\cmake-build-debug-visual-studio\\external\\glfw\\src /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /W3 /Foexternal\\glfw\\src\\CMakeFiles\\glfw.dir\\vulkan.c.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\external\\glfw\\src\\vulkan.c",
+  "file": "E:\\repository\\Vulkan_learn\\external\\glfw\\src\\vulkan.c",
+  "output": "external\\glfw\\src\\CMakeFiles\\glfw.dir\\vulkan.c.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\glfw\\src -IE:\\repository\\Vulkan_learn\\cmake-build-debug-visual-studio\\external\\glfw\\src /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /W3 /Foexternal\\glfw\\src\\CMakeFiles\\glfw.dir\\window.c.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\external\\glfw\\src\\window.c",
+  "file": "E:\\repository\\Vulkan_learn\\external\\glfw\\src\\window.c",
+  "output": "external\\glfw\\src\\CMakeFiles\\glfw.dir\\window.c.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\glfw\\src -IE:\\repository\\Vulkan_learn\\cmake-build-debug-visual-studio\\external\\glfw\\src /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /W3 /Foexternal\\glfw\\src\\CMakeFiles\\glfw.dir\\egl_context.c.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\external\\glfw\\src\\egl_context.c",
+  "file": "E:\\repository\\Vulkan_learn\\external\\glfw\\src\\egl_context.c",
+  "output": "external\\glfw\\src\\CMakeFiles\\glfw.dir\\egl_context.c.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\glfw\\src -IE:\\repository\\Vulkan_learn\\cmake-build-debug-visual-studio\\external\\glfw\\src /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /W3 /Foexternal\\glfw\\src\\CMakeFiles\\glfw.dir\\osmesa_context.c.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\external\\glfw\\src\\osmesa_context.c",
+  "file": "E:\\repository\\Vulkan_learn\\external\\glfw\\src\\osmesa_context.c",
+  "output": "external\\glfw\\src\\CMakeFiles\\glfw.dir\\osmesa_context.c.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\glfw\\src -IE:\\repository\\Vulkan_learn\\cmake-build-debug-visual-studio\\external\\glfw\\src /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /W3 /Foexternal\\glfw\\src\\CMakeFiles\\glfw.dir\\null_init.c.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\external\\glfw\\src\\null_init.c",
+  "file": "E:\\repository\\Vulkan_learn\\external\\glfw\\src\\null_init.c",
+  "output": "external\\glfw\\src\\CMakeFiles\\glfw.dir\\null_init.c.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\glfw\\src -IE:\\repository\\Vulkan_learn\\cmake-build-debug-visual-studio\\external\\glfw\\src /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /W3 /Foexternal\\glfw\\src\\CMakeFiles\\glfw.dir\\null_monitor.c.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\external\\glfw\\src\\null_monitor.c",
+  "file": "E:\\repository\\Vulkan_learn\\external\\glfw\\src\\null_monitor.c",
+  "output": "external\\glfw\\src\\CMakeFiles\\glfw.dir\\null_monitor.c.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\glfw\\src -IE:\\repository\\Vulkan_learn\\cmake-build-debug-visual-studio\\external\\glfw\\src /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /W3 /Foexternal\\glfw\\src\\CMakeFiles\\glfw.dir\\null_window.c.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\external\\glfw\\src\\null_window.c",
+  "file": "E:\\repository\\Vulkan_learn\\external\\glfw\\src\\null_window.c",
+  "output": "external\\glfw\\src\\CMakeFiles\\glfw.dir\\null_window.c.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\glfw\\src -IE:\\repository\\Vulkan_learn\\cmake-build-debug-visual-studio\\external\\glfw\\src /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /W3 /Foexternal\\glfw\\src\\CMakeFiles\\glfw.dir\\null_joystick.c.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\external\\glfw\\src\\null_joystick.c",
+  "file": "E:\\repository\\Vulkan_learn\\external\\glfw\\src\\null_joystick.c",
+  "output": "external\\glfw\\src\\CMakeFiles\\glfw.dir\\null_joystick.c.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\glfw\\src -IE:\\repository\\Vulkan_learn\\cmake-build-debug-visual-studio\\external\\glfw\\src /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /W3 /Foexternal\\glfw\\src\\CMakeFiles\\glfw.dir\\win32_module.c.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\external\\glfw\\src\\win32_module.c",
+  "file": "E:\\repository\\Vulkan_learn\\external\\glfw\\src\\win32_module.c",
+  "output": "external\\glfw\\src\\CMakeFiles\\glfw.dir\\win32_module.c.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\glfw\\src -IE:\\repository\\Vulkan_learn\\cmake-build-debug-visual-studio\\external\\glfw\\src /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /W3 /Foexternal\\glfw\\src\\CMakeFiles\\glfw.dir\\win32_time.c.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\external\\glfw\\src\\win32_time.c",
+  "file": "E:\\repository\\Vulkan_learn\\external\\glfw\\src\\win32_time.c",
+  "output": "external\\glfw\\src\\CMakeFiles\\glfw.dir\\win32_time.c.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\glfw\\src -IE:\\repository\\Vulkan_learn\\cmake-build-debug-visual-studio\\external\\glfw\\src /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /W3 /Foexternal\\glfw\\src\\CMakeFiles\\glfw.dir\\win32_thread.c.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\external\\glfw\\src\\win32_thread.c",
+  "file": "E:\\repository\\Vulkan_learn\\external\\glfw\\src\\win32_thread.c",
+  "output": "external\\glfw\\src\\CMakeFiles\\glfw.dir\\win32_thread.c.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\glfw\\src -IE:\\repository\\Vulkan_learn\\cmake-build-debug-visual-studio\\external\\glfw\\src /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /W3 /Foexternal\\glfw\\src\\CMakeFiles\\glfw.dir\\win32_init.c.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\external\\glfw\\src\\win32_init.c",
+  "file": "E:\\repository\\Vulkan_learn\\external\\glfw\\src\\win32_init.c",
+  "output": "external\\glfw\\src\\CMakeFiles\\glfw.dir\\win32_init.c.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\glfw\\src -IE:\\repository\\Vulkan_learn\\cmake-build-debug-visual-studio\\external\\glfw\\src /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /W3 /Foexternal\\glfw\\src\\CMakeFiles\\glfw.dir\\win32_joystick.c.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\external\\glfw\\src\\win32_joystick.c",
+  "file": "E:\\repository\\Vulkan_learn\\external\\glfw\\src\\win32_joystick.c",
+  "output": "external\\glfw\\src\\CMakeFiles\\glfw.dir\\win32_joystick.c.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\glfw\\src -IE:\\repository\\Vulkan_learn\\cmake-build-debug-visual-studio\\external\\glfw\\src /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /W3 /Foexternal\\glfw\\src\\CMakeFiles\\glfw.dir\\win32_monitor.c.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\external\\glfw\\src\\win32_monitor.c",
+  "file": "E:\\repository\\Vulkan_learn\\external\\glfw\\src\\win32_monitor.c",
+  "output": "external\\glfw\\src\\CMakeFiles\\glfw.dir\\win32_monitor.c.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\glfw\\src -IE:\\repository\\Vulkan_learn\\cmake-build-debug-visual-studio\\external\\glfw\\src /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /W3 /Foexternal\\glfw\\src\\CMakeFiles\\glfw.dir\\win32_window.c.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\external\\glfw\\src\\win32_window.c",
+  "file": "E:\\repository\\Vulkan_learn\\external\\glfw\\src\\win32_window.c",
+  "output": "external\\glfw\\src\\CMakeFiles\\glfw.dir\\win32_window.c.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE -IE:\\repository\\Vulkan_learn\\external\\glfw\\include -IE:\\repository\\Vulkan_learn\\external\\glfw\\src -IE:\\repository\\Vulkan_learn\\cmake-build-debug-visual-studio\\external\\glfw\\src /DWIN32 /D_WINDOWS /Zi /Ob0 /Od /RTC1 -MDd /W3 /Foexternal\\glfw\\src\\CMakeFiles\\glfw.dir\\wgl_context.c.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\external\\glfw\\src\\wgl_context.c",
+  "file": "E:\\repository\\Vulkan_learn\\external\\glfw\\src\\wgl_context.c",
+  "output": "external\\glfw\\src\\CMakeFiles\\glfw.dir\\wgl_context.c.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -DSPDLOG_COMPILED_LIB -IE:\\repository\\Vulkan_learn\\external\\spdlog\\include /DWIN32 /D_WINDOWS /EHsc /Zc:__cplusplus /MP /Zi /Ob0 /Od /RTC1 -std:c++17 -MDd /Foexternal\\spdlog\\CMakeFiles\\spdlog.dir\\src\\spdlog.cpp.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\external\\spdlog\\src\\spdlog.cpp",
+  "file": "E:\\repository\\Vulkan_learn\\external\\spdlog\\src\\spdlog.cpp",
+  "output": "external\\spdlog\\CMakeFiles\\spdlog.dir\\src\\spdlog.cpp.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -DSPDLOG_COMPILED_LIB -IE:\\repository\\Vulkan_learn\\external\\spdlog\\include /DWIN32 /D_WINDOWS /EHsc /Zc:__cplusplus /MP /Zi /Ob0 /Od /RTC1 -std:c++17 -MDd /Foexternal\\spdlog\\CMakeFiles\\spdlog.dir\\src\\stdout_sinks.cpp.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\external\\spdlog\\src\\stdout_sinks.cpp",
+  "file": "E:\\repository\\Vulkan_learn\\external\\spdlog\\src\\stdout_sinks.cpp",
+  "output": "external\\spdlog\\CMakeFiles\\spdlog.dir\\src\\stdout_sinks.cpp.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -DSPDLOG_COMPILED_LIB -IE:\\repository\\Vulkan_learn\\external\\spdlog\\include /DWIN32 /D_WINDOWS /EHsc /Zc:__cplusplus /MP /Zi /Ob0 /Od /RTC1 -std:c++17 -MDd /Foexternal\\spdlog\\CMakeFiles\\spdlog.dir\\src\\color_sinks.cpp.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\external\\spdlog\\src\\color_sinks.cpp",
+  "file": "E:\\repository\\Vulkan_learn\\external\\spdlog\\src\\color_sinks.cpp",
+  "output": "external\\spdlog\\CMakeFiles\\spdlog.dir\\src\\color_sinks.cpp.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -DSPDLOG_COMPILED_LIB -IE:\\repository\\Vulkan_learn\\external\\spdlog\\include /DWIN32 /D_WINDOWS /EHsc /Zc:__cplusplus /MP /Zi /Ob0 /Od /RTC1 -std:c++17 -MDd /Foexternal\\spdlog\\CMakeFiles\\spdlog.dir\\src\\file_sinks.cpp.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\external\\spdlog\\src\\file_sinks.cpp",
+  "file": "E:\\repository\\Vulkan_learn\\external\\spdlog\\src\\file_sinks.cpp",
+  "output": "external\\spdlog\\CMakeFiles\\spdlog.dir\\src\\file_sinks.cpp.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -DSPDLOG_COMPILED_LIB -IE:\\repository\\Vulkan_learn\\external\\spdlog\\include /DWIN32 /D_WINDOWS /EHsc /Zc:__cplusplus /MP /Zi /Ob0 /Od /RTC1 -std:c++17 -MDd /Foexternal\\spdlog\\CMakeFiles\\spdlog.dir\\src\\async.cpp.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\external\\spdlog\\src\\async.cpp",
+  "file": "E:\\repository\\Vulkan_learn\\external\\spdlog\\src\\async.cpp",
+  "output": "external\\spdlog\\CMakeFiles\\spdlog.dir\\src\\async.cpp.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -DSPDLOG_COMPILED_LIB -IE:\\repository\\Vulkan_learn\\external\\spdlog\\include /DWIN32 /D_WINDOWS /EHsc /Zc:__cplusplus /MP /Zi /Ob0 /Od /RTC1 -std:c++17 -MDd /Foexternal\\spdlog\\CMakeFiles\\spdlog.dir\\src\\cfg.cpp.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\external\\spdlog\\src\\cfg.cpp",
+  "file": "E:\\repository\\Vulkan_learn\\external\\spdlog\\src\\cfg.cpp",
+  "output": "external\\spdlog\\CMakeFiles\\spdlog.dir\\src\\cfg.cpp.obj"
+},
+{
+  "directory": "E:/repository/Vulkan_learn/cmake-build-debug-visual-studio",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1429~1.301\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -DSPDLOG_COMPILED_LIB -IE:\\repository\\Vulkan_learn\\external\\spdlog\\include /DWIN32 /D_WINDOWS /EHsc /Zc:__cplusplus /MP /Zi /Ob0 /Od /RTC1 -std:c++17 -MDd /Foexternal\\spdlog\\CMakeFiles\\spdlog.dir\\src\\bundled_fmtlib_format.cpp.obj /FdTARGET_COMPILE_PDB /FS -c E:\\repository\\Vulkan_learn\\external\\spdlog\\src\\bundled_fmtlib_format.cpp",
+  "file": "E:\\repository\\Vulkan_learn\\external\\spdlog\\src\\bundled_fmtlib_format.cpp",
+  "output": "external\\spdlog\\CMakeFiles\\spdlog.dir\\src\\bundled_fmtlib_format.cpp.obj"
+}
+]

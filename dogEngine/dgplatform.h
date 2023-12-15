@@ -48,15 +48,15 @@ namespace RenderPassOperation {
 
 namespace TextureType{
     enum Enum{
-        Texture1D, Texture2D, Texture3D,Texture1DArray, Texture2DArray, TextureCubeArray, UNDEFINED
+        Texture1D, Texture2D, Texture3D, TextureCube, Texture1DArray, Texture2DArray, TextureCubeArray, UNDEFINED
     };
 
     enum Mask{
-        Texture1D_Mask= 1<<0,Texture2D_Mask = 1<<1,Texture3D_Mask = 1<<2, Texture1DArray_Mask = 1<<3,Texture2DArray_Mask = 1 << 4, TextureCubeArray_Mask = 1 << 5,UNDEFINED_MASK = 1<<6
+        Texture1D_Mask= 1<<0,Texture2D_Mask = 1<<1,Texture3D_Mask = 1<<2, TextureCube_Make = 1<<3, Texture1DArray_Mask = 1<<4,Texture2DArray_Mask = 1 << 5, TextureCubeArray_Mask = 1 << 6,UNDEFINED_MASK = 1<<7
     };
 
     static const char* s_values_names[] = {
-        "Texture1D", "Texture2D", "Texture3D", "Texture_1D_Array", "Texture_2D_Array", "Texture_Cube_Array"
+        "Texture1D", "Texture2D", "Texture3D", "TextureCube", "Texture_1D_Array", "Texture_2D_Array", "Texture_Cube_Array"
     };
 
     static const char* ToString(Enum e){

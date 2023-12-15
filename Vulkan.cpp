@@ -1,6 +1,7 @@
 #include "dogEngine/DeviceContext.h"
 #include "dogEngine/Renderer.h"
 #include "Vertex.h"
+#include "ModelLoader.h"
 
 using namespace dg;
 
@@ -56,8 +57,8 @@ int main() {
   pipelineInfo.m_vertexInput.Attrib = Vertex::getAttributeDescriptions();
   pipelineInfo.m_vertexInput.Binding = Vertex::getBindingDescription();
   pipelineInfo.m_shaderState.reset();
-  auto vsCode = readFile("./shaders/vert.spv");
-  auto fsCode = readFile("./shaders/frag.spv");
+  auto vsCode = readFile("./shaders/pbrvert.spv");
+  auto fsCode = readFile("./shaders/pbrfrag.spv");
   pipelineInfo.m_shaderState.addStage(vsCode.data(), vsCode.size(), VK_SHADER_STAGE_VERTEX_BIT);
   pipelineInfo.m_shaderState.addStage(fsCode.data(), fsCode.size(), VK_SHADER_STAGE_FRAGMENT_BIT);
   pipelineInfo.m_shaderState.setName("pbrPipeline");
@@ -67,19 +68,42 @@ int main() {
   programInfo.dslyaoutInfo = descLayoutInfo;
   programInfo.setName(pipelineInfo.name.c_str());
   auto programe = renderer.createProgram(programInfo);
-  std::shared_ptr<Material> material = std::make_shared<Material>();
   MaterialCreateInfo matInfo{};
   matInfo.setProgram(programe);
   matInfo.name = "pbr_mat";
   Material* mat = renderer.createMaterial(matInfo);
   renderer.setCurrentMaterial(mat);
+
+//create skybox material
+  pipelineInfo.m_depthStencil.setDepth(false, VK_COMPARE_OP_ALWAYS);
+  RasterizationCreation resterCI{};
+  resterCI.m_cullMode = VK_CULL_MODE_FRONT_BIT;
+  pipelineInfo.m_rasterization = resterCI;
+  pipelineInfo.m_shaderState.reset();
+  auto vscode = readFile("./shaders/skyvert.spv");
+  auto fscode = readFile("./shaders/skyfrag.spv");
+  pipelineInfo.m_shaderState.addStage(vscode.data(), vscode.size(), VK_SHADER_STAGE_VERTEX_BIT);
+  pipelineInfo.m_shaderState.addStage(fscode.data(), fscode.size(), VK_SHADER_STAGE_FRAGMENT_BIT);
+  pipelineInfo.m_shaderState.setName("skyBoxPipeline");
+  pipelineInfo.name=  pipelineInfo.m_shaderState.name;
+  programInfo.pipelineInfo = pipelineInfo;
+  programInfo.setName(pipelineInfo.name.c_str());
+  programe = renderer.createProgram(programInfo);
+  MaterialCreateInfo matinfo{};
+  matInfo.setProgram(programe);
+  matInfo.setName("sky_mat");
+  Material* skymat = renderer.createMaterial(matInfo);
   //renderer.loadFromPath("./models/nanosuit/nanosuit.obj");
   //renderer.loadFromPath("./models/Sponza/sponza.obj");
   //renderer.loadFromPath("./models/duck/12248_Bird_v1_L2.obj");
   //renderer.loadFromPath("./models/FlightHelmet/FlightHelmet.gltf");
   renderer.loadFromPath("./models/DamagedHelmet/DamagedHelmet.gltf");
   //renderer.loadFromPath("./models/glTFSponza/Sponza.gltf");
-  //renderer.loadFromPath("./models/gltfSponza/sponza.gltf");
+
+  renderer.getGltfLoader()->setSkyBox("./models/skybox/cube.gltf");
+  renderer.getGltfLoader()->setEnvMap("./models/skybox/gcanyon_cube.ktx");
+  Mesh& skybox = renderer.getGltfLoader()->getMeshes()[renderer.getGltfLoader()->getSceneNode().m_meshIndex];
+  skybox.m_meshMaterial = skymat;
   renderer.executeScene();
 
   while(!glfwWindowShouldClose(context->m_window)){

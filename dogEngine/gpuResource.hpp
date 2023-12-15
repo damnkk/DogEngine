@@ -13,14 +13,14 @@
 
 namespace dg{
 
-static const u32            k_max_swapchain_images = 3;
-static const u32            k_invalid_index = 0xffffffff;
-static const u32            k_max_discriptor_nums_per_set = 16;
-static const u8                     k_max_image_outputs = 8; 
-static const u8                     k_max_vertex_streams = 16;
-static const u8                     k_max_vertex_attributes = 16;
-static const u8                     k_max_shader_stages = 5;  
-static const u8                     k_max_descriptor_set_layouts = 8; 
+    static const u32                    k_max_swapchain_images = 3;
+    static const u32                    k_invalid_index = 0xffffffff;
+    static const u32                    k_max_discriptor_nums_per_set = 16;
+    static const u8                     k_max_image_outputs = 8;
+    static const u8                     k_max_vertex_streams = 16;
+    static const u8                     k_max_vertex_attributes = 16;
+    static const u8                     k_max_shader_stages = 5;
+    static const u8                     k_max_descriptor_set_layouts = 8;
 
 using ResourceHandle = u32;
 
@@ -134,7 +134,7 @@ struct DescriptorSetLayout{
     u32                                 m_numBindings = 0;
     u32                                 m_setIndex = 0;
 
-    DescriptorSetLayoutHandle           m_handle;
+    DescriptorSetLayoutHandle           m_handle = {k_invalid_index};
 };
 
 struct DescriptorSet{
@@ -207,6 +207,7 @@ struct TextureCreateInfo{
     TextureCreateInfo&                  setData(void* data);
     TextureCreateInfo&                  setMipmapLevel(u32 miplevel);
     TextureCreateInfo&                  setUsage(VkImageUsageFlags usage);
+    TextureCreateInfo&                  setTextureType(TextureType::Enum type);
 };
 
 struct BufferCreateInfo{
@@ -551,12 +552,12 @@ struct ConstentData{
 
 
 static VkImageType to_vk_image_type(TextureType::Enum e){
-    static VkImageType imageTypes[TextureType::UNDEFINED] = {VK_IMAGE_TYPE_1D, VK_IMAGE_TYPE_2D, VK_IMAGE_TYPE_3D, VK_IMAGE_TYPE_1D,VK_IMAGE_TYPE_2D,VK_IMAGE_TYPE_3D};
+    static VkImageType imageTypes[TextureType::UNDEFINED] = {VK_IMAGE_TYPE_1D, VK_IMAGE_TYPE_2D, VK_IMAGE_TYPE_3D, VK_IMAGE_TYPE_2D, VK_IMAGE_TYPE_1D,VK_IMAGE_TYPE_2D,VK_IMAGE_TYPE_3D};
     return imageTypes[e];
 }
 
 static VkImageViewType to_vk_image_view_type(TextureType::Enum e){
-    static VkImageViewType imageViewTypes[TextureType::UNDEFINED] = {VK_IMAGE_VIEW_TYPE_1D, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_VIEW_TYPE_3D, VK_IMAGE_VIEW_TYPE_1D_ARRAY, VK_IMAGE_VIEW_TYPE_2D_ARRAY,VK_IMAGE_VIEW_TYPE_CUBE_ARRAY};
+    static VkImageViewType imageViewTypes[TextureType::UNDEFINED] = {VK_IMAGE_VIEW_TYPE_1D, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_VIEW_TYPE_3D, VK_IMAGE_VIEW_TYPE_CUBE, VK_IMAGE_VIEW_TYPE_1D_ARRAY, VK_IMAGE_VIEW_TYPE_2D_ARRAY,VK_IMAGE_VIEW_TYPE_CUBE_ARRAY};
     return imageViewTypes[e];
 }
 

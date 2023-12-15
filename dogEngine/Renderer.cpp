@@ -116,7 +116,7 @@ void Renderer::destroy(){
     m_context->Destroy();
 }
 
-TextureResource* Renderer::createTexture(const TextureCreateInfo& textureInfo){
+TextureResource* Renderer::createTexture( TextureCreateInfo& textureInfo){
     if(textureInfo.name.empty()){
       DG_ERROR("Sampled texture object must have an unique name");
       exit(-1);
@@ -133,7 +133,7 @@ TextureResource* Renderer::createTexture(const TextureCreateInfo& textureInfo){
     return textureRes;
 }
 
-BufferResource* Renderer::createBuffer(const BufferCreateInfo& bufferInfo){
+BufferResource* Renderer::createBuffer( BufferCreateInfo& bufferInfo){
     if(bufferInfo.name.empty()){
       DG_ERROR("Buffer created by renderer must have an unique name");
       exit(-1);
@@ -149,7 +149,7 @@ BufferResource* Renderer::createBuffer(const BufferCreateInfo& bufferInfo){
     return bufferRes;
 }
 
-SamplerResource* Renderer::createSampler(const SamplerCreateInfo& samplerInfo){
+SamplerResource* Renderer::createSampler( SamplerCreateInfo& samplerInfo){
     if(samplerInfo.name.empty()){
       DG_ERROR("Sampler created by renderer must have an unique name")
       exit(-1);
@@ -165,7 +165,7 @@ SamplerResource* Renderer::createSampler(const SamplerCreateInfo& samplerInfo){
     return samplerRes;
 }
 
-Material* Renderer::createMaterial(const MaterialCreateInfo& matInfo){
+Material* Renderer::createMaterial( MaterialCreateInfo& matInfo){
   if(matInfo.name.empty()){
     DG_ERROR("Material created by renderer must have an unique name");
     exit(-1);
@@ -184,7 +184,7 @@ Material* Renderer::createMaterial(const MaterialCreateInfo& matInfo){
   return material;
 }
 
-ProgramResource* Renderer::createProgram(const ProgramCreateInfo& programInfo){
+ProgramResource* Renderer::createProgram(ProgramCreateInfo& programInfo){
   if(programInfo.name.empty()){
     DG_ERROR("Program created by renderer must have an unique name");
     exit(-1);
@@ -324,11 +324,10 @@ void Renderer::drawScene(){
       auto endTime = std::chrono::high_resolution_clock::now();
       float time = std::chrono::duration<float, std::chrono::seconds::period>(endTime-startTime).count();
       udata.modelMatrix = currRenderObject.m_modelMatrix;
-      udata.modelMatrix = glm::scale(udata.modelMatrix,glm::vec3(0.5f,0.5f,0.5f));
-      //udata.modelMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f,0.0f,0.0f));
+      //udata.modelMatrix = glm::scale(udata.modelMatrix,glm::vec3(0.5f,0.5f,0.5f));
+      //udata.modelMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f)*time, glm::vec3(1.0f,0.0f,0.0f));
       udata.projectMatrix = m_context->m_camera->getProjectMatrix();
       udata.viewMatrix = m_context->m_camera->getViewMatrix();
-      u32 test = sizeof(UniformData);
       memcpy(data,&udata,sizeof(UniformData));
       vmaUnmapMemory(m_context->m_vma, uniformBuffer->m_allocation);
       // std::vector<DescriptorSetHandle> descriptors;

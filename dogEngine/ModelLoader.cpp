@@ -3,6 +3,8 @@
 #include "tiny_obj_loader.h"
 #include "CommandBuffer.h"
 #include "Renderer.h"
+#include "ktx.h"
+#include "ktxvulkan.h"
 namespace dg{
     std::array<glm::vec3, 2> SceneNode::getAABB(){
         std::array<glm::vec3, 2> temp;
@@ -38,6 +40,19 @@ namespace dg{
 
     TextureHandle upLoadTextureToGPU(Renderer* renderer, std::string texPath){
         if(texPath.empty()) return {k_invalid_index};
+        auto found = texPath.find_last_of(".");
+        if(texPath.substr(found+1)=="ktx"){
+            ktxTexture* ktxTexture;
+            ktxResult res = ktxTexture_CreateFromNamedFile(texPath.c_str(), KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT, &ktxTexture);
+            DGASSERT(res == KTX_SUCCESS);
+            TextureCreateInfo texCI{};
+            texCI.setData(ktxTexture).setName("skyTexture").setFormat(VK_FORMAT_R16G16B16A16_SFLOAT).setUsage(VK_IMAGE_USAGE_SAMPLED_BIT).setMipmapLevel(ktxTexture->numLevels).setExtent({ktxTexture->baseWidth,ktxTexture->baseHeight,1});
+            texCI.m_imageType = TextureType::Enum::TextureCube;
+            TextureHandle handle = renderer->createTexture(texCI)->handle;
+            ktxTexture_Destroy(ktxTexture);
+            ktxTexture = nullptr;
+            return handle;
+        }
         int imgWidth,imgHeight,imgChannel; 
         auto ptr = stbi_load(texPath.c_str(),&imgWidth,&imgHeight,&imgChannel,4);
         TextureCreateInfo texInfo;
@@ -97,15 +112,19 @@ namespace dg{
             rj.m_vertexCount = mesh.m_vertices.size();
             //下面这行好像没有什么卵用;
             rj.m_uniformBuffer = m_renderer->getContext()->m_viewProjectUniformBuffer;
-            Material* matPtr = m_renderer->getCurrentMaterial();
+            
+            Material* matPtr;
+            if(mesh.m_meshMaterial) matPtr= mesh.m_meshMaterial;
+            else{
+                matPtr = m_renderer->getCurrentMaterial();
+            }
             if(matPtr!=nullptr){
-
                 rj.m_material = matPtr;
-
                 DescriptorSetCreateInfo descInfo;
                 descInfo.setName("base descriptor Set");
                 descInfo.reset().setLayout(rj.m_material->program->passes[0].descriptorSetLayout).texture(rj.m_diffuseTex, 0).texture(rj.m_MRTtex,1).texture(rj.m_normalTex,2)
                 .texture(rj.m_emissiveTex,3).texture(rj.m_occlusionTex,4).buffer(m_renderer->getContext()->m_viewProjectUniformBuffer, 5);
+                //.texture(matPtr->LUTTexture->handle,6).texture(matPtr->iradianceTexture->handle, 7).texture(matPtr->iradianceTexture->handle,8);
                 rj.m_descriptors.push_back(m_renderer->getContext()->createDescriptorSet(descInfo));
                 // additional descriptors, like HDR env map or sth;
                 //-------
@@ -226,7 +245,7 @@ namespace dg{
         m_renderer = renderer;
     }
 
-    void gltfLoader::loadNode(tinygltf::Node& inputNode, tinygltf::Model& model, SceneNode* parent){
+    void gltfLoader::loadNode(tinygltf::Node& inputNode, tinygltf::Model& model, SceneNode* parent,LoadType LoadType){
         parent->m_subNodes.push_back({});
         auto& currNode = parent->m_subNodes.back();
         currNode.m_parentNodePtr = parent;
@@ -253,21 +272,43 @@ namespace dg{
 
         if(inputNode.mesh>-1){
             const tinygltf::Mesh gltfMesh = model.meshes[inputNode.mesh];
+            
             for(int i = 0;i<gltfMesh.primitives.size();++i){
-                currNode.m_subNodes.push_back({});
-                auto& primitiveNode = currNode.m_subNodes.back();
-                primitiveNode.m_parentNodePtr = &currNode;
-                Mesh mesh;
-                if(!gltfMesh.name.empty()) mesh.name = gltfMesh.name;
-                else mesh.name = "mesh"+std::to_string(m_meshes.size());
+                // Mesh mesh;
+                
                 auto& primitive = gltfMesh.primitives[i];
+                Mesh* mesh;
+                switch (LoadType) {
+                    case(LoadType::SKYBOX):
+                    {
+                        m_sceneRoot.m_meshIndex = m_meshes.size();
+                        m_meshes.push_back({});
+                        mesh = &m_meshes.back();
+                        mesh->name = "skyBox";
+                        break;
+                    }
+                    case(LoadType::MODEL):
+                    {
+                        currNode.m_subNodes.push_back({});
+                        auto& primitiveNode = currNode.m_subNodes.back();
+                        primitiveNode.m_parentNodePtr = &currNode;
+                        primitiveNode.m_meshIndex = m_meshes.size();
+                        m_meshes.push_back({});
+                        mesh = &m_meshes.back();
+                        if(!gltfMesh.name.empty()) mesh->name = gltfMesh.name;
+                        else mesh->name = "mesh"+std::to_string(m_meshes.size());
+                        m_haveContent = true;
+                        break;
+                    }
+                }
+
                 u32 indexCount = 0;
+                u32 vertexCount = 0;
                 //vertices
                 {
                     const float* positionBuffer = nullptr;
                     const float* normalBuffer = nullptr;
                     const float* texcoordsBuffer = nullptr;
-                    u32 vertexCount = 0;
                     //get the position data
                     if(primitive.attributes.find("POSITION") != primitive.attributes.end()){
                         const tinygltf::Accessor& accessor = model.accessors[primitive.attributes.find("POSITION")->second];
@@ -295,7 +336,7 @@ namespace dg{
                         vt.pos = glm::vec3(glm::make_vec3(&positionBuffer[v*3]));
                         vt.normal = glm::vec3(glm::make_vec3(&normalBuffer[v*3]));
                         vt.texCoord = glm::vec2(glm::make_vec2(&texcoordsBuffer[v*2]));
-                        mesh.m_vertices.push_back(vt);
+                        mesh->m_vertices.push_back(vt);
                     }
                 }
                 //indices
@@ -304,51 +345,48 @@ namespace dg{
                     const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
                     const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
                     switch (accessor.componentType) {
-					case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT: {
-						const uint32_t* buf = reinterpret_cast<const uint32_t*>(&buffer.data[accessor.byteOffset + bufferView.byteOffset]);
-						for (size_t index = 0; index < accessor.count; index++) {
-							mesh.m_indices.push_back(buf[index]);
-						}
-						break;
-					}
-					case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT: {
-						const uint16_t* buf = reinterpret_cast<const uint16_t*>(&buffer.data[accessor.byteOffset + bufferView.byteOffset]);
-						for (size_t index = 0; index < accessor.count; index++) {
-							mesh.m_indices.push_back(buf[index]);
-						}
-						break;
-					}
-					case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE: {
-						const uint8_t* buf = reinterpret_cast<const uint8_t*>(&buffer.data[accessor.byteOffset + bufferView.byteOffset]);
-						for (size_t index = 0; index < accessor.count; index++) {
-							mesh.m_indices.push_back(buf[index]);
-						}
-						break;
-					}
-					default:
-						std::cerr << "Index component type " << accessor.componentType << " not supported!" << std::endl;
-						return;
-					}
+                    case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT: {
+                        const uint32_t* buf = reinterpret_cast<const uint32_t*>(&buffer.data[accessor.byteOffset + bufferView.byteOffset]);
+                        for (size_t index = 0; index < accessor.count; index++) {
+                            mesh->m_indices.push_back(buf[index]);
+                        }
+                        break;
+                    }
+                    case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT: {
+                        const uint16_t* buf = reinterpret_cast<const uint16_t*>(&buffer.data[accessor.byteOffset + bufferView.byteOffset]);
+                        for (size_t index = 0; index < accessor.count; index++) {
+                            mesh->m_indices.push_back(buf[index]);
+                        }
+                        break;
+                    }
+                    case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE: {
+                        const uint8_t* buf = reinterpret_cast<const uint8_t*>(&buffer.data[accessor.byteOffset + bufferView.byteOffset]);
+                        for (size_t index = 0; index < accessor.count; index++) {
+                            mesh->m_indices.push_back(buf[index]);
+                        }
+                        break;
+                    }
+                    default:
+                        std::cerr << "Index component type " << accessor.componentType << " not supported!" << std::endl;
+                        return;
+                    }
                 }
 
                 if(primitive.material>-1){
                     tinygltf::Material& material = model.materials[primitive.material];
-                    mesh.m_diffuseTexturePath =model.extras_json_string + model.images[model.textures[material.values["baseColorTexture"].TextureIndex()].source].uri;
-                    mesh.m_emissiveTexturePath = material.emissiveTexture.index==-1?"":model.extras_json_string + model.images[model.textures[material.emissiveTexture.index].source].uri;
-                    mesh.m_occlusionTexturePath = material.occlusionTexture.index==-1?"":model.extras_json_string+ model.images[model.textures[material.occlusionTexture.index].source].uri;
-                    mesh.m_MRTexturePath = material.pbrMetallicRoughness.metallicRoughnessTexture.index ==-1?"":model.extras_json_string+model.images[model.textures[material.pbrMetallicRoughness.metallicRoughnessTexture.index].source].uri;
-                    mesh.m_normalTexturePath = material.normalTexture.index==-1?"":model.extras_json_string + model.images[model.textures[material.normalTexture.index].source].uri;
+                    mesh->m_diffuseTexturePath =material.pbrMetallicRoughness.baseColorTexture.index==-1?"":model.extras_json_string + model.images[model.textures[material.values["baseColorTexture"].TextureIndex()].source].uri;
+                    mesh->m_emissiveTexturePath = material.emissiveTexture.index==-1?"":model.extras_json_string + model.images[model.textures[material.emissiveTexture.index].source].uri;
+                    mesh->m_occlusionTexturePath = material.occlusionTexture.index==-1?"":model.extras_json_string+ model.images[model.textures[material.occlusionTexture.index].source].uri;
+                    mesh->m_MRTexturePath = material.pbrMetallicRoughness.metallicRoughnessTexture.index ==-1?"":model.extras_json_string+model.images[model.textures[material.pbrMetallicRoughness.metallicRoughnessTexture.index].source].uri;
+                    mesh->m_normalTexturePath = material.normalTexture.index==-1?"":model.extras_json_string + model.images[model.textures[material.normalTexture.index].source].uri;
                 }
-                primitiveNode.m_meshIndex = m_meshes.size();
-                m_meshes.push_back(mesh);
-                m_haveContent = true;
             }
-            
         }
-
     }
 
-    void gltfLoader::loadFromPath(std::string path){
+    
+
+    void gltfLoader::loadFromPath(std::string path,LoadType LoadType){
         tinygltf::Model model;
         tinygltf::TinyGLTF loader;
         std::string err;
@@ -375,13 +413,39 @@ namespace dg{
             m_sceneRoot.m_subNodes.back().m_parentNodePtr = &m_sceneRoot;
             auto& sceneNode = m_sceneRoot.m_subNodes.back();
             for(int nd = 0;nd<scene.nodes.size();++nd){
+                
                 auto& inputNode = nodes[scene.nodes[nd]];
-                loadNode(inputNode, model, &sceneNode);
+                if(inputNode.mesh<=-1)continue;
+                loadNode(inputNode, model, &sceneNode,LoadType);
             }
         }
     }
 
-    void gltfLoader::destroy(){
+    void gltfLoader::setSkyBox(std::string path){
+        loadFromPath(path,LoadType::SKYBOX);
+    }
 
+    void gltfLoader::setEnvMap(std::string path){
+        if(path.empty()){
+            DG_WARN("Can not open file: ",path);
+            return;
+        }
+        
+        if(m_sceneRoot.m_meshIndex<=-1){
+            DG_WARN("You need to set a skybox first, then you can use this env map on that");
+            return;
+        }
+        Mesh& skyBox = m_meshes[m_sceneRoot.m_meshIndex];
+        skyBox.m_diffuseTexturePath =  path;
+    }
+
+    void gltfLoader::destroy(){
+        if(m_renderObjects.empty()) return;
+        for(int i = 0;i<m_renderObjects.size();++i){
+            auto& rj = m_renderObjects[i];
+            for(auto& j:rj.m_descriptors){
+                m_renderer->getContext()->DestroyDescriptorSet(j);
+            }
+        }
     }
 }

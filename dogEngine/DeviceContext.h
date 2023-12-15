@@ -47,15 +47,15 @@ struct DeviceContext{
     void                                        init(const ContextCreateInfo& createinfo);
     void                                        Destroy();
 
-    TextureHandle                               createTexture(const TextureCreateInfo& tcf);
-    BufferHandle                                createBuffer(const BufferCreateInfo& bcf);
-    PipelineHandle                              createPipeline(const pipelineCreateInfo& pcf);
-    DescriptorSetLayoutHandle                   createDescriptorSetLayout(const DescriptorSetLayoutCreateInfo& dcf);
+    TextureHandle                               createTexture(TextureCreateInfo& tcf);
+    BufferHandle                                createBuffer( BufferCreateInfo& bcf);
+    PipelineHandle                              createPipeline( pipelineCreateInfo& pcf);
+    DescriptorSetLayoutHandle                   createDescriptorSetLayout( DescriptorSetLayoutCreateInfo& dcf);
     DescriptorSetHandle                         createDescriptorSet(DescriptorSetCreateInfo& dcf);
-    RenderPassHandle                            createRenderPass(const RenderPassCreateInfo& rcf);
-    ShaderStateHandle                           createShaderState(const ShaderStateCreation& scf);
-    SamplerHandle                               createSampler(const SamplerCreateInfo& scf);
-    FrameBufferHandle                           createFrameBuffer(const FrameBufferCreateInfo& fcf);
+    RenderPassHandle                            createRenderPass( RenderPassCreateInfo& rcf);
+    ShaderStateHandle                           createShaderState( ShaderStateCreation& scf);
+    SamplerHandle                               createSampler( SamplerCreateInfo& scf);
+    FrameBufferHandle                           createFrameBuffer(FrameBufferCreateInfo& fcf);
 
     void                                        DestroyTexture(TextureHandle  texIndex);
     void                                        DestroyBuffer(BufferHandle    bufferIndex);

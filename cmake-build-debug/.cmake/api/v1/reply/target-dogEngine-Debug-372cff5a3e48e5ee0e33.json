@@ -1,0 +1,618 @@
+{
+	"archive" : {},
+	"artifacts" : 
+	[
+		{
+			"path" : "dogEngine/libdogEngine.a"
+		}
+	],
+	"backtrace" : 1,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_library",
+			"target_include_directories"
+		],
+		"files" : 
+		[
+			"dogEngine/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 18,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 19,
+				"parent" : 0
+			}
+		]
+	},
+	"compileGroups" : 
+	[
+		{
+			"compileCommandFragments" : 
+			[
+				{
+					"fragment" : "-g -std=gnu++17 -fdiagnostics-color=always"
+				}
+			],
+			"includes" : 
+			[
+				{
+					"backtrace" : 2,
+					"path" : "E:/Vulkan/Include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "E:/repository/Vulkan_learn/external/glfw/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "E:/repository/Vulkan_learn/external/VMA/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "E:/repository/Vulkan_learn/external/glm/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "E:/repository/Vulkan_learn/external/spdlog/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "E:/repository/Vulkan_learn/external/tinyobjloader"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "E:/repository/Vulkan_learn/external/tinygltf"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "E:/repository/Vulkan_learn/dogEngine/./ktx/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "E:/repository/Vulkan_learn/external/stb"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "E:/repository/Vulkan_learn/dogEngine"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "E:/repository/Vulkan_learn/dogEngine/GUI"
+				}
+			],
+			"language" : "CXX",
+			"languageStandard" : 
+			{
+				"backtraces" : 
+				[
+					1
+				],
+				"standard" : "17"
+			},
+			"sourceIndexes" : 
+			[
+				0,
+				2,
+				4,
+				6,
+				8,
+				11,
+				13,
+				14,
+				16,
+				19,
+				20,
+				25,
+				27,
+				30,
+				36,
+				38
+			]
+		},
+		{
+			"compileCommandFragments" : 
+			[
+				{
+					"fragment" : "-g -fdiagnostics-color=always"
+				}
+			],
+			"includes" : 
+			[
+				{
+					"backtrace" : 2,
+					"path" : "E:/Vulkan/Include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "E:/repository/Vulkan_learn/external/glfw/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "E:/repository/Vulkan_learn/external/VMA/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "E:/repository/Vulkan_learn/external/glm/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "E:/repository/Vulkan_learn/external/spdlog/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "E:/repository/Vulkan_learn/external/tinyobjloader"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "E:/repository/Vulkan_learn/external/tinygltf"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "E:/repository/Vulkan_learn/dogEngine/./ktx/include"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "E:/repository/Vulkan_learn/external/stb"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "E:/repository/Vulkan_learn/dogEngine"
+				},
+				{
+					"backtrace" : 2,
+					"path" : "E:/repository/Vulkan_learn/dogEngine/GUI"
+				}
+			],
+			"language" : "C",
+			"sourceIndexes" : 
+			[
+				57,
+				58,
+				59,
+				60,
+				61,
+				62
+			]
+		}
+	],
+	"id" : "dogEngine::@c6ae41248e06baa9e78e",
+	"name" : "dogEngine",
+	"nameOnDisk" : "libdogEngine.a",
+	"paths" : 
+	{
+		"build" : "dogEngine",
+		"source" : "dogEngine"
+	},
+	"sourceGroups" : 
+	[
+		{
+			"name" : "Source Files",
+			"sourceIndexes" : 
+			[
+				0,
+				2,
+				4,
+				6,
+				8,
+				11,
+				13,
+				14,
+				16,
+				19,
+				20,
+				25,
+				27,
+				30,
+				36,
+				38,
+				57,
+				58,
+				59,
+				60,
+				61,
+				62
+			]
+		},
+		{
+			"name" : "Header Files",
+			"sourceIndexes" : 
+			[
+				1,
+				3,
+				5,
+				7,
+				9,
+				10,
+				12,
+				15,
+				17,
+				18,
+				21,
+				22,
+				23,
+				24,
+				26,
+				28,
+				29,
+				31,
+				32,
+				33,
+				34,
+				35,
+				37,
+				39,
+				40,
+				41,
+				42,
+				43,
+				44,
+				45,
+				46,
+				47,
+				48,
+				49,
+				50,
+				51,
+				52,
+				53,
+				54,
+				55,
+				56
+			]
+		}
+	],
+	"sources" : 
+	[
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "dogEngine/Camera.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"path" : "dogEngine/Camera.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "dogEngine/CommandBuffer.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"path" : "dogEngine/CommandBuffer.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "dogEngine/DebugMessanger.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"path" : "dogEngine/DebugMessanger.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "dogEngine/DeviceContext.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"path" : "dogEngine/DeviceContext.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "dogEngine/GUI/GUI.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"path" : "dogEngine/GUI/GUI.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"path" : "dogEngine/GUI/imguiBase/imconfig.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "dogEngine/GUI/imguiBase/imgui.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"path" : "dogEngine/GUI/imguiBase/imgui.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "dogEngine/GUI/imguiBase/imgui_draw.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "dogEngine/GUI/imguiBase/imgui_impl_glfw.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"path" : "dogEngine/GUI/imguiBase/imgui_impl_glfw.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "dogEngine/GUI/imguiBase/imgui_impl_vulkan.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"path" : "dogEngine/GUI/imguiBase/imgui_impl_vulkan.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"path" : "dogEngine/GUI/imguiBase/imgui_internal.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "dogEngine/GUI/imguiBase/imgui_tables.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "dogEngine/GUI/imguiBase/imgui_widgets.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"path" : "dogEngine/GUI/imguiBase/imstb_rectpack.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"path" : "dogEngine/GUI/imguiBase/imstb_textedit.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"path" : "dogEngine/GUI/imguiBase/imstb_truetype.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"path" : "dogEngine/MeshModel.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "dogEngine/ModelLoader.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"path" : "dogEngine/ModelLoader.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "dogEngine/Renderer.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"path" : "dogEngine/Renderer.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"path" : "dogEngine/ResourcePool.hpp",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "dogEngine/Vertex.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"path" : "dogEngine/Vertex.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"path" : "dogEngine/dgAssert.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"path" : "dogEngine/dgLog.hpp",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"path" : "dogEngine/dgpch.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"path" : "dogEngine/dgplatform.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "dogEngine/gpuResource.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"path" : "dogEngine/gpuResource.hpp",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "dogEngine/headerOnly.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"path" : "dogEngine/ktx/include/KHR/khrplatform.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"path" : "dogEngine/ktx/include/ktx.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"path" : "dogEngine/ktx/include/ktxvulkan.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"path" : "dogEngine/ktx/lib/filestream.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"path" : "dogEngine/ktx/lib/gl_format.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"path" : "dogEngine/ktx/lib/gl_funcptrs.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"path" : "dogEngine/ktx/lib/gles1_funcptrs.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"path" : "dogEngine/ktx/lib/gles2_funcptrs.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"path" : "dogEngine/ktx/lib/gles3_funcptrs.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"path" : "dogEngine/ktx/lib/ktxgl.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"path" : "dogEngine/ktx/lib/ktxint.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"path" : "dogEngine/ktx/lib/memstream.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"path" : "dogEngine/ktx/lib/stream.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"path" : "dogEngine/ktx/lib/uthash.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"path" : "dogEngine/ktx/lib/vk_format.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"path" : "dogEngine/ktx/lib/vk_funcs.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"path" : "dogEngine/ktx/other_include/KHR/khrplatform.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"path" : "dogEngine/vk_mem_alloc.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 1,
+			"path" : "dogEngine/ktx/lib/texture.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 1,
+			"path" : "dogEngine/ktx/lib/hashlist.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 1,
+			"path" : "dogEngine/ktx/lib/checkheader.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 1,
+			"path" : "dogEngine/ktx/lib/swap.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 1,
+			"path" : "dogEngine/ktx/lib/memstream.c",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 1,
+			"path" : "dogEngine/ktx/lib/filestream.c",
+			"sourceGroupIndex" : 0
+		}
+	],
+	"type" : "STATIC_LIBRARY"
+}

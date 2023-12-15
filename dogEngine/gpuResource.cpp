@@ -91,6 +91,11 @@ namespace dg{
         return *this;
     }
 
+    TextureCreateInfo& TextureCreateInfo::setTextureType(TextureType::Enum type){
+        m_imageType = type;
+        return *this;
+    }
+
     RenderPassCreateInfo& RenderPassCreateInfo::setName(const char* name){
         this->name = name;
         return *this;

@@ -29,6 +29,7 @@ struct SceneNode{
 };
 
 struct Mesh{
+    Material*                           m_meshMaterial = nullptr;
     std::string                         name;
     std::vector<Vertex>                 m_vertices;
     std::vector<u32>                    m_indices;
@@ -41,7 +42,7 @@ struct Mesh{
 
 struct RenderObject{
     RenderPassHandle                    m_renderPass;
-    Material*                           m_material;
+    Material*                           m_material = nullptr;
     std::vector<DescriptorSetHandle>    m_descriptors;
     glm::mat4                           m_modelMatrix = {glm::vec4(1, 0, 0, 0), glm::vec4(0, 1, 0, 0), glm::vec4(0, 0, 1, 0), glm::vec4(0, 0, 0, 1)};
     BufferHandle                        m_vertexBuffer;
@@ -62,11 +63,12 @@ public:
     BaseLoader(Renderer* renderer);
     virtual void destroy();
     virtual ~BaseLoader() {};
-    virtual void                        loadFromPath(std::string path) = 0; 
+    virtual void                        loadFromPath(std::string path){}; 
     virtual std::vector<RenderObject>   Execute(const SceneNode& rootNode);
     virtual bool                        haveContent(){return m_haveContent;}
     virtual SceneNode&                  getSceneNode(){return m_sceneRoot;}
     virtual std::vector<RenderObject>&  getRenderObject(){return m_renderObjects;}
+    virtual std::vector<Mesh>&          getMeshes(){return m_meshes;}
 
 protected:
     SceneNode                           m_sceneRoot;
@@ -87,12 +89,19 @@ public:
 
 class gltfLoader: public BaseLoader{
 public:
+    enum LoadType{
+        MODEL,
+        SKYBOX
+    };
     gltfLoader();
     gltfLoader(Renderer* renderer);
-    void loadNode(tinygltf::Node& inputNode, tinygltf::Model& model, SceneNode* parent);
     ~gltfLoader(){};
-    void                                loadFromPath(std::string path) override;
+    void loadNode(tinygltf::Node& inputNode, tinygltf::Model& model, SceneNode* parent,LoadType LoadType=LoadType::MODEL);
+    void                                loadFromPath(std::string path, LoadType ldType=LoadType::MODEL);
     void                                destroy() override;
+    void                                setSkyBox(std::string path);
+    void                                setEnvMap(std::string path);
+
 };
 
 }

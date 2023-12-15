@@ -89,11 +89,11 @@ public:
     void                                        init(std::shared_ptr<DeviceContext> context);
     void                                        destroy();
 
-    TextureResource*                            createTexture(const TextureCreateInfo& textureInfo);
-    BufferResource*                             createBuffer(const BufferCreateInfo& bufferInfo);
-    SamplerResource*                            createSampler(const SamplerCreateInfo& samplerInfo);
-    ProgramResource*                            createProgram(const ProgramCreateInfo& programInfo);
-    Material*                                   createMaterial(const MaterialCreateInfo& matInfo);
+    TextureResource*                            createTexture( TextureCreateInfo& textureInfo);
+    BufferResource*                             createBuffer( BufferCreateInfo& bufferInfo);
+    SamplerResource*                            createSampler( SamplerCreateInfo& samplerInfo);
+    ProgramResource*                            createProgram( ProgramCreateInfo& programInfo);
+    Material*                                   createMaterial( MaterialCreateInfo& matInfo);
 
 
     void                                        destroyTexture(TextureResource* textureRes);
@@ -103,15 +103,17 @@ public:
     void                                        destroyMaterial(Material* material);
 
     std::shared_ptr<DeviceContext>              getContext(){return m_context;}
+    CommandBuffer*                              getCommandBuffer();
+    void                                        setCurrentMaterial(Material* material);
+    Material*                                   getCurrentMaterial();
+    std::shared_ptr<objLoader>                  getObjLoader(){return m_objLoader;}
+    std::shared_ptr<gltfLoader>                 getGltfLoader(){return m_gltfLoader;}
     void                                        newFrame();
     void                                        present();
     void                                        drawScene();
     void                                        drawUI();
     void                                        loadFromPath(const std::string& path);
     void                                        executeScene();
-    CommandBuffer*                              getCommandBuffer();
-    void                                        setCurrentMaterial(Material* material);
-    Material*                                   getCurrentMaterial();
 
 private:
     ResourceCache                               m_resourceCache;
