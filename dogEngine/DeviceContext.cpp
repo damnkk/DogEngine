@@ -1340,7 +1340,7 @@ DescriptorSetLayoutHandle DeviceContext::createDescriptorSetLayout( DescriptorSe
 
 static void vk_fill_write_descriptor_sets(DeviceContext* context, const DescriptorSetLayout* setLayout, VkDescriptorSet vk_descriptor_set,
                                               VkWriteDescriptorSet* descriptorWrite, VkDescriptorBufferInfo* bufferInfo, VkDescriptorImageInfo* imageInfo,
-                                              VkSampler* sampler, u32& num_resources, const std::vector<ResourceHandle>& resources, std::vector<SamplerHandle>& samplers,const std::vector<u32>& bindings){
+                                              VkSampler* sampler, const u32& num_resources, const std::vector<ResourceHandle>& resources, std::vector<SamplerHandle>& samplers,const std::vector<u32>& bindings){
     for(int i = 0;i<num_resources;++i){
         u32 layoutBindingIndex = bindings[i];
         auto& binding = setLayout->m_vkBindings[layoutBindingIndex];
@@ -1444,11 +1444,11 @@ DescriptorSetHandle DeviceContext::createDescriptorSet(DescriptorSetCreateInfo& 
     set->m_samples = dcinfo.m_samplers;
     set->m_layout = layout;
 
-    VkWriteDescriptorSet descriptor_write[16];
-    VkDescriptorBufferInfo buffer_info [16];
-    VkDescriptorImageInfo  image_info [16];
     Sampler* sampler = accessSampler(m_defaultSampler);
-    u32 numResources = dcinfo.m_resourceNums;
+    const u32 numResources = dcinfo.m_resourceNums;
+    VkWriteDescriptorSet descriptor_write[32];
+    VkDescriptorBufferInfo buffer_info [32];
+    VkDescriptorImageInfo  image_info [32];
     vk_fill_write_descriptor_sets(this,layout,set->m_vkdescriptorSet,descriptor_write,buffer_info,image_info,&sampler->m_sampler,numResources,dcinfo.m_resources,dcinfo.m_samplers,dcinfo.m_bindings);
 
     for(int i = 0;i<numResources;++i){
@@ -1524,7 +1524,7 @@ PipelineHandle DeviceContext::createPipeline( pipelineCreateInfo& pipelineInfo){
         pipeline->m_DescriptorSetLayoutHandle[i] = pipelineInfo.m_DescriptroSetLayouts[i];
         dSetLayouts[i] = pipeline->m_DescriptorSetLayout[i]->m_descriptorSetLayout;
     }
-    
+
     VkPushConstantRange pushConstant;
     pushConstant.offset = 0;
     pushConstant.size = sizeof(ConstentData);
@@ -1650,8 +1650,8 @@ PipelineHandle DeviceContext::createPipeline( pipelineCreateInfo& pipelineInfo){
         VkViewport viewport = {};
         viewport.x = 0.0f;
         viewport.y = 0.0f;
-        viewport.width = m_swapChainWidth;
-        viewport.height = m_swapChainHeight;
+        viewport.width = (float)m_swapChainWidth;
+        viewport.height = (float)m_swapChainHeight;
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
 
@@ -1677,9 +1677,12 @@ PipelineHandle DeviceContext::createPipeline( pipelineCreateInfo& pipelineInfo){
         pipeline->m_isGraphicsPipeline = true;
         pipeline->m_pipelineHandle = handle;
         pipeline->m_bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-        pipeline->m_blendState = pipelineInfo.m_BlendState;
-        pipeline->m_depthStencil = pipelineInfo.m_depthStencil;
-        pipeline->m_rasterization = pipelineInfo.m_rasterization;
+        pipeline->m_blendStateCrt = pipelineInfo.m_BlendState;
+        pipeline->m_rasterizationCrt = pipelineInfo.m_rasterization;
+        pipeline->m_depthStencilCrt = pipelineInfo.m_depthStencil;
+        pipeline->m_shaderStateCrt = pipelineInfo.m_shaderState;
+        pipeline->m_blendStateCrt = pipelineInfo.m_BlendState;
+        pipeline->m_vertexInputCrt = pipelineInfo.m_vertexInput;
     }else {
         VkComputePipelineCreateInfo computeInfo{VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO};
         computeInfo.stage = state->m_shaderStateInfo[0];
@@ -1913,6 +1916,14 @@ void DeviceContext::init(const ContextCreateInfo& DeviceInfo){
     m_defaultTexture = createTexture(dt);
     delete ptr;
     ptr = nullptr;
+
+    m_defaultSetLayoutCI.reset();
+    for(int i = 0;i<30;++i){
+        m_defaultSetLayoutCI.addBinding({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,i,1,std::to_string(i)});
+    }
+    m_defaultSetLayoutCI.addBinding({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 30,1,"30"});
+    m_defaultSetLayoutCI.addBinding({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 31,1,"31"});
+
     //RenderPassCreat
     RenderPassCreateInfo renderpassInfo{};
     renderpassInfo.setName("SwapChain pass").setType(RenderPassType::Enum::SwapChain).setOperations(RenderPassOperation::Enum::Clear, RenderPassOperation::Enum::Clear, RenderPassOperation::Clear);

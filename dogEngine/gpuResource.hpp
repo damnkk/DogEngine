@@ -15,7 +15,7 @@ namespace dg{
 
     static const u32                    k_max_swapchain_images = 3;
     static const u32                    k_invalid_index = 0xffffffff;
-    static const u32                    k_max_discriptor_nums_per_set = 16;
+    static const u32                    k_max_discriptor_nums_per_set = 32;
     static const u8                     k_max_image_outputs = 8;
     static const u8                     k_max_vertex_streams = 16;
     static const u8                     k_max_vertex_attributes = 16;
@@ -269,7 +269,7 @@ struct DepthStencilCreation{
     DepthStencilCreation():m_depthEnable(true),m_depthWriteEnable(true),m_stencilEnable(false){
 
     }
-    DepthStencilCreation&               setDepth(bool write, VkCompareOp compareTest);
+    DepthStencilCreation&               setDepth(bool enable, bool write, VkCompareOp compareTest);
 };
 
 struct BlendState{
@@ -411,7 +411,7 @@ struct DescriptorSetCreateInfo{
 struct DescriptorSetLayoutCreateInfo{
     struct Binding{
         VkDescriptorType                m_type = VK_DESCRIPTOR_TYPE_MAX_ENUM;
-        u32                             m_start;
+        int                             m_start = -1;
         u32                             m_count;
         std::string                     name;
 
@@ -480,11 +480,14 @@ struct Pipeline{
     const DescriptorSetLayout*          m_DescriptorSetLayout[k_max_descriptor_set_layouts];
     DescriptorSetLayoutHandle           m_DescriptorSetLayoutHandle[k_max_descriptor_set_layouts];   
     u32                                 m_activeLayouts = 0;
-    DepthStencilCreation                m_depthStencil;
-    BlendStateCreation                  m_blendState;
-    RasterizationCreation               m_rasterization;
+
+    RasterizationCreation               m_rasterizationCrt;
+    DepthStencilCreation                m_depthStencilCrt;
+    BlendStateCreation                  m_blendStateCrt;
+    VertexInputCreation                 m_vertexInputCrt;
+    ShaderStateCreation                 m_shaderStateCrt;
     PipelineHandle                      m_pipelineHandle;
-    bool                                m_isGraphicsPipeline;                
+    bool                                m_isGraphicsPipeline;
 };
 
 struct ExecutionBarrier{

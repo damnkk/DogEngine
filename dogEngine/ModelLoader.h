@@ -33,11 +33,6 @@ struct Mesh{
     std::string                         name;
     std::vector<Vertex>                 m_vertices;
     std::vector<u32>                    m_indices;
-    std::string                         m_diffuseTexturePath;
-    std::string                         m_MRTexturePath;
-    std::string                         m_normalTexturePath;
-    std::string                         m_emissiveTexturePath;
-    std::string                         m_occlusionTexturePath;
 };
 
 struct RenderObject{
@@ -47,14 +42,10 @@ struct RenderObject{
     glm::mat4                           m_modelMatrix = {glm::vec4(1, 0, 0, 0), glm::vec4(0, 1, 0, 0), glm::vec4(0, 0, 1, 0), glm::vec4(0, 0, 0, 1)};
     BufferHandle                        m_vertexBuffer;
     BufferHandle                        m_indexBuffer;
-    BufferHandle                        m_uniformBuffer;
+    BufferHandle                        m_GlobalUniform;
+    BufferHandle                        m_MaterialUniform;
     u32                                 m_vertexCount = 0;
     u32                                 m_indexCount = 0;
-    TextureHandle                       m_diffuseTex = {k_invalid_index};
-    TextureHandle                       m_MRTtex = {k_invalid_index};
-    TextureHandle                       m_normalTex = {k_invalid_index};
-    TextureHandle                       m_emissiveTex = {k_invalid_index};
-    TextureHandle                       m_occlusionTex = {k_invalid_index};
 };
 
 class BaseLoader{
@@ -89,18 +80,12 @@ public:
 
 class gltfLoader: public BaseLoader{
 public:
-    enum LoadType{
-        MODEL,
-        SKYBOX
-    };
     gltfLoader();
     gltfLoader(Renderer* renderer);
     ~gltfLoader(){};
-    void loadNode(tinygltf::Node& inputNode, tinygltf::Model& model, SceneNode* parent,LoadType LoadType=LoadType::MODEL);
-    void                                loadFromPath(std::string path, LoadType ldType=LoadType::MODEL);
+    void loadNode(tinygltf::Node& inputNode, tinygltf::Model& model, SceneNode* parent);
+    void                                loadFromPath(std::string path);
     void                                destroy() override;
-    void                                setSkyBox(std::string path);
-    void                                setEnvMap(std::string path);
 
 };
 

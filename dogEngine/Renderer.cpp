@@ -1,12 +1,16 @@
 #include "Renderer.h"
 #include "ModelLoader.h"
 #include "CommandBuffer.h"
+#include "ktx.h"
+#include "ktxvulkan.h"
+#include "dgGeometry.h"
+#include "unordered_set"
+
 namespace dg{
 
 const std::string                       TextureResource::k_type = "texture_resource";
 const std::string                       BufferResource::k_type = "buffer_resource";
 const std::string                       SamplerResource::k_type = "sampler_resource";
-const std::string                       ProgramResource::k_type = "program_resource";
 
 void keycallback(GLFWwindow *window)
 {
@@ -47,10 +51,6 @@ void keycallback(GLFWwindow *window)
 
 }
 
-ProgramCreateInfo&  ProgramCreateInfo::setName(const char* name){
-  this->name = name;
-  return *this;
-}
 
 void ResourceCache::destroy(Renderer* renderer){
   for(auto& i:textures){
@@ -72,17 +72,7 @@ void ResourceCache::destroy(Renderer* renderer){
     renderer->destroyMaterial(i.second);
   }
   materials.clear();
-  for(auto& i:programs){
-    renderer->destroyProgram(i.second);
-  }
-  programs.clear();
 
-}
-
-MaterialCreateInfo& MaterialCreateInfo::setProgram(ProgramResource* progInfo){
-  program = progInfo;
-  name = program->name;
-  return *this;
 }
 
 MaterialCreateInfo& MaterialCreateInfo::setRenderOrder(u32 renderOrder){
@@ -90,9 +80,30 @@ MaterialCreateInfo& MaterialCreateInfo::setRenderOrder(u32 renderOrder){
   return *this;
 }
 
-MaterialCreateInfo& MaterialCreateInfo::setName(const char* name){
+MaterialCreateInfo& MaterialCreateInfo::setName(std::string name){
   this->name = name;
   return *this;
+}
+
+void Renderer::makeDefaultMaterial(){
+    MaterialCreateInfo matCI{};
+    matCI.setName("defaultMat");
+    m_defaultMaterial = createMaterial(matCI);
+    DescriptorSetLayoutCreateInfo descInfo = m_context->m_defaultSetLayoutCI;
+    descInfo.setName("defaultDescLayout");
+    pipelineCreateInfo  pipelineInfo{};
+    pipelineInfo.m_renderPassHandle = m_context->m_swapChainPass;
+    pipelineInfo.m_depthStencil.setDepth(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
+    pipelineInfo.m_vertexInput.Attrib = Vertex::getAttributeDescriptions();
+    pipelineInfo.m_vertexInput.Binding = Vertex::getBindingDescription();
+    pipelineInfo.m_shaderState.reset();
+    auto vsCode = readFile("./shaders/pbrvert.spv");
+    auto fsCode = readFile("./shaders/pbrfrag.spv");
+    pipelineInfo.m_shaderState.addStage(vsCode.data(), vsCode.size(), VK_SHADER_STAGE_VERTEX_BIT);
+    pipelineInfo.m_shaderState.addStage(fsCode.data(),fsCode.size(),VK_SHADER_STAGE_FRAGMENT_BIT);
+    pipelineInfo.m_shaderState.setName("defaultPipeline");
+    pipelineInfo.name = pipelineInfo.m_shaderState.name;
+    m_defaultMaterial->setProgram(createProgram("defaultPbrProgram",&pipelineInfo));
 }
 
 void Renderer::init(std::shared_ptr<DeviceContext> context){
@@ -101,10 +112,10 @@ void Renderer::init(std::shared_ptr<DeviceContext> context){
     m_buffers.init(4096);
     m_textures.init(256);
     m_samplers.init(256);
-    m_programs.init(32);
     m_materials.init(32);
     m_objLoader = std::make_shared<objLoader>(this);
     m_gltfLoader = std::make_shared<gltfLoader>(this);
+    makeDefaultMaterial();
 }
 
 void Renderer::destroy(){
@@ -113,6 +124,10 @@ void Renderer::destroy(){
     m_resourceCache.destroy(this);
     m_gltfLoader->destroy();
     m_objLoader->destroy();
+    m_textures.destroy();
+    m_buffers.destroy();
+    m_materials.destroy();
+    m_samplers.destroy();
     m_context->Destroy();
 }
 
@@ -175,38 +190,30 @@ Material* Renderer::createMaterial( MaterialCreateInfo& matInfo){
     DG_INFO("There is a material with the same name in resourceCache, renderer will reuse it")
     return findRes->second;
   }
-
   auto material = m_materials.obtain();
-  material->program = matInfo.program;
-  material->name = matInfo.name;
+  material->name    = matInfo.name;
   material->renderOrder = matInfo.renderOrder;
+  material->renderer    = this;
   m_resourceCache.materials[material->name] = material;
   return material;
 }
 
-ProgramResource* Renderer::createProgram(ProgramCreateInfo& programInfo){
-  if(programInfo.name.empty()){
-    DG_ERROR("Program created by renderer must have an unique name");
-    exit(-1);
+std::shared_ptr<Program> Renderer::createProgram(const std::string& name, pipelineCreateInfo* pipCI){
+  std::shared_ptr<Program> pg = std::make_shared<Program>(m_context,name);
+  if(pipCI){
+      u32 numPasses = 1;
+      pg->passes.resize(numPasses);
+      for(int i = 0;i<numPasses;++i){
+        ProgramPass& pass = pg->passes[i];
+        pass.descriptorSetLayout = m_context->createDescriptorSetLayout(m_context->m_defaultSetLayoutCI);
+        pipelineCreateInfo pipelineInfo = *pipCI;
+          pipelineInfo.addDescriptorSetlayout(pass.descriptorSetLayout);
+        pass.pipeline = m_context->createPipeline(pipelineInfo);
+      }
+      return pg;
+  }else{
+      //创建着色器文件；
   }
-  auto findRes = m_resourceCache.programs.find(programInfo.name);
-  if(findRes != m_resourceCache.programs.end()){
-    DG_INFO("There is a program with the same name in resourceCache, renderer will reuse it")
-    return findRes->second;
-  }
-  auto programRes = m_programs.obtain();
-  u32 numPasses = 1;
-  programRes->passes.resize(numPasses);
-  programRes->name = programInfo.name;
-  for(int i = 0;i<numPasses;++i){
-    ProgramPass& pass = programRes->passes[i];
-    pass.descriptorSetLayout = m_context->createDescriptorSetLayout(programInfo.dslyaoutInfo);
-    pipelineCreateInfo pipelineinfo = programInfo.pipelineInfo;
-    pipelineinfo.addDescriptorSetlayout(pass.descriptorSetLayout);
-    pass.pipeline = m_context->createPipeline(pipelineinfo);
-  }
-  m_resourceCache.programs[programRes->name] = programRes;
-  return programRes;
 }
 
 
@@ -247,14 +254,6 @@ void Renderer::destroyMaterial(Material* material){
   
 }
 
-void Renderer::destroyProgram(ProgramResource* progRes){
-  if(!progRes){
-    DG_WARN("An invalid ProgramResource pointer");
-    return;
-  }
-  m_context->DestroyPipeline(progRes->passes[0].pipeline);
-  m_programs.release(progRes);
-}
 
 void Renderer::newFrame(){
     m_context->newFrame();
@@ -281,25 +280,21 @@ void Renderer::loadFromPath(const std::string& path){
 }
 
 void Renderer::executeScene(){
+    if(have_skybox) executeSkyBox();
     if(m_objLoader->haveContent()){
         m_objLoader->Execute(m_objLoader->getSceneNode());
+        m_renderObjects.insert(m_renderObjects.end(),m_objLoader->getRenderObject().begin(),m_objLoader->getRenderObject().end());
     }
     if(m_gltfLoader->haveContent()){
         m_gltfLoader->Execute(m_gltfLoader->getSceneNode());
+        m_renderObjects.insert(m_renderObjects.end(),m_gltfLoader->getRenderObject().begin(),m_gltfLoader->getRenderObject().end());
     }
 }
 
 void Renderer::drawScene(){
     CommandBuffer* cmd = m_context->getCommandBuffer(QueueType::Enum::Graphics, true);
-    std::vector<RenderObject> renderObjects;
-    if(m_objLoader->haveContent()){
-       renderObjects = m_objLoader->getRenderObject();
-    }
-    if(m_gltfLoader->haveContent()){
-        renderObjects.insert(renderObjects.end(),m_gltfLoader->getRenderObject().begin(),m_gltfLoader->getRenderObject().end());
-    }
-    for(int i = 0;i<renderObjects.size();++i){
-      auto& currRenderObject = renderObjects[i];
+    for(int i = 0;i<m_renderObjects.size();++i){
+      auto& currRenderObject = m_renderObjects[i];
       cmd->bindPass(currRenderObject.m_renderPass);
       cmd->bindPipeline(currRenderObject.m_material->program->passes[0].pipeline);
       Rect2DInt scissor;
@@ -313,44 +308,50 @@ void Renderer::drawScene(){
       cmd->bindVertexBuffer(currRenderObject.m_vertexBuffer, 0, 0);
       cmd->bindIndexBuffer(currRenderObject.m_indexBuffer, 0, VK_INDEX_TYPE_UINT32);
       vkCmdSetDepthTestEnable(cmd->m_commandBuffer, VK_TRUE);
-      Buffer* uniformBuffer = m_context->accessBuffer(currRenderObject.m_uniformBuffer);
-      if(!uniformBuffer){DG_WARN("Invalid uniform Buffer");}
+      Buffer* globalUniformBuffer = m_context->accessBuffer(currRenderObject.m_GlobalUniform);
+      if(!globalUniformBuffer){DG_WARN("Invalid uniform Buffer");}
       void* data;
-      vmaMapMemory(m_context->m_vma, uniformBuffer->m_allocation, &data);
+      vmaMapMemory(m_context->m_vma, globalUniformBuffer->m_allocation, &data);
       UniformData udata{};
+      size_t test = sizeof(UniformData);
       udata.cameraPos = m_context->m_camera->pos;
       udata.cameraDirectory = m_context->m_camera->direction;
       static auto startTime = std::chrono::high_resolution_clock::now();
       auto endTime = std::chrono::high_resolution_clock::now();
       float time = std::chrono::duration<float, std::chrono::seconds::period>(endTime-startTime).count();
-      udata.modelMatrix = currRenderObject.m_modelMatrix;
-      //udata.modelMatrix = glm::scale(udata.modelMatrix,glm::vec3(0.5f,0.5f,0.5f));
-      //udata.modelMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f)*time, glm::vec3(1.0f,0.0f,0.0f));
+
       udata.projectMatrix = m_context->m_camera->getProjectMatrix();
       udata.viewMatrix = m_context->m_camera->getViewMatrix();
       memcpy(data,&udata,sizeof(UniformData));
-      vmaUnmapMemory(m_context->m_vma, uniformBuffer->m_allocation);
-      // std::vector<DescriptorSetHandle> descriptors;
-      // descriptors.push_back(currRenderObject.m_descriptor);
-      // if(currRenderObject.m_descriptors.size()>k_max_swapchain_images){
-      //     descriptors.insert(descriptors.end(),currRenderObject.m_descriptors.begin()+k_max_swapchain_images,currRenderObject.m_descriptors.end());
-      // }
+      vmaUnmapMemory(m_context->m_vma, globalUniformBuffer->m_allocation);
+      Material::UniformMaterial um{};
+      um.baseColorFactor = currRenderObject.m_material->uniformMaterial.baseColorFactor;
+      um.emissiveFactor = currRenderObject.m_material->uniformMaterial.emissiveFactor;
+      um.modelMatrix = currRenderObject.m_modelMatrix;
+      //um.modelMatrix = glm::scale(udata.modelMatrix,glm::vec3(0.5f,0.5f,0.5f));
+      //um.modelMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f)*time, glm::vec3(1.0f,0.0f,0.0f));
+      um.mrFactor = currRenderObject.m_material->uniformMaterial.mrFactor;
+      um.tueFactor = currRenderObject.m_material->uniformMaterial.tueFactor;
+      Buffer* materialBuffer = m_context->accessBuffer(currRenderObject.m_MaterialUniform);
+      vmaMapMemory(m_context->m_vma, materialBuffer->m_allocation,&data);
+      memcpy(data,&um,sizeof(Material::UniformMaterial));
+      vmaUnmapMemory(m_context->m_vma,materialBuffer->m_allocation);
       cmd->bindDescriptorSet(currRenderObject.m_descriptors, nullptr, 0);
       //cmd->draw(TopologyType::Enum::Triangle, 0, currRenderObject.m_vertexCount, 0, 0);
       cmd->drawIndexed(TopologyType::Enum::Triangle, currRenderObject.m_indexCount, 1, 0, 0, 0);
     }
 }
 
-void Renderer::setCurrentMaterial(Material* mat){
+void Renderer::setDefaultMaterial(Material* mat){
   if(!mat){
     DG_WARN("You are implementing a invalid material as current material, check again");
     return ;
   }
-  m_currentMaterial = mat;
+  m_defaultMaterial = mat;
 }
 
-Material* Renderer::getCurrentMaterial(){
-  return m_currentMaterial;
+Material* Renderer::getDefaultMaterial(){
+  return m_defaultMaterial;
 }
 
 void Renderer::drawUI(){
@@ -364,4 +365,164 @@ void Renderer::drawUI(){
     m_context->queueCommandBuffer(cmd);
 }
 
+TextureHandle Renderer::upLoadTextureToGPU(std::string& texPath) {
+    if(texPath.empty()) return {k_invalid_index};
+    auto found = texPath.find_last_of('.');
+    if(texPath.substr(found+1)=="ktx"){
+        ktxTexture* ktxTexture;
+        ktxResult res = ktxTexture_CreateFromNamedFile(texPath.c_str(), KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT, &ktxTexture);
+        DGASSERT(res == KTX_SUCCESS);
+        TextureCreateInfo texCI{};
+        texCI.setData(ktxTexture).setName("skyTexture").setFormat(VK_FORMAT_R16G16B16A16_SFLOAT).setUsage(VK_IMAGE_USAGE_SAMPLED_BIT).setMipmapLevel(ktxTexture->numLevels).setExtent({ktxTexture->baseWidth,ktxTexture->baseHeight,1});
+        texCI.m_imageType = TextureType::Enum::TextureCube;
+        TextureHandle handle = createTexture(texCI)->handle;
+        ktxTexture_Destroy(ktxTexture);
+        ktxTexture = nullptr;
+        return handle;
+    }
+    int imgWidth,imgHeight,imgChannel;
+    auto ptr = stbi_load(texPath.c_str(),&imgWidth,&imgHeight,&imgChannel,4);
+    TextureCreateInfo texInfo;
+    u32 foundHead = texPath.find_last_of("/\\");
+    u32 foundEnd = texPath.find_last_not_of(".");
+    std::string texName = texPath.substr(foundHead+1,foundEnd);
+    texInfo.setName(texName.c_str()).setData(ptr).setExtent({(u32)imgWidth,(u32)imgHeight,1})
+            .setFormat(VK_FORMAT_R8G8B8A8_SRGB).setMipmapLevel(1).setUsage(VK_IMAGE_USAGE_SAMPLED_BIT);
+    TextureHandle texHandle = createTexture(texInfo)->handle;
+    delete ptr;
+    ptr = nullptr;
+    return texHandle;
 }
+
+void Renderer::executeSkyBox() {
+    if(m_skyTexture.index==k_invalid_index){
+        DG_INFO("You have not set skybox in this renderer");
+        return;
+    }
+    //create render object
+    m_renderObjects.emplace_back();
+    RenderObject& skybox = m_renderObjects.back();
+    //render data prepare
+    skybox.m_renderPass = m_context->m_swapChainPass;
+    skybox.m_vertexBuffer = upLoadBufferToGPU(cubeVertexData,"skyMesh");
+    skybox.m_indexBuffer = upLoadBufferToGPU(cubeIndexData,"skyMesh");
+    skybox.m_vertexCount = cubeVertexData.size();
+    skybox.m_indexCount = cubeIndexData.size();
+    skybox.m_GlobalUniform = m_context->m_viewProjectUniformBuffer;
+    BufferCreateInfo bcinfo{};
+    bcinfo.reset().setName("skyBoxMaterialUniformBuffer").setDeviceOnly(false).setUsageSize(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,sizeof(Material::UniformMaterial));
+    skybox.m_MaterialUniform = createBuffer(bcinfo)->handle;
+    //material stuff
+    DescriptorSetLayoutCreateInfo skyLayoutInfo{};
+    skyLayoutInfo.reset().addBinding({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,0,1,"skyTexture"});
+    skyLayoutInfo.setName("skyDescLayout");
+    pipelineCreateInfo pipelineInfo;
+    pipelineInfo.m_renderPassHandle = m_context->m_swapChainPass;
+    pipelineInfo.m_depthStencil.setDepth(false, false, VK_COMPARE_OP_LESS_OR_EQUAL);
+    pipelineInfo.m_vertexInput.Attrib = Vertex::getAttributeDescriptions();
+    pipelineInfo.m_vertexInput.Binding = Vertex::getBindingDescription();
+    pipelineInfo.m_shaderState.reset();
+    RasterizationCreation resCI{};
+    resCI.m_cullMode = VK_CULL_MODE_FRONT_BIT;
+    pipelineInfo.m_rasterization = resCI;
+    auto vsCode = readFile("./shaders/skyvert.spv");
+    auto fsCode = readFile("./shaders/skyfrag.spv");
+    pipelineInfo.m_shaderState.addStage(vsCode.data(), vsCode.size(), VK_SHADER_STAGE_VERTEX_BIT);
+    pipelineInfo.m_shaderState.addStage(fsCode.data(), fsCode.size(), VK_SHADER_STAGE_FRAGMENT_BIT);
+    pipelineInfo.m_shaderState.setName("skyPipeline");
+    MaterialCreateInfo matInfo{};
+    matInfo.setName("skyMaterial");
+    skybox.m_material = createMaterial(matInfo);
+    std::shared_ptr<Program> skyProgram = createProgram("skyPipe",&pipelineInfo);
+    skybox.m_material->setProgram(skyProgram);
+    skybox.m_material->setDiffuseTexture(m_skyTexture);
+    DescriptorSetCreateInfo descInfo{};
+    descInfo.reset().setName("skyDesc").setLayout(skybox.m_material->program->passes[0].descriptorSetLayout).texture(skybox.m_material->textureMap["DiffuseTexture"].texture,skybox.m_material->textureMap["DiffuseTexture"].bindIdx)
+    .texture(skybox.m_material->textureMap["DiffuseTexture"].texture,skybox.m_material->textureMap["DiffuseTexture"].bindIdx)
+    .buffer(skybox.m_GlobalUniform,30).buffer(skybox.m_MaterialUniform,31);
+    skybox.m_descriptors.push_back(m_context->createDescriptorSet(descInfo));
+}
+
+    void Renderer::addSkyBox(std::string skyTexPath) {
+        m_skyTexture = upLoadTextureToGPU(skyTexPath);
+        have_skybox = true;
+    }
+
+    Program::~Program() {
+    for(auto & passe : passes){
+        context->DestroyPipeline(passe.pipeline);
+    }
+}
+
+    Program::Program(std::shared_ptr<DeviceContext> context, std::string name) {
+        this->context = context;
+        this->name = name;
+    }
+
+    Material::Material():textureMap({{"DiffuseTexture", {k_invalid_index,0}},{"MetallicRoughnessTexture",{k_invalid_index,1}},{"AOTexture", {k_invalid_index,2}},
+                                 {"NormalTexture",{k_invalid_index,3}},{"EmissiveTexture",{k_invalid_index,4}}}) {
+}
+
+void Material::addTexture(Renderer *renderer, std::string name, std::string path) {
+    TextureHandle handle = renderer->upLoadTextureToGPU(path);
+    textureMap[name] = {handle,(u32)textureMap.size()};
+}
+
+void Material::addLutTexture(Renderer *renderer, TextureHandle handle) {
+    textureMap["LUTTexture"] = {handle, (u32)textureMap.size()};
+}
+
+void Material::addDiffuseEnvMap(Renderer *renderer, TextureHandle handle) {
+    textureMap["DiffuseEnvMap"] = {handle,(u32)textureMap.size()};
+};
+
+void Material::addSpecularEnvMap(Renderer *renderer, TextureHandle handle) {
+    textureMap["SpecularEnvMap"] = {handle,(u32)textureMap.size()};
+}
+
+
+void Material::updateProgram() {
+//    for(int i = 0;i<program->passes.size();++i){
+//        ProgramPass& pass = program->passes[i];
+//        DescriptorSetLayoutCreateInfo newDslayout;
+//        pass.bindingElementNames.clear();
+//        std::unordered_set<std::string> set;
+//        pass.bindingElementNames.push_back("DiffuseTexture");
+//        pass.bindingElementNames.push_back("MetallicRoughnessTexture");
+//        pass.bindingElementNames.push_back("NormalTexture");
+//        pass.bindingElementNames.push_back("EmissiveTexture");
+//        pass.bindingElementNames.push_back("AOTexture");
+//        set.insert("DiffuseTexture");
+//        set.insert("MetallicRoughnessTexture");
+//        set.insert("NormalTexture");
+//        set.insert("EmissiveTexture");
+//        set.insert("AOTexture");
+//        newDslayout.reset();
+//        newDslayout.addBinding({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,0,1,"DiffuseTexture"});
+//        newDslayout.addBinding({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,1,1,"MetallicRoughnessTexture"});
+//        newDslayout.addBinding({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,2,1,"NormalTexture"});
+//        newDslayout.addBinding({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,3,1,"EmissiveTexture"});
+//        newDslayout.addBinding({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,4,1,"AOTexture"});
+//        newDslayout.addBinding({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,5,1,"GlobalUniform"});
+//        newDslayout.addBinding({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,6,1,"MaterialUniform"});
+//        u32 bindIndex = 6;
+//        for(auto& [first,second]: textureMap){
+//            if(set.find(first)==set.end()) continue;
+//            ++bindIndex;
+//            pass.bindingElementNames.push_back(first);
+//            newDslayout.addBinding({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,bindIndex,1,first});
+//        }
+//        Pipeline test;
+//    }
+}
+
+void Material::setProgram(const std::shared_ptr<Program> &program) {
+    Material::program = program;
+};
+
+
+
+
+
+
+}// namespace dg

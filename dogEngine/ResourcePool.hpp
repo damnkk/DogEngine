@@ -8,6 +8,7 @@ namespace dg{
     template<typename T>
     struct ResourcePool{
         void                        init(u32 poolsize);
+        void                        destroy();
         
         u32                         obtainResource();
         
@@ -26,6 +27,13 @@ namespace dg{
         u32                         m_poolSize = 16;
 
     };
+
+    template<typename T>
+    void  ResourcePool<T>::destroy() {
+        m_objectArray.clear();
+        m_freeIndices.clear();
+    }
+
 
     template<typename T>
     void  ResourcePool<T>::init( u32 poolsize){

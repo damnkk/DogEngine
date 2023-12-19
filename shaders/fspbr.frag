@@ -1,17 +1,24 @@
 #version 450
-layout(binding=5)uniform UniformBufferObject{
+layout(binding=30)uniform UniformBufferObject{
     vec3 cameraPos;
     vec3 cameraDirectory;
-    mat4 model;
     mat4 view;
     mat4 proj;
 }ubo;
 
+layout(binding=31)uniform UniformMaterialObject{
+    mat4 modelMatrix;
+    vec4 baseColorFactor;
+    vec3 emissiveFactor;
+    vec3 tueFactor;
+    vec3 mrFactor;
+}umat;
+
 layout(set=0,binding=0)uniform sampler2D diffuseTex;
 layout(set=0,binding=1)uniform sampler2D mrtTex;
-layout(set=0,binding=2)uniform sampler2D normTex;
-layout(set=0,binding=3)uniform sampler2D emissTex;
-layout(set=0,binding=4)uniform sampler2D occuTex;
+layout(set=0,binding=2)uniform sampler2D occuTex;
+layout(set=0,binding=3)uniform sampler2D normTex;
+layout(set=0,binding=4)uniform sampler2D emissTex;
 
 layout(location=0)in vec3 fragNormal;
 layout(location=1)in vec2 fragTexCoord;

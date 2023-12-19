@@ -18,16 +18,12 @@
 namespace dg{
 
 struct CommandBuffer;
-struct constentData {
-  glm::mat4 modelMatrix;
-};
 
 const int MAX_FRAMES_IN_FLIGHT = 3;
 
 struct UniformData{
     alignas(16) glm::vec3                           cameraPos;
     alignas(16) glm::vec3                           cameraDirectory;
-    alignas(16) glm::mat4                           modelMatrix;
     alignas(16) glm::mat4                           viewMatrix;
     alignas(16) glm::mat4                           projectMatrix;
 };
@@ -121,11 +117,12 @@ struct DeviceContext{
     ResourcePool<ShaderState>                   m_shaderStates;
     ResourcePool<FrameBuffer>                   m_frameBuffers;
     //RssourcePool<Shader>                        m_shaders;
-    SamplerHandle                               m_defaultSampler;
     BufferHandle                                m_FullScrVertexBuffer;
     RenderPassHandle                            m_swapChainPass;
     TextureHandle                               m_depthTexture;
     TextureHandle                               m_defaultTexture;
+    SamplerHandle                               m_defaultSampler;
+    DescriptorSetLayoutCreateInfo               m_defaultSetLayoutCI;
     std::vector<CommandBuffer*>                 m_queuedCommandBuffer;
     std::vector<ResourceUpdate>                 m_delectionQueue;
     std::vector<DescriptorSetUpdate>            m_descriptorSetUpdateQueue;

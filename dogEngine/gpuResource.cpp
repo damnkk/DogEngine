@@ -193,7 +193,8 @@ namespace dg{
         return *this;
     }
 
-    DepthStencilCreation& DepthStencilCreation::setDepth(bool write, VkCompareOp testOp){
+    DepthStencilCreation& DepthStencilCreation::setDepth(bool enable, bool write, VkCompareOp testOp){
+        m_depthEnable = enable;
         m_depthWriteEnable = write;
         m_depthCompare = testOp;
         return *this;
