@@ -76,13 +76,13 @@ namespace dg{
         vkCmdBindIndexBuffer(m_commandBuffer, realBuffer, offse, iType);
     }
 
-    void CommandBuffer::bindDescriptorSet(std::vector<DescriptorSetHandle>& set,  u32* offsets, u32 numOffsets){
+    void CommandBuffer::bindDescriptorSet(std::vector<DescriptorSetHandle> set, u32 firstSet, u32* offsets, u32 numOffsets){
         for(int i = 0;i<set.size();++i){
             DescriptorSet* dset = m_context->accessDescriptorSet(set[i]);
             if(!dset){DG_ERROR("You are trying to bind an invalid descriptor set")}
             m_descriptorSets[i] = dset->m_vkdescriptorSet;
         }
-        vkCmdBindDescriptorSets(m_commandBuffer, m_pipeline->m_bindPoint, m_pipeline->m_pipelineLayout, 0, set.size(), m_descriptorSets, 0, nullptr);
+        vkCmdBindDescriptorSets(m_commandBuffer, m_pipeline->m_bindPoint, m_pipeline->m_pipelineLayout, firstSet, set.size(), m_descriptorSets, 0, nullptr);
     }
 
     void CommandBuffer::setScissor(const Rect2DInt* rect){

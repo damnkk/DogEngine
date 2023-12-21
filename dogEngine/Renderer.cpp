@@ -90,7 +90,9 @@ void Renderer::makeDefaultMaterial(){
     matCI.setName("defaultMat");
     m_defaultMaterial = createMaterial(matCI);
     DescriptorSetLayoutCreateInfo descInfo = m_context->m_defaultSetLayoutCI;
+    descInfo.addBinding({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,1,1,"MaterialUniformBuffer"});
     descInfo.setName("defaultDescLayout");
+    DescriptorSetLayoutHandle descLayout = m_context->createDescriptorSetLayout(descInfo);
     pipelineCreateInfo  pipelineInfo{};
     pipelineInfo.m_renderPassHandle = m_context->m_swapChainPass;
     pipelineInfo.m_depthStencil.setDepth(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
@@ -103,7 +105,9 @@ void Renderer::makeDefaultMaterial(){
     pipelineInfo.m_shaderState.addStage(fsCode.data(),fsCode.size(),VK_SHADER_STAGE_FRAGMENT_BIT);
     pipelineInfo.m_shaderState.setName("defaultPipeline");
     pipelineInfo.name = pipelineInfo.m_shaderState.name;
-    m_defaultMaterial->setProgram(createProgram("defaultPbrProgram",&pipelineInfo));
+    pipelineInfo.addDescriptorSetlayout(descLayout);
+    pipelineInfo.addDescriptorSetlayout(m_context->m_bindlessDescriptorSetLayout);
+    m_defaultMaterial->setProgram(createProgram("defaultPbrProgram",{pipelineInfo}));
 }
 
 void Renderer::init(std::shared_ptr<DeviceContext> context){
@@ -198,22 +202,18 @@ Material* Renderer::createMaterial( MaterialCreateInfo& matInfo){
   return material;
 }
 
-std::shared_ptr<Program> Renderer::createProgram(const std::string& name, pipelineCreateInfo* pipCI){
+std::shared_ptr<Program> Renderer::createProgram(const std::string& name, ProgramPassCreateInfo progPassCI){
   std::shared_ptr<Program> pg = std::make_shared<Program>(m_context,name);
-  if(pipCI){
-      u32 numPasses = 1;
-      pg->passes.resize(numPasses);
-      for(int i = 0;i<numPasses;++i){
-        ProgramPass& pass = pg->passes[i];
-        pass.descriptorSetLayout = m_context->createDescriptorSetLayout(m_context->m_defaultSetLayoutCI);
-        pipelineCreateInfo pipelineInfo = *pipCI;
-          pipelineInfo.addDescriptorSetlayout(pass.descriptorSetLayout);
-        pass.pipeline = m_context->createPipeline(pipelineInfo);
-      }
-      return pg;
-  }else{
-      //创建着色器文件；
+  u32 numPasses = 1;
+  pg->passes.resize(numPasses);
+  for(int i = 0;i<numPasses;++i){
+    ProgramPass& pass = pg->passes[i];
+    pass.pipeline = m_context->createPipeline(progPassCI.pipelineInfo);
+    for(auto& layoutHandle:progPassCI.pipelineInfo.m_descLayout){
+        pass.descriptorSetLayout.emplace_back(layoutHandle);
+    }
   }
+  return pg;
 }
 
 
@@ -309,7 +309,7 @@ void Renderer::drawScene(){
       cmd->bindIndexBuffer(currRenderObject.m_indexBuffer, 0, VK_INDEX_TYPE_UINT32);
       vkCmdSetDepthTestEnable(cmd->m_commandBuffer, VK_TRUE);
       Buffer* globalUniformBuffer = m_context->accessBuffer(currRenderObject.m_GlobalUniform);
-      if(!globalUniformBuffer){DG_WARN("Invalid uniform Buffer");}
+      if(!globalUniformBuffer){DG_WARN("Invalid uniform Buffer"); continue;}
       void* data;
       vmaMapMemory(m_context->m_vma, globalUniformBuffer->m_allocation, &data);
       UniformData udata{};
@@ -332,11 +332,15 @@ void Renderer::drawScene(){
       //um.modelMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f)*time, glm::vec3(1.0f,0.0f,0.0f));
       um.mrFactor = currRenderObject.m_material->uniformMaterial.mrFactor;
       um.tueFactor = currRenderObject.m_material->uniformMaterial.tueFactor;
+      for(auto& [first,second]:currRenderObject.m_material->textureMap){
+          um.textureIndices[second.bindIdx] = second.texture.index;
+      }
       Buffer* materialBuffer = m_context->accessBuffer(currRenderObject.m_MaterialUniform);
       vmaMapMemory(m_context->m_vma, materialBuffer->m_allocation,&data);
       memcpy(data,&um,sizeof(Material::UniformMaterial));
       vmaUnmapMemory(m_context->m_vma,materialBuffer->m_allocation);
-      cmd->bindDescriptorSet(currRenderObject.m_descriptors, nullptr, 0);
+      cmd->bindDescriptorSet(currRenderObject.m_descriptors,0, nullptr, 0);
+      cmd->bindDescriptorSet({m_context->m_bindlessDescriptorSet},1,nullptr,0);
       //cmd->draw(TopologyType::Enum::Triangle, 0, currRenderObject.m_vertexCount, 0, 0);
       cmd->drawIndexed(TopologyType::Enum::Triangle, currRenderObject.m_indexCount, 1, 0, 0, 0);
     }
@@ -373,7 +377,8 @@ TextureHandle Renderer::upLoadTextureToGPU(std::string& texPath) {
         ktxResult res = ktxTexture_CreateFromNamedFile(texPath.c_str(), KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT, &ktxTexture);
         DGASSERT(res == KTX_SUCCESS);
         TextureCreateInfo texCI{};
-        texCI.setData(ktxTexture).setName("skyTexture").setFormat(VK_FORMAT_R16G16B16A16_SFLOAT).setUsage(VK_IMAGE_USAGE_SAMPLED_BIT).setMipmapLevel(ktxTexture->numLevels).setExtent({ktxTexture->baseWidth,ktxTexture->baseHeight,1});
+        texCI.setData(ktxTexture).setName("skyTexture").setFormat(VK_FORMAT_R16G16B16A16_SFLOAT).setUsage(VK_IMAGE_USAGE_SAMPLED_BIT)
+        .setMipmapLevel(ktxTexture->numLevels).setExtent({ktxTexture->baseWidth,ktxTexture->baseHeight,1}).setBindLess(true);
         texCI.m_imageType = TextureType::Enum::TextureCube;
         TextureHandle handle = createTexture(texCI)->handle;
         ktxTexture_Destroy(ktxTexture);
@@ -382,12 +387,12 @@ TextureHandle Renderer::upLoadTextureToGPU(std::string& texPath) {
     }
     int imgWidth,imgHeight,imgChannel;
     auto ptr = stbi_load(texPath.c_str(),&imgWidth,&imgHeight,&imgChannel,4);
-    TextureCreateInfo texInfo;
+    TextureCreateInfo texInfo{};
     u32 foundHead = texPath.find_last_of("/\\");
     u32 foundEnd = texPath.find_last_not_of(".");
     std::string texName = texPath.substr(foundHead+1,foundEnd);
     texInfo.setName(texName.c_str()).setData(ptr).setExtent({(u32)imgWidth,(u32)imgHeight,1})
-            .setFormat(VK_FORMAT_R8G8B8A8_SRGB).setMipmapLevel(1).setUsage(VK_IMAGE_USAGE_SAMPLED_BIT);
+            .setFormat(VK_FORMAT_R8G8B8A8_SRGB).setMipmapLevel(1).setUsage(VK_IMAGE_USAGE_SAMPLED_BIT).setBindLess(true);
     TextureHandle texHandle = createTexture(texInfo)->handle;
     delete ptr;
     ptr = nullptr;
@@ -414,7 +419,8 @@ void Renderer::executeSkyBox() {
     skybox.m_MaterialUniform = createBuffer(bcinfo)->handle;
     //material stuff
     DescriptorSetLayoutCreateInfo skyLayoutInfo{};
-    skyLayoutInfo.reset().addBinding({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,0,1,"skyTexture"});
+    skyLayoutInfo.reset().addBinding({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,0,1,"globalUniform"})
+    .addBinding({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,1,1,"MaterialUniform"});
     skyLayoutInfo.setName("skyDescLayout");
     pipelineCreateInfo pipelineInfo;
     pipelineInfo.m_renderPassHandle = m_context->m_swapChainPass;
@@ -430,16 +436,16 @@ void Renderer::executeSkyBox() {
     pipelineInfo.m_shaderState.addStage(vsCode.data(), vsCode.size(), VK_SHADER_STAGE_VERTEX_BIT);
     pipelineInfo.m_shaderState.addStage(fsCode.data(), fsCode.size(), VK_SHADER_STAGE_FRAGMENT_BIT);
     pipelineInfo.m_shaderState.setName("skyPipeline");
+    pipelineInfo.addDescriptorSetlayout(m_context->createDescriptorSetLayout(skyLayoutInfo));
+    pipelineInfo.addDescriptorSetlayout(m_context->m_bindlessDescriptorSetLayout);
     MaterialCreateInfo matInfo{};
     matInfo.setName("skyMaterial");
     skybox.m_material = createMaterial(matInfo);
-    std::shared_ptr<Program> skyProgram = createProgram("skyPipe",&pipelineInfo);
+    std::shared_ptr<Program> skyProgram = createProgram("skyPipe",{pipelineInfo});
     skybox.m_material->setProgram(skyProgram);
     skybox.m_material->setDiffuseTexture(m_skyTexture);
     DescriptorSetCreateInfo descInfo{};
-    descInfo.reset().setName("skyDesc").setLayout(skybox.m_material->program->passes[0].descriptorSetLayout).texture(skybox.m_material->textureMap["DiffuseTexture"].texture,skybox.m_material->textureMap["DiffuseTexture"].bindIdx)
-    .texture(skybox.m_material->textureMap["DiffuseTexture"].texture,skybox.m_material->textureMap["DiffuseTexture"].bindIdx)
-    .buffer(skybox.m_GlobalUniform,30).buffer(skybox.m_MaterialUniform,31);
+    descInfo.reset().setName("skyDesc").setLayout(skybox.m_material->program->passes[0].descriptorSetLayout[0]).buffer(skybox.m_GlobalUniform,0).buffer(skybox.m_MaterialUniform,1);
     skybox.m_descriptors.push_back(m_context->createDescriptorSet(descInfo));
 }
 
@@ -519,10 +525,5 @@ void Material::updateProgram() {
 void Material::setProgram(const std::shared_ptr<Program> &program) {
     Material::program = program;
 };
-
-
-
-
-
 
 }// namespace dg

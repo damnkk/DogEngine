@@ -96,6 +96,11 @@ namespace dg{
         return *this;
     }
 
+    TextureCreateInfo &TextureCreateInfo::setBindLess(bool isBindLess) {
+        this->bindless = isBindLess;
+        return *this;
+    }
+
     RenderPassCreateInfo& RenderPassCreateInfo::setName(const char* name){
         this->name = name;
         return *this;
@@ -135,6 +140,10 @@ namespace dg{
     } 
 
     DescriptorSetLayoutCreateInfo& DescriptorSetLayoutCreateInfo::addBinding(const Binding& binding){
+        if(m_bindingNum>=k_max_discriptor_nums_per_set){
+            DG_ERROR("Max number of binding is ", std::to_string(k_max_discriptor_nums_per_set)," can't add more binding!")
+            exit(-1);
+        }
         m_bindings[m_bindingNum++] = binding;
         return *this;
     }
@@ -228,6 +237,10 @@ namespace dg{
 
     BlendState& BlendStateCreation::add_blend_state()
     {
+        if(m_activeStates>=k_max_image_outputs){
+            DG_ERROR("Max number of blend state is ", std::to_string(k_max_image_outputs)," can't add more blend state!")
+            exit(-1);
+        }
         return m_blendStates[m_activeStates++];
     }
 
@@ -243,6 +256,10 @@ namespace dg{
     }
 
     ShaderStateCreation& ShaderStateCreation::addStage(const char* code ,u32 codeSize, VkShaderStageFlagBits type){
+        if(m_stageCount>=k_max_shader_stages){
+            DG_ERROR("Max number of shader stages is ", std::to_string(k_max_shader_stages)," can't add more shader stage!")
+            exit(-1);
+        }
         m_stages[m_stageCount].m_code = code;
         m_stages[m_stageCount].m_codeSize = codeSize;
         m_stages[m_stageCount].m_type = type;
@@ -283,8 +300,12 @@ namespace dg{
         return *this;
     }
 
-    pipelineCreateInfo& pipelineCreateInfo::addDescriptorSetlayout(DescriptorSetLayoutHandle handle){
-        m_DescriptroSetLayouts[m_numActivateLayouts++] = handle;
+    pipelineCreateInfo& pipelineCreateInfo::addDescriptorSetlayout(const DescriptorSetLayoutHandle& info){
+        if(m_numActivateLayouts>=k_max_descriptor_set_layouts){
+            DG_ERROR("The max descriptor set layout num for per pipeline is limited to ", std::to_string(k_max_descriptor_set_layouts)," can't add more layout info!")
+            exit(-1);
+        }
+        m_descLayout[m_numActivateLayouts++] = info;
         return *this;
     }
 
@@ -324,11 +345,19 @@ namespace dg{
     }
 
     ExecutionBarrier&   ExecutionBarrier::addImageBarrier(const ImageBarrier& imageBarrier){
+        if(numBufferBarriers>=maxBarrierNum){
+            DG_ERROR("Max barrier num is", std::to_string(maxBarrierNum),"can't add more image barrier!")
+            exit(-1);
+        }
         imageBarriers[numImageBarriers++] = imageBarrier;
         return *this;
     }
 
     ExecutionBarrier&   ExecutionBarrier::addmemoryBarrier(const MemBarrier& memBarrier){
+        if(numBufferBarriers>=maxBarrierNum){
+            DG_ERROR("Max barrier num is", std::to_string(maxBarrierNum),"can't add more memory barrier!")
+            exit(-1);
+        }
         memoryBarriers[numBufferBarriers++] = memBarrier;
         return *this;
     }

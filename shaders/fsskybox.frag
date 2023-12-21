@@ -1,24 +1,25 @@
 #version 450
-layout(binding=30)uniform UniformBufferObject{
+
+#extension GL_EXT_nonuniform_qualifier:enable
+#extension GL_EXT_scalar_block_layout:enable
+layout(std430,binding=0)uniform UniformBufferObject{
 	vec3 cameraPos;
 	vec3 cameraDirectory;
 	mat4 view;
 	mat4 proj;
 }ubo;
 
-layout(binding=31)uniform UniformMaterialObject{
+layout(std430,binding=1)uniform UniformMaterialObject{
 	mat4 modelMatrix;
 	vec4 baseColorFactor;
 	vec3 emissiveFactor;
 	vec3 tueFactor;
 	vec3 mrFactor;
+	int textureIndices[];
 }umat;
 
-layout(set=0,binding=0)uniform sampler2D skybox;
-layout(set=0,binding=1)uniform sampler2D mrtTex;
-layout(set=0,binding=2)uniform sampler2D normTex;
-layout(set=0,binding=3)uniform sampler2D emissTex;
-layout(set=0,binding=4)uniform sampler2D occuTex;
+layout(set=1,binding=0)uniform sampler2D globalTextures[];
+
 layout(location=0)in vec3 worldPos;
 
 layout(location=0)out vec4 outColor;
@@ -47,7 +48,7 @@ vec2 SampleSphericalMap(vec3 v){
 void main(){
 	vec3 sampleVector=worldPos-ubo.cameraPos;
 	vec2 uv=SampleSphericalMap(normalize(worldPos));
-	vec3 envColor=texture(skybox,uv).xyz;
+	vec3 envColor=texture(globalTextures[nonuniformEXT(umat.textureIndices[0])],uv).xyz;
 	envColor=ACESToneMapping(envColor,1.5f);
 	outColor=vec4(envColor,1.f);
 	

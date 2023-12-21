@@ -1,24 +1,32 @@
 #version 450
-layout(binding=30)uniform UniformBufferObject{
+
+#extension GL_EXT_nonuniform_qualifier:enable
+#extension GL_EXT_scalar_block_layout:enable
+layout(std430,binding=0)uniform UniformBufferObject{
     vec3 cameraPos;
     vec3 cameraDirectory;
     mat4 view;
     mat4 proj;
 }ubo;
 
-layout(binding=31)uniform UniformMaterialObject{
+layout(std430,binding=1)uniform UniformMaterialObject{
     mat4 modelMatrix;
     vec4 baseColorFactor;
     vec3 emissiveFactor;
     vec3 tueFactor;
     vec3 mrFactor;
+    int textureIndices[];
 }umat;
 
-layout(set=0,binding=0)uniform sampler2D diffuseTex;
-layout(set=0,binding=1)uniform sampler2D mrtTex;
-layout(set=0,binding=2)uniform sampler2D occuTex;
-layout(set=0,binding=3)uniform sampler2D normTex;
-layout(set=0,binding=4)uniform sampler2D emissTex;
+/*
+Diffuse  0
+MRT      1
+AO       2
+Nomral   3
+emissive 4
+*/
+
+layout(set=1,binding=0)uniform sampler2D globalTextures[];
 
 layout(location=0)in vec3 fragNormal;
 layout(location=1)in vec2 fragTexCoord;
@@ -56,7 +64,7 @@ vec3 addNormTex(vec3 initNormal,vec2 fragTexCoord){
         normalize(initNormal)
     );
     
-    vec3 N=normalize(texture(normTex,fragTexCoord).rgb*2.-1.);
+    vec3 N=normalize(texture(globalTextures[nonuniformEXT(umat.textureIndices[3])],fragTexCoord).rgb*2.-1.);
     N=normalize(TBN*N);
     return N;
     
@@ -174,10 +182,11 @@ void main(){
     vec3 N=normalize(fragNormal);
     N=addNormTex(N,fragTexCoord);
     vec3 H=normalize(L+V);
-    float roughness=texture(mrtTex,fragTexCoord).y;
-    float metallic=texture(mrtTex,fragTexCoord).z;
-    vec4 baseColor=vec4(decode_srgb(texture(diffuseTex,fragTexCoord).xyz),texture(diffuseTex,fragTexCoord).a);
-    vec3 emission=vec3(decode_srgb(texture(emissTex,fragTexCoord).xyz));
+    float roughness=texture(globalTextures[nonuniformEXT(umat.textureIndices[1])],fragTexCoord).y;
+    float metallic=texture(globalTextures[nonuniformEXT(umat.textureIndices[1])],fragTexCoord).z;
+    vec4 baseColor=vec4(decode_srgb(texture(globalTextures[nonuniformEXT(umat.textureIndices[0])],fragTexCoord).xyz),texture(globalTextures[nonuniformEXT(umat.textureIndices[0])],fragTexCoord).a);
+    vec3 emission=vec3(decode_srgb(texture(globalTextures[nonuniformEXT(umat.textureIndices[4])],fragTexCoord).xyz));
     vec3 color=PBR(N,V,L,baseColor.xyz,vec3(2.f),roughness,metallic)+emission;
+    //color=vec3(texture(globalTextures[nonuniformEXT(umat.textureIndices[2])],fragTexCoord));
     outColor=vec4(color,1.);
 }

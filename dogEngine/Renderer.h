@@ -34,17 +34,20 @@ struct SamplerResource:public Resource{
     static const std::string            k_type;
 };
 
+struct ProgramPassCreateInfo{
+    pipelineCreateInfo                  pipelineInfo;
+};
 
 struct ProgramPass{
     PipelineHandle                      pipeline;
-    DescriptorSetLayoutHandle           descriptorSetLayout;
+    std::vector<DescriptorSetLayoutHandle>   descriptorSetLayout;
 };
 
 struct Program{
     Program(){}
     Program(std::shared_ptr<DeviceContext> context,std::string name);
     ~Program();
-    void                                addPass(pipelineCreateInfo pipeInfo);
+    void                                addPass(ProgramPassCreateInfo& pipeInfo);
     std::string                         name;
     std::vector<ProgramPass>            passes;
     std::shared_ptr<DeviceContext>      context;
@@ -77,6 +80,7 @@ struct Material:public Resource{
         alignas(16) glm::vec3                           tueFactor = glm::vec3(1.0f,1.0f,0.0f);
         //metallic, roughness, __undefined_placeholder__
         alignas(16) glm::vec3                           mrFactor = glm::vec3(1.0f,1.0f,0.0f);
+        int                                 textureIndices[k_max_bindless_resource] ;
     } uniformMaterial;
     Material();
     void                                addTexture(Renderer* renderer, std::string name, std::string path);
@@ -133,7 +137,7 @@ public:
     TextureResource*                            createTexture( TextureCreateInfo& textureInfo);
     BufferResource*                             createBuffer( BufferCreateInfo& bufferInfo);
     SamplerResource*                            createSampler( SamplerCreateInfo& samplerInfo);
-    std::shared_ptr<Program>                    createProgram(const std::string& name, pipelineCreateInfo* pipCI);
+    std::shared_ptr<Program>                    createProgram(const std::string& name, ProgramPassCreateInfo progPassCI);
     Material*                                   createMaterial( MaterialCreateInfo& matInfo);
     void                                        addSkyBox(std::string skyTexPath);
 

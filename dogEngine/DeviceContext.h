@@ -120,7 +120,7 @@ struct DeviceContext{
     BufferHandle                                m_FullScrVertexBuffer;
     RenderPassHandle                            m_swapChainPass;
     TextureHandle                               m_depthTexture;
-    TextureHandle                               m_defaultTexture;
+    TextureHandle                               m_DummyTexture;
     SamplerHandle                               m_defaultSampler;
     DescriptorSetLayoutCreateInfo               m_defaultSetLayoutCI;
     std::vector<CommandBuffer*>                 m_queuedCommandBuffer;
@@ -159,15 +159,17 @@ struct DeviceContext{
     VkPhysicalDeviceProperties                  m_phyDeviceProperty;
     static GLFWwindow*                          m_window;
     VkDescriptorPool                            m_descriptorPool;
+    VkDescriptorPool                            m_bindlessDescriptorPool;
+    VkDescriptorSet                             m_VulkanBindlessDescriptorSet;
+    DescriptorSetLayoutHandle                   m_bindlessDescriptorSetLayout;
+    DescriptorSetHandle                         m_bindlessDescriptorSet;
+    std::vector<ResourceUpdate>                 m_texture_to_update_bindless;
     VkQueue                                     m_computeQueue;
     VkQueue                                     m_graphicsQueue;
     VkQueue                                     m_transferQueue;
     static std::shared_ptr<Camera>              m_camera;
 
     VmaAllocator                                m_vma;
-    PipelineHandle                              m_pbrPipeline{k_invalid_index};
-    PipelineHandle                              m_nprPipeline{k_invalid_index};
-    PipelineHandle                              m_rayTracingPipeline{k_invalid_index};
 
 
     Sampler* accessSampler(SamplerHandle samplerhandle);

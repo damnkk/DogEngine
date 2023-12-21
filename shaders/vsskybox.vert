@@ -1,17 +1,20 @@
 #version 450
 
-layout(binding=30)uniform UniformBufferObject{
+#extension GL_EXT_scalar_block_layout:enable
+
+layout(std140,binding=0)uniform UniformBufferObject{
 	vec3 cameraPos;
 	vec3 cameraDirectory;
 	mat4 view;
 	mat4 proj;
 }ubo;
-layout(binding=31)uniform UniformMaterialObject{
+layout(std140,binding=1)uniform UniformMaterialObject{
 	mat4 modelMatrix;
 	vec4 baseColorFactor;
 	vec3 emissiveFactor;
 	vec3 tueFactor;
 	vec3 mrFactor;
+	int textureIndices[];
 }umat;
 
 layout(location=0)in vec3 inPosition;

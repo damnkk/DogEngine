@@ -16,6 +16,8 @@ namespace dg{
     static const u32                    k_max_swapchain_images = 3;
     static const u32                    k_invalid_index = 0xffffffff;
     static const u32                    k_max_discriptor_nums_per_set = 32;
+    static const u32                    k_max_bindless_resource = 1024;
+    static const u32                    k_bindless_sampled_texture_bind_index = 0;
     static const u8                     k_max_image_outputs = 8;
     static const u8                     k_max_vertex_streams = 16;
     static const u8                     k_max_vertex_attributes = 16;
@@ -81,7 +83,7 @@ struct Texture{
     VkFormat                            m_format;
     VmaAllocation                       m_vma;
     TextureHandle                       m_handle;
-    
+    bool                                bindless = false;
     TextureType::Enum                   m_type;
     std::string                         m_name;
     VkExtent3D                          m_extent= {1,1,1};
@@ -122,6 +124,7 @@ struct DescriptorBinding {
     u16                                 start   = 0;
     u16                                 count   = 0;
     u16                                 set     = 0;
+    VkShaderStageFlagBits               stageFlags;
 
     std::string                         name;
 }; // struct ResourceBindingVulkan
@@ -133,7 +136,7 @@ struct DescriptorSetLayout{
     std::vector<DescriptorBinding>                  m_bindings;
     u32                                 m_numBindings = 0;
     u32                                 m_setIndex = 0;
-
+    bool                                bindless = false;
     DescriptorSetLayoutHandle           m_handle = {k_invalid_index};
 };
 
@@ -200,6 +203,7 @@ struct TextureCreateInfo{
     TextureType::Enum                   m_imageType = TextureType::Enum::Texture2D;
     std::string                         name;
     VkImageUsageFlags                   m_imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    bool                                bindless = false;
     
     TextureCreateInfo&                  setName(const char* neme);
     TextureCreateInfo&                  setFormat(VkFormat format);
@@ -208,6 +212,7 @@ struct TextureCreateInfo{
     TextureCreateInfo&                  setMipmapLevel(u32 miplevel);
     TextureCreateInfo&                  setUsage(VkImageUsageFlags usage);
     TextureCreateInfo&                  setTextureType(TextureType::Enum type);
+    TextureCreateInfo&                  setBindLess(bool isBindLess);
 };
 
 struct BufferCreateInfo{
@@ -374,24 +379,7 @@ struct RenderPassOutput{
                                                       RenderPassOperation::Enum stencil);
 };
 
-struct pipelineCreateInfo{
-    RasterizationCreation               m_rasterization;
-    DepthStencilCreation                m_depthStencil;
-    BlendStateCreation                  m_BlendState;
-    VertexInputCreation                 m_vertexInput;
-    ShaderStateCreation                 m_shaderState;
 
-    RenderPassOutput                    m_renderPassOutput;
-    RenderPassHandle                    m_renderPassHandle;
-    DescriptorSetLayoutHandle           m_DescriptroSetLayouts[k_max_discriptor_nums_per_set];
-    const ViewPortState*                m_viewport = nullptr;
-
-    u32                                 m_numActivateLayouts = 0;
-    std::string                         name;
-    pipelineCreateInfo&                 addDescriptorSetlayout(DescriptorSetLayoutHandle handle);
-    RenderPassOutput&                   renderPassOutput();
-
-};
 struct DescriptorSetCreateInfo{
     std::vector<ResourceHandle>         m_resources;
     std::vector<SamplerHandle>          m_samplers;
@@ -414,11 +402,13 @@ struct DescriptorSetLayoutCreateInfo{
         int                             m_start = -1;
         u32                             m_count;
         std::string                     name;
+        VkShaderStageFlagBits           stageFlags = VK_SHADER_STAGE_ALL;
 
     };
     Binding                             m_bindings[k_max_discriptor_nums_per_set];
-    u32                                 m_bindingNum;
-    u32                                 m_setIndex;
+    u32                                 m_bindingNum = 0;
+    u32                                 m_setIndex = 0;
+    bool                                bindless = false;
     std::string                         name;
 
     DescriptorSetLayoutCreateInfo&      reset();
@@ -426,6 +416,26 @@ struct DescriptorSetLayoutCreateInfo{
     DescriptorSetLayoutCreateInfo&      addBinding(const Binding& binding);
     DescriptorSetLayoutCreateInfo&      setBindingAtIndex(const Binding& binding, u32 index);
     DescriptorSetLayoutCreateInfo&      setSetIndex(u32 index);
+};
+
+struct pipelineCreateInfo{
+
+    RasterizationCreation               m_rasterization;
+    DepthStencilCreation                m_depthStencil;
+    BlendStateCreation                  m_BlendState;
+    VertexInputCreation                 m_vertexInput;
+    ShaderStateCreation                 m_shaderState;
+
+    RenderPassOutput                    m_renderPassOutput;
+    RenderPassHandle                    m_renderPassHandle;
+    DescriptorSetLayoutHandle           m_descLayout[k_max_descriptor_set_layouts];
+    const ViewPortState*                m_viewport = nullptr;
+
+    u32                                 m_numActivateLayouts = 0;
+    std::string                         name;
+    pipelineCreateInfo&                 addDescriptorSetlayout(const DescriptorSetLayoutHandle& handle);
+    RenderPassOutput&                   renderPassOutput();
+
 };
 
 struct RenderPassCreateInfo{
@@ -491,6 +501,7 @@ struct Pipeline{
 };
 
 struct ExecutionBarrier{
+    static const u32                                 maxBarrierNum = 8;
     PipelineStage::Enum                 srcStage;
     PipelineStage::Enum                 dstStage;
     VkImageLayout                       newLayout;
@@ -507,8 +518,8 @@ struct ExecutionBarrier{
     u32                                 numBufferBarriers;
     u32                                 newBarrierExperimental = UINT32_MAX;
 
-    ImageBarrier                        imageBarriers[8];
-    MemBarrier                          memoryBarriers[8];
+    ImageBarrier                        imageBarriers[maxBarrierNum];
+    MemBarrier                          memoryBarriers[maxBarrierNum];
 
     ExecutionBarrier&                   reset();
     ExecutionBarrier&                   set(PipelineStage::Enum srcStage, PipelineStage::Enum dstStage);
@@ -539,9 +550,10 @@ typedef enum ResourceState {
 } ResourceState;
 
 struct ResourceUpdate{
-    ResourceDelectionType::Enum         type;
+    ResourceUpdateType::Enum         type;
     ResourceHandle                      handle;
     u32                                 currentFrame;
+    bool                                deleting = true;
 };
 
 struct DescriptorSetUpdate{

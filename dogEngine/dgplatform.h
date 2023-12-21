@@ -12,7 +12,7 @@ using u8  = uint8_t;
 #define DG_FILELINE(message)             __FILE__, "(", message
 
 
-namespace ResourceDelectionType{
+namespace ResourceUpdateType{
     enum Enum{
         Buffer,Texture,Pipeline,Sampler, DescriptorSetLayout, DescriptorSet, RenderPass, ShaderState, FrameBuffer, Count
     };

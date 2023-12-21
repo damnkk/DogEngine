@@ -24,7 +24,7 @@
         void                bindPipeline(PipelineHandle pip);
         void                bindVertexBuffer(BufferHandle vb, u32 binding, u32 offset);
         void                bindIndexBuffer(BufferHandle ib, u32 offset, VkIndexType index_type);
-        void                bindDescriptorSet(std::vector<DescriptorSetHandle>& set, u32* offsets, u32 numOffsets);
+        void                bindDescriptorSet(std::vector<DescriptorSetHandle> set, u32 firstSet, u32* offsets, u32 numOffsets);
         
 
         void                setScissor(const Rect2DInt* rect);

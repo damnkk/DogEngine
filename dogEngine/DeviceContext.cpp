@@ -126,7 +126,7 @@ void DeviceContext::setResourceName(VkObjectType objectType, uint64_t handle, co
 }
 void CommandBufferRing::init(DeviceContext* contex){
     if(!contex){
-        DG_ERROR("Invalid contex pointer, check this again");
+        DG_ERROR("Invalid contex pointer, check this again")
         exit(-1);
     } 
     m_context = contex;
@@ -138,7 +138,7 @@ void CommandBufferRing::init(DeviceContext* contex){
         poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
         poolInfo.queueFamilyIndex = m_context->m_graphicQueueIndex;
         VkResult res = vkCreateCommandPool(m_context->m_logicDevice, &poolInfo, nullptr, &m_commandPools[i]);
-        DGASSERT(res == VK_SUCCESS);
+        DGASSERT(res == VK_SUCCESS)
     }
 
     for(int i = 0;i<k_max_buffers;++i){
@@ -147,7 +147,7 @@ void CommandBufferRing::init(DeviceContext* contex){
         cmdAllocInfo.commandPool = m_commandPools[i/k_buffer_per_pool];
         cmdAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         auto res = vkAllocateCommandBuffers(m_context->m_logicDevice, &cmdAllocInfo, &m_commandBuffers[i].m_commandBuffer);
-        DGASSERT(res==VK_SUCCESS);
+        DGASSERT(res==VK_SUCCESS)
         m_commandBuffers[i].m_context = m_context;
         m_commandBuffers[i].m_handle = i;
         m_commandBuffers[i].reset();
@@ -262,7 +262,7 @@ void DeviceContext::DestroyTexture(TextureHandle texIndex){
     if(texIndex.index > m_textures.m_poolSize) {
         DG_WARN("You are trying to add an invalid texture in delection queue");
     }
-    m_delectionQueue.push_back({ResourceDelectionType::Enum::Texture, texIndex.index, m_currentFrame});
+    m_delectionQueue.push_back({ResourceUpdateType::Enum::Texture, texIndex.index, m_currentFrame});
     texIndex = {k_invalid_index};
 }
 
@@ -270,7 +270,7 @@ void DeviceContext::DestroyBuffer(BufferHandle bufferIndex){
     if(bufferIndex.index>m_buffers.m_poolSize){
         DG_WARN("You are trying to add an invalid buffer in delection queue");
     }
-    m_delectionQueue.push_back({ResourceDelectionType::Enum::Buffer, bufferIndex.index, m_currentFrame});
+    m_delectionQueue.push_back({ResourceUpdateType::Enum::Buffer, bufferIndex.index, m_currentFrame});
     bufferIndex = {k_invalid_index};
 }
 
@@ -278,7 +278,7 @@ void DeviceContext::DestroyRenderPass(RenderPassHandle passIndex){
     if(passIndex.index>m_renderPasses.m_poolSize){
         DG_WARN("You are trying to add an invalid renderPass in delection queue");
     }
-    m_delectionQueue.push_back({ResourceDelectionType::Enum::RenderPass,passIndex.index, m_currentFrame});
+    m_delectionQueue.push_back({ResourceUpdateType::Enum::RenderPass,passIndex.index, m_currentFrame});
     passIndex = {k_invalid_index};
 }
 
@@ -288,10 +288,11 @@ void DeviceContext::DestroyPipeline(PipelineHandle pipelineIndex){
     }
     Pipeline* pipeline = accessPipeline(pipelineIndex);
     for(int i = 0;i<pipeline->m_activeLayouts;++i){
+        if(pipeline->m_DescriptorSetLayout[i]->m_handle.index==m_bindlessDescriptorSetLayout.index)continue;
         DestroyDescriptorSetLayout(pipeline->m_DescriptorSetLayout[i]->m_handle);
     }
     DestroyShaderState(pipeline->m_shaderState);
-    m_delectionQueue.push_back({ResourceDelectionType::Enum::Pipeline, pipelineIndex.index,m_currentFrame});
+    m_delectionQueue.push_back({ResourceUpdateType::Enum::Pipeline, pipelineIndex.index,m_currentFrame, true});
     pipelineIndex = {k_invalid_index};
 }
 
@@ -299,7 +300,7 @@ void DeviceContext::DestroyDescriptorSet(DescriptorSetHandle dsIndex){
     if(dsIndex.index>m_descriptorSets.m_poolSize){
         DG_WARN("You are trying to add an invalid descriptor set in delection queue");
     }
-    m_delectionQueue.push_back({ResourceDelectionType::Enum::DescriptorSet, dsIndex.index, m_currentFrame});
+    m_delectionQueue.push_back({ResourceUpdateType::Enum::DescriptorSet, dsIndex.index, m_currentFrame});
     dsIndex = {k_invalid_index};
 }
 
@@ -307,7 +308,7 @@ void DeviceContext::DestroyDescriptorSetLayout(DescriptorSetLayoutHandle dsLayou
     if(dsLayoutIndex.index>m_descriptorSetLayouts.m_poolSize){
         DG_WARN("You are trying to add an invalid descriptor set layout in delection queue");
     }
-    m_delectionQueue.push_back({ResourceDelectionType::Enum::DescriptorSetLayout, dsLayoutIndex.index, m_currentFrame});
+    m_delectionQueue.push_back({ResourceUpdateType::Enum::DescriptorSetLayout, dsLayoutIndex.index, m_currentFrame});
     dsLayoutIndex = {k_invalid_index};
 }
 
@@ -315,7 +316,7 @@ void DeviceContext::DestroyShaderState(ShaderStateHandle ssHandle){
     if(ssHandle.index>m_shaderStates.m_poolSize){
         DG_WARN("You are trying to add an invalid shader state in delection queue");
     }
-    m_delectionQueue.push_back({ResourceDelectionType::Enum::ShaderState, ssHandle.index, m_currentFrame});
+    m_delectionQueue.push_back({ResourceUpdateType::Enum::ShaderState, ssHandle.index, m_currentFrame});
     ssHandle = {k_invalid_index};
 }
 
@@ -323,7 +324,7 @@ void DeviceContext::DestroySampler(SamplerHandle sampHandle){
     if(sampHandle.index>m_samplers.m_poolSize){
         DG_WARN("You are trying to add an invalid smapler to delection queue");
     }
-    m_delectionQueue.push_back({ResourceDelectionType::Enum::Sampler, sampHandle.index, m_currentFrame});
+    m_delectionQueue.push_back({ResourceUpdateType::Enum::Sampler, sampHandle.index, m_currentFrame});
     sampHandle = {k_invalid_index};
 }
 
@@ -331,7 +332,7 @@ void DeviceContext::DestroyFrameBuffer(FrameBufferHandle fboHandle){
     if(fboHandle.index!= k_invalid_index){
         DG_WARN("You are trying to add an invalid FramBuffer to delection queue");
     }
-    m_delectionQueue.push_back({ResourceDelectionType::Enum::FrameBuffer, fboHandle.index, m_currentFrame});
+    m_delectionQueue.push_back({ResourceUpdateType::Enum::FrameBuffer, fboHandle.index, m_currentFrame});
     fboHandle = {k_invalid_index};
 }
 
@@ -511,6 +512,7 @@ static void vulkanCreateTexture(DeviceContext* context, const TextureCreateInfo&
     Sampler* sampler = context->accessSampler(context->m_defaultSampler);
     texture->m_imageInfo.sampler = sampler->m_sampler;
     texture->m_usage= tc.m_imageUsage;
+    texture->bindless = tc.bindless;
 
     VkImageCreateInfo imgCreateInfo = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
     imgCreateInfo.imageType = to_vk_image_type(tc.m_imageType);
@@ -545,6 +547,10 @@ static void vulkanCreateTexture(DeviceContext* context, const TextureCreateInfo&
     viewInfo.subresourceRange.layerCount = 1;
     DGASSERT(vkCreateImageView(context->m_logicDevice, &viewInfo, nullptr, &texture->m_imageInfo.imageView)==VK_SUCCESS);
     context->setResourceName(VK_OBJECT_TYPE_IMAGE_VIEW, (uint64_t)texture->m_imageInfo.imageView, tc.name.c_str());
+    if(tc.bindless){
+        ResourceUpdate resUpdate {ResourceUpdateType::Texture,texture->m_handle.index, context->m_currentFrame, 0};
+        context->m_texture_to_update_bindless.push_back(resUpdate);
+    }
 }
 
 
@@ -1305,13 +1311,19 @@ DescriptorSetLayoutHandle DeviceContext::createDescriptorSetLayout( DescriptorSe
     DescriptorSetLayout* setLayout = accessDescriptorSetLayout(handle);
     setLayout->m_numBindings = dcinfo.m_bindingNum;
     setLayout->m_bindings.resize(dcinfo.m_bindingNum);
+    setLayout->m_vkBindings.resize(dcinfo.m_bindingNum);
     for(int i = 0;i<dcinfo.m_bindingNum;++i){
         setLayout->m_bindings[i].type = dcinfo.m_bindings[i].m_type;
+        setLayout->m_vkBindings[i].descriptorType = dcinfo.m_bindings[i].m_type;
         setLayout->m_bindings[i].start  = dcinfo.m_bindings[i].m_start;
+        setLayout->m_vkBindings[i].binding = dcinfo.m_bindings[i].m_start;
         setLayout->m_bindings[i].count = dcinfo.m_bindings[i].m_count;
+        setLayout->m_vkBindings[i].descriptorCount = dcinfo.m_bindings[i].m_count;
+        setLayout->m_bindings[i].stageFlags = dcinfo.m_bindings[i].stageFlags;
+        setLayout->m_vkBindings[i].stageFlags = dcinfo.m_bindings[i].stageFlags;
     }
     setLayout->m_setIndex = dcinfo.m_setIndex;
-    setLayout->m_vkBindings.resize(dcinfo.m_bindingNum);
+    setLayout->bindless = dcinfo.bindless?dcinfo.bindless: false;
     for(int i =0;i<dcinfo.m_bindingNum;++i){
         DescriptorBinding& tempBinding = setLayout->m_bindings[i];
         const DescriptorSetLayoutCreateInfo::Binding& input_binding = dcinfo.m_bindings[i];
@@ -1319,6 +1331,10 @@ DescriptorSetLayoutHandle DeviceContext::createDescriptorSetLayout( DescriptorSe
         tempBinding.count = 1;
         tempBinding.name = input_binding.name;
         tempBinding.type = input_binding.m_type;
+
+        if(dcinfo.bindless&&(tempBinding.type==VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER||tempBinding.type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)){
+            continue;
+        }
 
         VkDescriptorSetLayoutBinding& vkBinding = setLayout->m_vkBindings[i];
         vkBinding.binding = tempBinding.start;
@@ -1329,10 +1345,25 @@ DescriptorSetLayoutHandle DeviceContext::createDescriptorSetLayout( DescriptorSe
         vkBinding.pImmutableSamplers = nullptr;
     }
 
-    VkDescriptorSetLayoutCreateInfo setinfo{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
-    setinfo.bindingCount = dcinfo.m_bindingNum;
-    setinfo.pBindings = setLayout->m_vkBindings.data();
-    vkCreateDescriptorSetLayout(m_logicDevice, &setinfo, nullptr, &setLayout->m_descriptorSetLayout);
+    VkDescriptorSetLayoutCreateInfo layoutInfo{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
+    layoutInfo.bindingCount = dcinfo.m_bindingNum;
+    layoutInfo.pBindings = setLayout->m_vkBindings.data();
+    if(dcinfo.bindless){
+        layoutInfo.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
+        VkDescriptorBindingFlags  bindless_flags = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT|VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT;//|VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT_EXT;
+        VkDescriptorBindingFlags binding_flags[16];
+        for(u32 r= 0;r<dcinfo.m_bindingNum;++r){
+            binding_flags[r] = bindless_flags;
+        }
+        VkDescriptorSetLayoutBindingFlagsCreateInfo extended_info{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,
+                                                                  nullptr};
+        extended_info.bindingCount = dcinfo.m_bindingNum;
+        extended_info.pBindingFlags = binding_flags;
+        layoutInfo.pNext = &extended_info;
+        vkCreateDescriptorSetLayout(m_logicDevice,&layoutInfo,nullptr,&setLayout->m_descriptorSetLayout);
+    }else{
+        vkCreateDescriptorSetLayout(m_logicDevice, &layoutInfo, nullptr, &setLayout->m_descriptorSetLayout);
+    }
     setResourceName(VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (uint64_t)setLayout->m_descriptorSetLayout, dcinfo.name.c_str());
     setLayout->m_handle = handle;
     return handle;
@@ -1357,7 +1388,7 @@ static void vk_fill_write_descriptor_sets(DeviceContext* context, const Descript
                 Texture* texture;
                 auto& iinfo = imageInfo[i];
                 if(resources[i] == k_invalid_index){
-                    texture = context->accessTexture(context->m_defaultTexture); 
+                    texture = context->accessTexture(context->m_DummyTexture);
                 }else{
                     texture = context->accessTexture({resources[i]});
                 }
@@ -1437,7 +1468,20 @@ DescriptorSetHandle DeviceContext::createDescriptorSet(DescriptorSetCreateInfo& 
     setAllocInfo.descriptorPool = m_descriptorPool;
     setAllocInfo.descriptorSetCount = 1;
     setAllocInfo.pSetLayouts = &layout->m_descriptorSetLayout;
-    DGASSERT(vkAllocateDescriptorSets(m_logicDevice, &setAllocInfo, &set->m_vkdescriptorSet) == VK_SUCCESS);
+    if(layout->bindless){
+        VkDescriptorSetVariableDescriptorCountAllocateInfo count_info{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO};
+        u32 max_binding = k_max_bindless_resource-1;
+        count_info.descriptorSetCount = 1;
+        count_info.pDescriptorCounts = &max_binding;
+        setAllocInfo.descriptorPool = m_bindlessDescriptorPool;
+        setAllocInfo.pNext = &count_info;
+        VkResult  res = vkAllocateDescriptorSets(m_logicDevice,& setAllocInfo,&set->m_vkdescriptorSet);
+        DGASSERT(res==VK_SUCCESS);
+    }else{
+        VkResult  res = vkAllocateDescriptorSets(m_logicDevice, &setAllocInfo, &set->m_vkdescriptorSet) ;
+        DGASSERT(res==VK_SUCCESS)
+    }
+
 
     set->m_bindings = dcinfo.m_bindings;
     set->m_resources = dcinfo.m_resources;
@@ -1520,8 +1564,7 @@ PipelineHandle DeviceContext::createPipeline( pipelineCreateInfo& pipelineInfo){
     pipeline->m_shaderState = shaderState;
     VkDescriptorSetLayout  dSetLayouts[k_max_descriptor_set_layouts];
     for(int i = 0;i<pipelineInfo.m_numActivateLayouts;++i){
-        pipeline->m_DescriptorSetLayout[i] = accessDescriptorSetLayout(pipelineInfo.m_DescriptroSetLayouts[i]);
-        pipeline->m_DescriptorSetLayoutHandle[i] = pipelineInfo.m_DescriptroSetLayouts[i];
+        pipeline->m_DescriptorSetLayout[i] = accessDescriptorSetLayout(pipelineInfo.m_descLayout[i]);
         dSetLayouts[i] = pipeline->m_DescriptorSetLayout[i]->m_descriptorSetLayout;
     }
 
@@ -1541,7 +1584,7 @@ PipelineHandle DeviceContext::createPipeline( pipelineCreateInfo& pipelineInfo){
     pipeline->m_pipelineLayout = pipelineLayout;
     pipeline->m_activeLayouts = pipelineInfo.m_numActivateLayouts;
 
-    if(state->m_isInGraphicsPipelie == true){
+    if(state->m_isInGraphicsPipelie){
         VkGraphicsPipelineCreateInfo pipelineCreateInfo{VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO};
         pipelineCreateInfo.stageCount = state->m_activeShaders;
         pipelineCreateInfo.pStages = state->m_shaderStateInfo;
@@ -1787,13 +1830,22 @@ void DeviceContext::init(const ContextCreateInfo& DeviceInfo){
     }
     VkPhysicalDeviceFeatures2 phy2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
     vkGetPhysicalDeviceFeatures2(m_physicalDevice, &phy2);
+    VkPhysicalDeviceDescriptorIndexingFeaturesEXT indexingFeatures{};
+    indexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
+    indexingFeatures.pNext = nullptr;
+    indexingFeatures.runtimeDescriptorArray = VK_TRUE;
+    indexingFeatures.descriptorBindingVariableDescriptorCount = VK_TRUE;
+    indexingFeatures.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+    indexingFeatures.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
+    indexingFeatures.descriptorBindingStorageImageUpdateAfterBind = VK_TRUE;
+    indexingFeatures.descriptorBindingPartiallyBound = VK_TRUE;
 
     VkDeviceCreateInfo deviceInfo = {VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO};
     deviceInfo.queueCreateInfoCount = queueCount;
     deviceInfo.pQueueCreateInfos = queueInfos.data();
     deviceInfo.enabledExtensionCount = deviceExtensions.size();
     deviceInfo.ppEnabledExtensionNames = deviceExtensions.data();
-    deviceInfo.pNext = &phy2;
+    deviceInfo.pNext = &indexingFeatures;
 
     result = vkCreateDevice(m_physicalDevice, &deviceInfo, nullptr, &m_logicDevice);
     DGASSERT(result==VK_SUCCESS);
@@ -1864,7 +1916,17 @@ void DeviceContext::init(const ContextCreateInfo& DeviceInfo){
     poolInfo.maxSets       = k_global_pool_size*poolSizes.size();
     poolInfo.flags         = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
     result = vkCreateDescriptorPool(m_logicDevice, &poolInfo, nullptr, &m_descriptorPool);
-    DGASSERT(result==VK_SUCCESS);
+    DGASSERT(result==VK_SUCCESS)
+    std::vector<VkDescriptorPoolSize > bindLessSizes = {
+            {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, k_max_bindless_resource},
+            {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, k_max_bindless_resource}
+    };
+    poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT;
+    poolInfo.maxSets = k_global_pool_size*bindLessSizes.size();
+    poolInfo.poolSizeCount = bindLessSizes.size();
+    poolInfo.pPoolSizes = bindLessSizes.data();
+    result = vkCreateDescriptorPool(m_logicDevice,&poolInfo,nullptr,&m_bindlessDescriptorPool);
+    DGASSERT(result==VK_SUCCESS)
     DG_INFO("Descriptor Pool created successfully");
 
     m_buffers.init(4096);
@@ -1876,6 +1938,19 @@ void DeviceContext::init(const ContextCreateInfo& DeviceInfo){
     m_renderPasses.init(128);
     m_shaderStates.init(128);
     DG_INFO("Resource Pools created successfully");
+
+    DescriptorSetLayoutCreateInfo bindLessLayout{};
+    bindLessLayout.reset().setName("bindlessLayout").addBinding({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,k_bindless_sampled_texture_bind_index,k_max_bindless_resource,"bindLessSampledTexture"})
+    .addBinding({VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,k_bindless_sampled_texture_bind_index+1,k_max_bindless_resource,"bindLessStorageTexture"});
+    bindLessLayout.bindless = true;
+     m_bindlessDescriptorSetLayout = createDescriptorSetLayout(bindLessLayout);
+     DescriptorSetCreateInfo bindLessSetCI{};
+     bindLessSetCI.reset().setName("bindlessSet").setLayout(m_bindlessDescriptorSetLayout);
+     m_bindlessDescriptorSet = createDescriptorSet(bindLessSetCI);
+     DescriptorSet* bindLessSet = accessDescriptorSet(m_bindlessDescriptorSet);
+     if(bindLessSet){
+        m_VulkanBindlessDescriptorSet = bindLessSet->m_vkdescriptorSet;
+     }
 
     VkSemaphoreCreateInfo semaphoreInfo{VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
     vkCreateSemaphore(m_logicDevice, &semaphoreInfo, nullptr, &m_image_acquired_semaphore);
@@ -1910,19 +1985,10 @@ void DeviceContext::init(const ContextCreateInfo& DeviceInfo){
     tc.setUsage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
     m_depthTexture = createTexture(tc);
 
-    TextureCreateInfo dt{nullptr,{20,20,1},1,VK_FORMAT_R8G8B8A8_UNORM,TextureType::Enum::Texture2D,"default texture",VK_IMAGE_USAGE_SAMPLED_BIT|VK_IMAGE_USAGE_TRANSFER_DST_BIT};
-    auto ptr = new uint8_t(0);
-    dt.setData(ptr);
-    m_defaultTexture = createTexture(dt);
-    delete ptr;
-    ptr = nullptr;
+    TextureCreateInfo dt{nullptr,{1,1,1},1,VK_FORMAT_R8G8B8A8_UNORM,TextureType::Enum::Texture2D,"default texture",VK_IMAGE_USAGE_SAMPLED_BIT|VK_IMAGE_USAGE_TRANSFER_DST_BIT};
+    m_DummyTexture = createTexture(dt);
 
-    m_defaultSetLayoutCI.reset();
-    for(int i = 0;i<30;++i){
-        m_defaultSetLayoutCI.addBinding({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,i,1,std::to_string(i)});
-    }
-    m_defaultSetLayoutCI.addBinding({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 30,1,"30"});
-    m_defaultSetLayoutCI.addBinding({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 31,1,"31"});
+    m_defaultSetLayoutCI.reset().addBinding({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,0,1,"globalUniformBuffer"});
 
     //RenderPassCreat
     RenderPassCreateInfo renderpassInfo{};
@@ -1955,6 +2021,57 @@ void DeviceContext::present(){
             vkCmdEndRenderPass(cmd->m_commandBuffer);
         }
         vkEndCommandBuffer(cmd->m_commandBuffer);
+        cmd->m_isRecording = false;
+        cmd->m_currRenderPass = nullptr;
+    }
+
+    if(!m_texture_to_update_bindless.empty()){
+        VkWriteDescriptorSet bindlessWrite[k_max_bindless_resource];
+        VkDescriptorImageInfo bindlessImageInfo[k_max_bindless_resource];
+        int currWriteIdx = 0;
+        for(int i = m_texture_to_update_bindless.size()-1;i>=0;--i){
+            ResourceUpdate& resUpdate = m_texture_to_update_bindless[i];
+            {
+                Texture* texture = accessTexture({resUpdate.handle});
+                if(texture->m_imageInfo.imageView==VK_NULL_HANDLE){
+                    m_texture_to_update_bindless.pop_back();
+                    continue;
+                }
+                VkWriteDescriptorSet& descWrite = bindlessWrite[currWriteIdx];
+                descWrite = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+                descWrite.descriptorCount = 1;
+                descWrite.dstArrayElement = resUpdate.handle;
+                descWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                descWrite.dstSet = m_VulkanBindlessDescriptorSet;
+                descWrite.dstBinding = k_bindless_sampled_texture_bind_index;
+                DGASSERT(texture->m_handle.index==resUpdate.handle)
+                Sampler* sampler= accessSampler(m_defaultSampler);
+                VkDescriptorImageInfo& imageInfo = bindlessImageInfo[currWriteIdx];
+                if(!resUpdate.deleting){
+                    imageInfo.imageView = texture->m_imageInfo.imageView;
+                    if(texture->m_imageInfo.sampler!=VK_NULL_HANDLE){
+                        imageInfo.sampler = texture->m_imageInfo.sampler;
+                    }else{
+                        imageInfo.sampler = sampler->m_sampler;
+                    }
+                }else{
+                    Texture* dumyTex = accessTexture(m_DummyTexture);
+                    imageInfo.imageView = dumyTex->m_imageInfo.imageView;
+                    imageInfo.sampler = sampler->m_sampler;
+                }
+                imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                descWrite.pImageInfo = &imageInfo;
+                m_texture_to_update_bindless.pop_back();
+                ++currWriteIdx;
+
+                if(resUpdate.deleting){
+                    m_delectionQueue.push_back({ResourceUpdateType::Enum::Texture,texture->m_handle.index,m_currentFrame,true});
+                }
+            }
+        }
+        if(currWriteIdx){
+            vkUpdateDescriptorSets(m_logicDevice,currWriteIdx,bindlessWrite,0, nullptr);
+        }
     }
     VkSemaphore waitSmps[] = {m_image_acquired_semaphore};
     VkPipelineStageFlags wait_stages = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
@@ -1989,42 +2106,42 @@ void DeviceContext::present(){
             ResourceUpdate& rd = m_delectionQueue[i];
             if(rd.currentFrame==m_currentFrame){
                 switch(rd.type){
-                    case(ResourceDelectionType::Enum::Buffer):
+                    case(ResourceUpdateType::Enum::Buffer):
                     {
                         destroyBufferInstant(rd.handle);
                         break;
                     }
-                    case(ResourceDelectionType::Enum::Texture):
+                    case(ResourceUpdateType::Enum::Texture):
                     {
                         destroyTextureInstant(rd.handle);
                         break;
                     }
-                    case(ResourceDelectionType::Enum::DescriptorSet):
+                    case(ResourceUpdateType::Enum::DescriptorSet):
                     {
                         destroyDescriptorInstant(rd.handle);
                         break;
                     }
-                    case(ResourceDelectionType::Enum::DescriptorSetLayout):
+                    case(ResourceUpdateType::Enum::DescriptorSetLayout):
                     {
                         destroyDescriptorSetLayoutInstant(rd.handle);
                         break;
                     }
-                    case(ResourceDelectionType::Enum::FrameBuffer):
+                    case(ResourceUpdateType::Enum::FrameBuffer):
                     {
                         destroyFrameBufferInstant(rd.handle);
                         break;
                     }
-                    case(ResourceDelectionType::Enum::Pipeline):
+                    case(ResourceUpdateType::Enum::Pipeline):
                     {
                         destroyPipelineInstant(rd.handle);
                         break;
                     }
-                    case(ResourceDelectionType::Enum::Sampler):
+                    case(ResourceUpdateType::Enum::Sampler):
                     {
                         destroySamplerInstant(rd.handle);
                         break;
                     }
-                    case(ResourceDelectionType::Enum::ShaderState):
+                    case(ResourceUpdateType::Enum::ShaderState):
                     {
                         destroyShaderStateInstant(rd.handle);
                         break;
@@ -2051,7 +2168,8 @@ void DeviceContext::Destroy(){
         vkDestroyFence(m_logicDevice, m_render_queue_complete_fence[i], nullptr);
     }
     vkDestroySemaphore(m_logicDevice, m_image_acquired_semaphore, nullptr);
-    DestroyTexture(m_defaultTexture);
+    DestroyTexture(m_DummyTexture);
+    DestroyDescriptorSetLayout(m_bindlessDescriptorSetLayout);
     DestroyTexture(m_depthTexture);
     DestroyBuffer(m_FullScrVertexBuffer);
     DestroyBuffer(m_viewProjectUniformBuffer);
@@ -2064,47 +2182,47 @@ void DeviceContext::Destroy(){
         ResourceUpdate& resDelete = m_delectionQueue[i];
         if(resDelete.currentFrame==-1) continue;
         switch(resDelete.type){
-            case ResourceDelectionType::Enum::Buffer:
+            case ResourceUpdateType::Enum::Buffer:
             {
                 destroyBufferInstant(resDelete.handle);
                 break;
             }
-            case ResourceDelectionType::Enum::Texture:
+            case ResourceUpdateType::Enum::Texture:
             {
                 destroyTextureInstant(resDelete.handle);
                 break;
             }
-            case ResourceDelectionType::Enum::Pipeline:
+            case ResourceUpdateType::Enum::Pipeline:
             {
                 destroyPipelineInstant(resDelete.handle);
                 break;
             }
-            case ResourceDelectionType::Enum::RenderPass:
+            case ResourceUpdateType::Enum::RenderPass:
             {
                 destroyRenderpassInstant(resDelete.handle);
                 break;
             }
-            case ResourceDelectionType::Enum::DescriptorSet:
+            case ResourceUpdateType::Enum::DescriptorSet:
             {
                 destroyDescriptorInstant(resDelete.handle);
                 break;
             }
-            case ResourceDelectionType::Enum::DescriptorSetLayout:
+            case ResourceUpdateType::Enum::DescriptorSetLayout:
             {
                 destroyDescriptorSetLayoutInstant(resDelete.handle);
                 break;
             }
-            case ResourceDelectionType::Enum::Sampler:
+            case ResourceUpdateType::Enum::Sampler:
             {
                 destroySamplerInstant(resDelete.handle);
                 break;
             }
-            case ResourceDelectionType::Enum::FrameBuffer:
+            case ResourceUpdateType::Enum::FrameBuffer:
             {
                 destroyFrameBufferInstant(resDelete.handle);
                 break;
             }
-            case ResourceDelectionType::Enum::ShaderState:
+            case ResourceUpdateType::Enum::ShaderState:
             {
                 destroyShaderStateInstant(resDelete.handle);
                 break;
@@ -2117,6 +2235,7 @@ void DeviceContext::Destroy(){
     vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
     vmaDestroyAllocator(m_vma);
     vkDestroyDescriptorPool(m_logicDevice, m_descriptorPool, nullptr);
+    vkDestroyDescriptorPool(m_logicDevice,m_bindlessDescriptorPool,nullptr);
     vkDestroyDevice(m_logicDevice, nullptr);
     DebugMessanger::GetInstance()->Clear();
     vkDestroyInstance(m_instance, nullptr);
