@@ -71,16 +71,19 @@ struct TextureBind{
 };
 
 struct Material:public Resource{
+    struct alignas(16) aliInt{
+        int a;
+    };
 
-    struct UniformMaterial{
-        alignas(16) glm::mat4                           modelMatrix = glm::mat4(1.0f);
-        alignas(16) glm::vec4                           baseColorFactor = glm::vec4(glm::vec3(0.0f),1.0f);
-        alignas(16) glm::vec3                           emissiveFactor = glm::vec3(0.0f);
+    struct alignas(16) UniformMaterial{
+        alignas(16)glm::mat4                           modelMatrix = glm::mat4(1.0f);
+        alignas(16)glm::vec4                           baseColorFactor = glm::vec4(glm::vec3(0.0f),1.0f);
+        alignas(16)glm::vec3                           emissiveFactor = glm::vec3(0.0f);
         //transparnt, uvscale, envRotate
-        alignas(16) glm::vec3                           tueFactor = glm::vec3(1.0f,1.0f,0.0f);
+        alignas(16)glm::vec3                           tueFactor = glm::vec3(1.0f,1.0f,0.0f);
         //metallic, roughness, __undefined_placeholder__
-        alignas(16) glm::vec3                           mrFactor = glm::vec3(1.0f,1.0f,0.0f);
-        int                                 textureIndices[k_max_bindless_resource] ;
+        alignas(16)glm::vec3                           mrFactor = glm::vec3(1.0f,1.0f,0.0f);
+        alignas(16)aliInt                              textureIndices[k_max_bindless_resource] ;
     } uniformMaterial;
     Material();
     void                                addTexture(Renderer* renderer, std::string name, std::string path);

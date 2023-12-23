@@ -333,7 +333,7 @@ void Renderer::drawScene(){
       um.mrFactor = currRenderObject.m_material->uniformMaterial.mrFactor;
       um.tueFactor = currRenderObject.m_material->uniformMaterial.tueFactor;
       for(auto& [first,second]:currRenderObject.m_material->textureMap){
-          um.textureIndices[second.bindIdx] = second.texture.index;
+          um.textureIndices[second.bindIdx] = {(int)second.texture.index};
       }
       Buffer* materialBuffer = m_context->accessBuffer(currRenderObject.m_MaterialUniform);
       vmaMapMemory(m_context->m_vma, materialBuffer->m_allocation,&data);

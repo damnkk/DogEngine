@@ -29,6 +29,7 @@
 #include <set>
 #include <unordered_map>
 
+
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
@@ -1605,6 +1606,8 @@ private:
 
         return VK_FALSE;
     }
+    
+    
 };
 
 int main() {

@@ -2,14 +2,14 @@
 
 #extension GL_EXT_nonuniform_qualifier:enable
 #extension GL_EXT_scalar_block_layout:enable
-layout(std430,binding=0)uniform UniformBufferObject{
+layout(binding=0)uniform UniformBufferObject{
 	vec3 cameraPos;
 	vec3 cameraDirectory;
 	mat4 view;
 	mat4 proj;
 }ubo;
 
-layout(std430,binding=1)uniform UniformMaterialObject{
+layout(binding=1)uniform UniformMaterialObject{
 	mat4 modelMatrix;
 	vec4 baseColorFactor;
 	vec3 emissiveFactor;
