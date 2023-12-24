@@ -33,9 +33,9 @@ namespace dg{
             passBeginInfo.renderArea.extent = {renderpas->m_width,renderpas->m_height};
             passBeginInfo.clearValueCount = m_clears.size();
             passBeginInfo.pClearValues = m_clears.data();
-            passBeginInfo.framebuffer =renderpas->m_type==RenderPassType::Enum::SwapChain? m_context->m_swapchainFbos[m_context->m_currentSwapchainImageIndex] : m_currFrameBuffer->m_frameBuffer;
+            passBeginInfo.framebuffer =renderpas->m_type==RenderPassType::Enum::SwapChain? m_context->m_swapchainFbos[m_context->m_currentSwapchainImageIndex] : renderpas->m_frameBuffer;
+            m_currFrameBuffer = passBeginInfo.framebuffer;
             passBeginInfo.renderArea.offset = {0,0};
-            VkSubpassContents test;
             vkCmdBeginRenderPass(m_commandBuffer, &passBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
         }
         m_currRenderPass = renderpas;
@@ -97,6 +97,10 @@ namespace dg{
             ret.extent = {m_context->m_swapChainWidth, m_context->m_swapChainHeight};
         }
         vkCmdSetScissor(m_commandBuffer, 0, 1, &ret);
+    }
+
+    void CommandBuffer::setDepthStencilState(VkBool32 enable){
+        vkCmdSetDepthTestEnable(m_commandBuffer, enable);
     }
 
     void CommandBuffer::setViewport(const ViewPort* vp){

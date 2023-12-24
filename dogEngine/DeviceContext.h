@@ -3,7 +3,7 @@
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
-
+#include "dgpch.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
@@ -15,7 +15,9 @@
 #include "DebugMessanger.h"
 #include "dgAssert.h"
 #include "Camera.h"
+#include "renderdoc/renderdoc_app.h"
 namespace dg{
+
 
 struct CommandBuffer;
 
@@ -61,7 +63,7 @@ struct DeviceContext{
     void                                        DestroyRenderPass(RenderPassHandle  rdIndex);
     void                                        DestroyShaderState(ShaderStateHandle  texIndex);
     void                                        DestroySampler(SamplerHandle sampIndex);
-    void                                        DestroyFrameBuffer(FrameBufferHandle fboIndex);
+    void                                        DestroyFrameBuffer(FrameBufferHandle fboIndex, bool destroyTexture = true);
 
     //query description
 
@@ -170,6 +172,7 @@ struct DeviceContext{
     static std::shared_ptr<Camera>              m_camera;
 
     VmaAllocator                                m_vma;
+    RENDERDOC_API_1_3_0*                        m_renderDoc_api = NULL;
 
 
     Sampler* accessSampler(SamplerHandle samplerhandle);

@@ -108,6 +108,7 @@ namespace dg{
 
     RenderPassCreateInfo& RenderPassCreateInfo::addRenderTexture(TextureHandle handle){
         this->m_outputTextures.push_back(handle);
+        m_rtNums = m_outputTextures.size();
         return *this;
     }
 
@@ -125,6 +126,51 @@ namespace dg{
 
     RenderPassCreateInfo& RenderPassCreateInfo::setType(RenderPassType::Enum type){
         this->m_renderPassType = type;
+        return *this;
+    }
+
+    FrameBufferCreateInfo& FrameBufferCreateInfo::reset(){
+        m_renderPassHandle = {k_invalid_index};
+        m_numRenderTargets = 0;
+        m_depthStencilTexture = {k_invalid_index};
+        m_width = 0;
+        m_height = 0;
+        return *this;
+    }
+
+    FrameBufferCreateInfo& FrameBufferCreateInfo::addRenderTarget(TextureHandle texture){
+        if(m_numRenderTargets==k_max_image_outputs){
+            DG_ERROR("There is already ", k_max_image_outputs," color attachments in this FrameBuffer, can add more");
+            exit(-1);
+        }
+        m_outputTextures[m_numRenderTargets++] = texture;
+        return *this;
+    }
+
+    FrameBufferCreateInfo& FrameBufferCreateInfo::setName(const char* name){
+        this->name = name;
+        return *this;
+    }
+
+    FrameBufferCreateInfo& FrameBufferCreateInfo::setScaling(float scalex,float scaley, u8 resize){
+        m_scaleX = scalex;
+        m_scaleY = scaley;
+        this->resize = resize;
+        return *this;
+    }
+
+    FrameBufferCreateInfo& FrameBufferCreateInfo::setRenderPass(RenderPassHandle rp){
+        this->m_renderPassHandle = rp;
+        return *this;
+    }
+
+    FrameBufferCreateInfo& FrameBufferCreateInfo::setExtent(VkExtent2D extent){
+        if(extent.width==0||extent.height==0||extent.height>7800||extent.width>7800){
+            DG_ERROR("Invalid frameBuffer extent,check again!");
+            exit(-1);
+        }
+        m_width = extent.width;
+        m_height = extent.height;
         return *this;
     }
 

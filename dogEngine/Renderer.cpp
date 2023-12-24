@@ -8,6 +8,9 @@
 
 namespace dg{
 
+#define RDOC_CATCH_START renderer->getContext()->m_renderDoc_api->StartFrameCapture(NULL,NULL);
+#define RDOC_CATCH_END renderer->getContext()->m_renderDoc_api->EndFrameCapture(NULL,NULL);
+
 const std::string                       TextureResource::k_type = "texture_resource";
 const std::string                       BufferResource::k_type = "buffer_resource";
 const std::string                       SamplerResource::k_type = "sampler_resource";
@@ -48,31 +51,47 @@ void keycallback(GLFWwindow *window)
   if(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE){
     sensitivity = 0.007;
   }
-
 }
 
-
 void ResourceCache::destroy(Renderer* renderer){
-  for(auto& i:textures){
-    renderer->destroyTexture(i.second);
+  for(auto it = textures.begin();it!=textures.end();++it){
+      if(!it->second){
+          DG_WARN("An invalid TextureResource pointer");
+          return;
+      }
+      renderer->getContext()->DestroyTexture(it->second->handle);
+      renderer->getTextures().release(it->second);
   }
   textures.clear();
 
-  for(auto& i:samplers){
-    renderer->destroySampler(i.second);
+  for(auto it = samplers.begin();it!=samplers.end();++it){
+      if(!it->second){
+          DG_WARN("An invalid SamplerResource pointer");
+          return;
+      }
+      renderer->getContext()->DestroySampler(it->second->handle);
+      renderer->getSamplers().release(it->second);
   }
   samplers.clear();
 
-  for(auto& i : buffers){
-    renderer->destroyBuffer(i.second);
+  for(auto it = buffers.begin();it!=buffers.end();++it){
+      if(!it->second){
+          DG_WARN("An invalid bufferResource pointer");
+          return;
+      }
+      renderer->getContext()->DestroyBuffer(it->second->handle);
+      renderer->getBuffers().release(it->second);
   }
   buffers.clear();
 
-  for(auto& i:materials){
-    renderer->destroyMaterial(i.second);
+  for(auto it = materials.begin();it!=materials.end();++it){
+      if(!it->second){
+          DG_WARN("An invalid Material pointer");
+          return;
+      }
+      renderer->getMaterials().release(it->second);
   }
   materials.clear();
-
 }
 
 MaterialCreateInfo& MaterialCreateInfo::setRenderOrder(u32 renderOrder){
@@ -108,6 +127,10 @@ void Renderer::makeDefaultMaterial(){
     pipelineInfo.addDescriptorSetlayout(descLayout);
     pipelineInfo.addDescriptorSetlayout(m_context->m_bindlessDescriptorSetLayout);
     m_defaultMaterial->setProgram(createProgram("defaultPbrProgram",{pipelineInfo}));
+    if(have_skybox){
+
+    }
+    m_defaultMaterial->setIblMap(this, "E:/repository/Vulkan_learn/models/skybox/farm_sunset_2k.hdr");
 }
 
 void Renderer::init(std::shared_ptr<DeviceContext> context){
@@ -132,6 +155,7 @@ void Renderer::destroy(){
     m_buffers.destroy();
     m_materials.destroy();
     m_samplers.destroy();
+    destroySkyBox();
     m_context->Destroy();
 }
 
@@ -142,7 +166,7 @@ TextureResource* Renderer::createTexture( TextureCreateInfo& textureInfo){
     }
     auto findRes = m_resourceCache.textures.find(textureInfo.name);
     if(m_resourceCache.textures.find(textureInfo.name)!=m_resourceCache.textures.end()){
-        DG_INFO("There is a Texture with the same name in resourceCache, renderer will reuse it");
+        DG_INFO("There is a Texture with the same name:{} in resourceCache, renderer will reuse it",textureInfo.name);
         return findRes->second;        
     }
     auto textureRes = m_textures.obtain();
@@ -222,6 +246,10 @@ void Renderer::destroyBuffer(BufferResource* bufRes){
     DG_WARN("An invalid bufferResource pointer");
     return;
   }
+  auto it = m_resourceCache.buffers.find(bufRes->name);
+  if(it!=m_resourceCache.buffers.end()){
+      m_resourceCache.buffers.erase(it);
+  }
   m_context->DestroyBuffer(bufRes->handle);
   m_buffers.release(bufRes);
 
@@ -232,6 +260,10 @@ void Renderer::destroyTexture(TextureResource* texRes){
     DG_WARN("An invalid TextureResource pointer");
     return;
   }
+  auto it = m_resourceCache.textures.find(texRes->name);
+    if(it!=m_resourceCache.textures.end()){
+        m_resourceCache.textures.erase(it);
+    }
   m_context->DestroyTexture(texRes->handle);
   m_textures.release(texRes);
 }
@@ -240,6 +272,10 @@ void Renderer::destroySampler(SamplerResource* samplerRes){
   if(!samplerRes){
     DG_WARN("An invalid SamplerResource pointer");
     return;
+  }
+  auto it = m_resourceCache.samplers.find(samplerRes->name);
+  if(it!=m_resourceCache.samplers.end()){
+      m_resourceCache.samplers.erase(it);
   }
   m_context->DestroySampler(samplerRes->handle);
   m_samplers.release(samplerRes);
@@ -250,8 +286,11 @@ void Renderer::destroyMaterial(Material* material){
     DG_WARN("An invalid Material pointer");
     return;
   }
+  auto it = m_resourceCache.materials.find(material->name);
+  if(it!=m_resourceCache.materials.end()){
+      m_resourceCache.materials.erase(it);
+  }
   m_materials.release(material);
-  
 }
 
 
@@ -328,8 +367,6 @@ void Renderer::drawScene(){
       um.baseColorFactor = currRenderObject.m_material->uniformMaterial.baseColorFactor;
       um.emissiveFactor = currRenderObject.m_material->uniformMaterial.emissiveFactor;
       um.modelMatrix = currRenderObject.m_modelMatrix;
-      //um.modelMatrix = glm::scale(udata.modelMatrix,glm::vec3(0.5f,0.5f,0.5f));
-      //um.modelMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f)*time, glm::vec3(1.0f,0.0f,0.0f));
       um.mrFactor = currRenderObject.m_material->uniformMaterial.mrFactor;
       um.tueFactor = currRenderObject.m_material->uniformMaterial.tueFactor;
       for(auto& [first,second]:currRenderObject.m_material->textureMap){
@@ -454,6 +491,13 @@ void Renderer::executeSkyBox() {
         have_skybox = true;
     }
 
+    void Renderer::destroySkyBox() {
+        auto& rj = m_renderObjects.front();
+        for(auto& i:rj.m_descriptors){
+            m_context->DestroyDescriptorSet(i);
+        }
+    }
+
     Program::~Program() {
     for(auto & passe : passes){
         context->DestroyPipeline(passe.pipeline);
@@ -474,52 +518,204 @@ void Material::addTexture(Renderer *renderer, std::string name, std::string path
     textureMap[name] = {handle,(u32)textureMap.size()};
 }
 
-void Material::addLutTexture(Renderer *renderer, TextureHandle handle) {
-    textureMap["LUTTexture"] = {handle, (u32)textureMap.size()};
+void generateLUTTexture(Renderer* renderer,TextureHandle LUTTexture){
+    RenderPassCreateInfo lutRenderPassCI{};
+    lutRenderPassCI.setName("LutRenderPass").addRenderTexture(LUTTexture).setOperations(RenderPassOperation::Enum::Clear, RenderPassOperation::Enum::Clear, RenderPassOperation::Enum::Clear);
+    RenderPassHandle lutRenderPass = renderer->getContext()->createRenderPass(lutRenderPassCI);
+    FrameBufferCreateInfo lutFrameBuffer{};
+    lutFrameBuffer.reset().addRenderTarget(LUTTexture).setRenderPass(lutRenderPass).setExtent({512,512});
+    FrameBufferHandle lutFBO = renderer->getContext()->createFrameBuffer(lutFrameBuffer);
+
+    pipelineCreateInfo pipelineInfo;
+    pipelineInfo.m_renderPassHandle = lutRenderPass;
+    pipelineInfo.m_depthStencil.setDepth(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
+    pipelineInfo.m_rasterization.m_cullMode = VK_CULL_MODE_NONE;
+    pipelineInfo.m_shaderState.reset();
+    auto vsCode = readFile("./shaders/lutvert.spv");
+    auto fsCode = readFile("./shaders/lutfrag.spv");
+    pipelineInfo.m_shaderState.addStage(vsCode.data(), vsCode.size(), VK_SHADER_STAGE_VERTEX_BIT);
+    pipelineInfo.m_shaderState.addStage(fsCode.data(), fsCode.size(), VK_SHADER_STAGE_FRAGMENT_BIT);
+    pipelineInfo.m_shaderState.setName("lutPipeline");
+    pipelineInfo.addDescriptorSetlayout(renderer->getContext()->m_bindlessDescriptorSetLayout);
+    PipelineHandle lutPipeline = renderer->getContext()->createPipeline(pipelineInfo);
+    CommandBuffer* cmd = renderer->getContext()->getInstantCommandBuffer();
+    VkCommandBufferBeginInfo cmdBeginInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
+    cmdBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    vkBeginCommandBuffer(cmd->m_commandBuffer, &cmdBeginInfo);
+    cmd->bindPass(lutRenderPass);
+
+    cmd->bindPipeline(lutPipeline);
+    Rect2DInt scissor;
+    scissor = {0,0,512,512};
+    cmd->setScissor(&scissor);
+     ViewPort viewport;
+     viewport.max_depth = 1.0f;
+     viewport.min_depth = 0.0f;
+     viewport.rect = scissor;
+    cmd->setViewport(&viewport);
+    cmd->setDepthStencilState(VK_TRUE);
+    cmd->draw(TopologyType::Triangle, 0, 3, 0, 1);
+    cmd->endpass();
+    vkEndCommandBuffer(cmd->m_commandBuffer);
+    
+    VkSubmitInfo submitInfo{VK_STRUCTURE_TYPE_SUBMIT_INFO};
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &cmd->m_commandBuffer;
+    VkResult res = vkQueueSubmit(renderer->getContext()->m_graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    vkQueueWaitIdle(renderer->getContext()->m_graphicsQueue);
+    renderer->getContext()->DestroyPipeline(lutPipeline);
+    renderer->getContext()->DestroyFrameBuffer(lutFBO,false);
+    renderer->getContext()->DestroyRenderPass(lutRenderPass);
+    cmd->destroy();
 }
 
-void Material::addDiffuseEnvMap(Renderer *renderer, TextureHandle handle) {
+void Material::addLutTexture(Renderer *renderer) {
+    auto LUTTextureFind = renderer->getResourceCache().textures.find("LUTTexture");
+    if(LUTTextureFind!=renderer->getResourceCache().textures.end()){
+        textureMap["LUTTexture"] = {LUTTextureFind->second->handle,(u32)textureMap.size()};
+        return;
+    }
+    TextureCreateInfo lutCI{};
+    lutCI.setExtent({512,512,1}).setName("LUTTexture").setBindLess(true)
+    .setUsage(VK_IMAGE_USAGE_SAMPLED_BIT|VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT).setTextureType(TextureType::Enum::Texture2D)
+    .setFormat(VK_FORMAT_R16G16_SFLOAT);
+    TextureHandle LutTex = renderer->createTexture(lutCI)->handle;
+    generateLUTTexture(renderer, LutTex);
+    textureMap["LUTTexture"] = {LutTex, (u32)textureMap.size()};
+}
+
+void generateDiffuseEnvTexture(Renderer* renderer, TextureHandle handle,TextureHandle envMap){
+    Material::aliInt um = {(int)envMap.index};
+    BufferCreateInfo bufferCI{};
+    bufferCI.reset().setName("ENVMapIdx").setUsageSize(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,sizeof(Material::aliInt)).setDeviceOnly(false).setData(&um);
+    BufferHandle bufHandle = renderer->getContext()->createBuffer(bufferCI);
+
+    DescriptorSetLayoutCreateInfo descLayoutInfo{};
+    descLayoutInfo.reset().setName("ENVMapIdx").addBinding({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,0,1,"Idx"});
+    DescriptorSetLayoutHandle descLayoutHandle = renderer->getContext()->createDescriptorSetLayout(descLayoutInfo);
+
+    DescriptorSetCreateInfo descCI{};
+    descCI.reset().buffer(bufHandle,0).setName("ENVMapIdx").setLayout(descLayoutHandle);
+    DescriptorSetHandle descHandle = renderer->getContext()->createDescriptorSet(descCI);
+
+    RenderPassCreateInfo irraRenderPassCI{};
+    irraRenderPassCI.setName("DiffRenderPass").addRenderTexture(handle).setOperations(RenderPassOperation::Enum::Clear,RenderPassOperation::Enum::Clear,RenderPassOperation::Enum::Clear);
+    RenderPassHandle irraRenderPass = renderer->getContext()->createRenderPass(irraRenderPassCI);
+    Texture* irraDTexture = renderer->getContext()->accessTexture(handle);
+    FrameBufferCreateInfo diffFrameBufferCI{};
+    diffFrameBufferCI.reset().addRenderTarget(handle).setRenderPass(irraRenderPass).setExtent({irraDTexture->m_extent.width,irraDTexture->m_extent.height});
+    FrameBufferHandle irraFBO = renderer->getContext()->createFrameBuffer(diffFrameBufferCI);
+    //RDOC_CATCH_START
+    pipelineCreateInfo pipelineInfo{};
+    pipelineInfo.m_renderPassHandle = irraRenderPass;
+    pipelineInfo.m_depthStencil.setDepth(true,true, VK_COMPARE_OP_LESS_OR_EQUAL);
+    pipelineInfo.m_rasterization.m_cullMode = VK_CULL_MODE_NONE;
+    pipelineInfo.m_shaderState.reset();
+    auto vsCode = readFile("./shaders/lutvert.spv");
+    auto fsCode = readFile("./shaders/irrafrag.spv");
+    pipelineInfo.m_shaderState.addStage(vsCode.data(),vsCode.size(), VK_SHADER_STAGE_VERTEX_BIT);
+    pipelineInfo.m_shaderState.addStage(fsCode.data(),fsCode.size(),VK_SHADER_STAGE_FRAGMENT_BIT);
+    pipelineInfo.m_shaderState.setName("irraPipeline");
+    pipelineInfo.addDescriptorSetlayout(descLayoutHandle);
+    pipelineInfo.addDescriptorSetlayout(renderer->getContext()->m_bindlessDescriptorSetLayout);
+    PipelineHandle irraPipeline = renderer->getContext()->createPipeline(pipelineInfo);
+    CommandBuffer* cmd = renderer->getContext()->getInstantCommandBuffer();
+
+    VkCommandBufferBeginInfo cmdBeginInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
+    cmdBeginInfo.flags = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    vkBeginCommandBuffer(cmd->m_commandBuffer,&cmdBeginInfo);
+    cmd->bindPass(irraRenderPass);
+    cmd->bindPipeline(irraPipeline);
+    Rect2DInt scissor;
+    scissor = {0,0,(u16)irraDTexture->m_extent.width,(u16)irraDTexture->m_extent.height};
+    cmd->setScissor(&scissor);
+    ViewPort viewport;
+    viewport.max_depth= 1.0f;
+    viewport.min_depth = 0.0f;
+    viewport.rect = scissor;
+    cmd->setViewport(&viewport);
+    cmd->setDepthStencilState(VK_FALSE);
+    cmd->bindDescriptorSet({descHandle},0,nullptr,0);
+    cmd->bindDescriptorSet({renderer->getContext()->m_bindlessDescriptorSet},1,nullptr,0);
+    cmd->draw(TopologyType::Enum::Triangle,0,3,0,1);
+    cmd->endpass();
+    vkEndCommandBuffer(cmd->m_commandBuffer);
+
+    VkSubmitInfo  submitInfo{VK_STRUCTURE_TYPE_SUBMIT_INFO};
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &cmd->m_commandBuffer;
+    VkResult res = vkQueueSubmit(renderer->getContext()->m_graphicsQueue,1,&submitInfo,VK_NULL_HANDLE);
+    DGASSERT(res==VK_SUCCESS)
+
+    vkQueueWaitIdle(renderer->getContext()->m_graphicsQueue);
+    //RDOC_CATCH_END
+    renderer->getContext()->DestroyPipeline(irraPipeline);
+    renderer->getContext()->DestroyFrameBuffer(irraFBO,false);
+    renderer->getContext()->DestroyRenderPass(irraRenderPass);
+    renderer->getContext()->DestroyBuffer(bufHandle);
+    renderer->getContext()->DestroyDescriptorSet(descHandle);
+    cmd->destroy();
+}
+
+void Material::addDiffuseEnvMap(Renderer *renderer, TextureHandle HDRTexture) {
+    addLutTexture(renderer);
+    auto DiffuseTextureFind = this->textureMap.find("DiffuseEnvMap");
+    if(DiffuseTextureFind!=this->textureMap.end()){
+        return;
+    }
+    Texture* HDR = renderer->getContext()->accessTexture(HDRTexture);
+    TextureCreateInfo DiffTexCI{};
+    DiffTexCI.setBindLess(true).setName("irradianceTex").setExtent({HDR->m_extent.width/2,HDR->m_extent.height/2,1}).setFormat(VK_FORMAT_R16G16B16A16_SFLOAT).setUsage(VK_IMAGE_USAGE_SAMPLED_BIT|VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
+    .setMipmapLevel(1).setTextureType(TextureType::Enum::Texture2D);
+    TextureHandle handle = renderer->createTexture(DiffTexCI)->handle;
+    generateDiffuseEnvTexture(renderer, handle, HDRTexture);
     textureMap["DiffuseEnvMap"] = {handle,(u32)textureMap.size()};
 };
 
 void Material::addSpecularEnvMap(Renderer *renderer, TextureHandle handle) {
+    addLutTexture(renderer);
     textureMap["SpecularEnvMap"] = {handle,(u32)textureMap.size()};
 }
 
+void Material::setIblMap(Renderer* renderer, std::string path){
+    TextureHandle hdrTex = this->renderer->upLoadTextureToGPU(path);
+    Texture* hdr = renderer->getContext()->accessTexture(hdrTex);
+    renderer->getContext()->m_descriptorSetUpdateQueue.pop_back();
 
-void Material::updateProgram() {
-//    for(int i = 0;i<program->passes.size();++i){
-//        ProgramPass& pass = program->passes[i];
-//        DescriptorSetLayoutCreateInfo newDslayout;
-//        pass.bindingElementNames.clear();
-//        std::unordered_set<std::string> set;
-//        pass.bindingElementNames.push_back("DiffuseTexture");
-//        pass.bindingElementNames.push_back("MetallicRoughnessTexture");
-//        pass.bindingElementNames.push_back("NormalTexture");
-//        pass.bindingElementNames.push_back("EmissiveTexture");
-//        pass.bindingElementNames.push_back("AOTexture");
-//        set.insert("DiffuseTexture");
-//        set.insert("MetallicRoughnessTexture");
-//        set.insert("NormalTexture");
-//        set.insert("EmissiveTexture");
-//        set.insert("AOTexture");
-//        newDslayout.reset();
-//        newDslayout.addBinding({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,0,1,"DiffuseTexture"});
-//        newDslayout.addBinding({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,1,1,"MetallicRoughnessTexture"});
-//        newDslayout.addBinding({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,2,1,"NormalTexture"});
-//        newDslayout.addBinding({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,3,1,"EmissiveTexture"});
-//        newDslayout.addBinding({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,4,1,"AOTexture"});
-//        newDslayout.addBinding({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,5,1,"GlobalUniform"});
-//        newDslayout.addBinding({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,6,1,"MaterialUniform"});
-//        u32 bindIndex = 6;
-//        for(auto& [first,second]: textureMap){
-//            if(set.find(first)==set.end()) continue;
-//            ++bindIndex;
-//            pass.bindingElementNames.push_back(first);
-//            newDslayout.addBinding({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,bindIndex,1,first});
-//        }
-//        Pipeline test;
-//    }
+    VkWriteDescriptorSet write{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+    write.descriptorCount = 1;
+    write.dstArrayElement = hdrTex.index;
+    write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    write.dstSet = renderer->getContext()->m_VulkanBindlessDescriptorSet;
+    write.dstBinding = k_bindless_sampled_texture_bind_index;
+    write.pImageInfo =&hdr->m_imageInfo;
+    vkUpdateDescriptorSets(renderer->getContext()->m_logicDevice,1,&write,0, nullptr);
+    addDiffuseEnvMap(this->renderer,hdrTex);
+    bool isSameWithSkyTex = (hdrTex.index == renderer->getSkyTexture().index);
+    if(!isSameWithSkyTex){
+        auto hdrResource = renderer->getResourceCache().textures[hdr->m_name];
+        renderer->destroyTexture(hdrResource);
+    }
+}
+
+void Material::setIblMap(Renderer* renderer, TextureHandle handle){
+    Texture* hdr = renderer->getContext()->accessTexture(handle);
+    renderer->getContext()->m_descriptorSetUpdateQueue.pop_back();
+
+    VkWriteDescriptorSet write{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+    write.descriptorCount = 1;
+    write.dstArrayElement = handle.index;
+    write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    write.dstSet = renderer->getContext()->m_VulkanBindlessDescriptorSet;
+    write.dstBinding = k_bindless_sampled_texture_bind_index;
+    write.pImageInfo =&hdr->m_imageInfo;
+    vkUpdateDescriptorSets(renderer->getContext()->m_logicDevice,1,&write,0, nullptr);
+    addDiffuseEnvMap(this->renderer,handle);
+    bool isSameWithSkyTex = (handle.index == renderer->getSkyTexture().index);
+    if(!isSameWithSkyTex){
+        auto hdrResource = renderer->getResourceCache().textures[hdr->m_name];
+        renderer->destroyTexture(hdrResource);
+    }
 }
 
 void Material::setProgram(const std::shared_ptr<Program> &program) {

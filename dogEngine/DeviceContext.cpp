@@ -284,7 +284,7 @@ void DeviceContext::DestroyRenderPass(RenderPassHandle passIndex){
 
 void DeviceContext::DestroyPipeline(PipelineHandle pipelineIndex){
     if(pipelineIndex.index>m_pipelines.m_poolSize){
-        DG_WARN("You are trying to add an invalid pipeline in delection queue");
+        DG_WARN("You are trying to add an invalid pipeline in deletion queue");
     }
     Pipeline* pipeline = accessPipeline(pipelineIndex);
     for(int i = 0;i<pipeline->m_activeLayouts;++i){
@@ -328,9 +328,14 @@ void DeviceContext::DestroySampler(SamplerHandle sampHandle){
     sampHandle = {k_invalid_index};
 }
 
-void DeviceContext::DestroyFrameBuffer(FrameBufferHandle fboHandle){
-    if(fboHandle.index!= k_invalid_index){
+void DeviceContext::DestroyFrameBuffer(FrameBufferHandle fboHandle, bool destroyTexture){
+    if(fboHandle.index== k_invalid_index){
         DG_WARN("You are trying to add an invalid FramBuffer to delection queue");
+        return;
+    }
+    if(!destroyTexture){
+        FrameBuffer* fbo = accessFrameBuffer(fboHandle);
+        fbo->m_numRenderTargets = 0;
     }
     m_delectionQueue.push_back({ResourceUpdateType::Enum::FrameBuffer, fboHandle.index, m_currentFrame});
     fboHandle = {k_invalid_index};
@@ -389,7 +394,6 @@ void DeviceContext::destroyRenderpassInstant(ResourceHandle handle){
     RenderPass* renderpassInstance = accessRenderPass({handle});
     if(renderpassInstance){
         vkDestroyRenderPass(m_logicDevice, renderpassInstance->m_renderPass, nullptr);
-        vkDestroyFramebuffer(m_logicDevice, renderpassInstance->m_frameBuffer, nullptr);
     }
     m_renderPasses.releaseResource(handle);
 }
@@ -416,6 +420,7 @@ void DeviceContext::destroyFrameBufferInstant(ResourceHandle fbo){
         }
         vkDestroyFramebuffer(m_logicDevice, framebuffer->m_frameBuffer, nullptr);
     }
+    m_frameBuffers.releaseResource(fbo);
 }
 void DeviceContext::resize(u16 width, u16 height){
     m_swapChainWidth = width;
@@ -570,7 +575,7 @@ static void vulkanCreateSwapChainPass(DeviceContext* context, const RenderPassCr
     color_ref.attachment = 0;
 
     VkAttachmentDescription depth_attach{};
-    Texture* depthTexture = context->accessTexture(ri.m_depthTexture);
+    Texture* depthTexture = context->accessTexture(context->m_depthTexture);
     depth_attach.format = depthTexture->m_format;
     depth_attach.samples = VK_SAMPLE_COUNT_1_BIT;
     depth_attach.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -690,40 +695,66 @@ static VkRenderPass vulkanCreateRenderPass(DeviceContext* context, const RenderP
         Texture* tex = context->m_textures.accessResource(passInfo.m_outputTextures[i].index);
         attDesc.format = tex->m_format;
         attDesc.loadOp = colorOp;
+        attDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
         attDesc.samples = VK_SAMPLE_COUNT_1_BIT;
         attDesc.stencilLoadOp = stencilOp;
         attDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        attDesc.initialLayout = colorInitial;
-        attDesc.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        attDesc.initialLayout = tex->m_imageInfo.imageLayout;
+        attDesc.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
         VkAttachmentReference& attref = color_ref[i];
-        attref.attachment = i;
         attref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        attref.attachment = i;
+    }
+        VkAttachmentDescription depthDesc;
+        VkAttachmentReference   depthRef;
+    if(passInfo.m_depthTexture.index!=k_invalid_index){
+        Texture* depthTex = context->m_textures.accessResource(passInfo.m_depthTexture.index);
+        depthDesc.format = depthTex->m_format;
+        depthDesc.loadOp = colorOp;
+        depthDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        depthDesc.samples = VK_SAMPLE_COUNT_1_BIT;
+        depthDesc.stencilLoadOp = stencilOp;
+        depthDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        depthDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        depthDesc.initialLayout = DepthInitial;
+        depthDesc.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        depthRef.attachment = passInfo.m_outputTextures.size();
+        depthRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
     }
 
-    VkAttachmentDescription depthDesc;
-    VkAttachmentReference   depthRef;
-    Texture* depthTex = context->m_textures.accessResource(passInfo.m_depthTexture.index);
-    depthDesc.format = depthTex->m_format;
-    depthDesc.loadOp = colorOp;
-    depthDesc.samples = VK_SAMPLE_COUNT_1_BIT;
-    depthDesc.stencilLoadOp = stencilOp;
-    depthDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    depthDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    depthDesc.initialLayout = DepthInitial;
-    depthDesc.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-    depthRef.attachment = passInfo.m_outputTextures.size();
-    depthRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-    VkSubpassDescription subpassDesc;
+    VkSubpassDescription subpassDesc{};
     subpassDesc.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpassDesc.colorAttachmentCount = color_attch.size();
+    subpassDesc.pColorAttachments = color_ref.data();
+    if(passInfo.m_depthTexture.index!=k_invalid_index){
+        subpassDesc.pDepthStencilAttachment = &depthRef;
+    }
+    //subpassDesc.flags = 0;
 
-    color_attch.push_back(depthDesc);
+    std::array<VkSubpassDependency,2> dependencies{};
+    dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+    dependencies[0].dstSubpass = 0;
+    dependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+    dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+    dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT|VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+    dependencies[1].srcSubpass = 0;
+    dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
+    dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependencies[1].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+    dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT|VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    dependencies[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+    dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
     VkRenderPassCreateInfo renderPassInfo{VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO};
-    renderPassInfo.subpassCount = 1;
-    renderPassInfo.pSubpasses = &subpassDesc;
     renderPassInfo.attachmentCount = color_attch.size();
     renderPassInfo.pAttachments = color_attch.data();
+    renderPassInfo.subpassCount = 1;
+    renderPassInfo.pSubpasses = &subpassDesc;
+    renderPassInfo.dependencyCount = 2;
+    renderPassInfo.pDependencies = dependencies.data();
     VkRenderPass renderpass;
     DGASSERT(vkCreateRenderPass(context->m_logicDevice, &renderPassInfo, nullptr, &renderpass)==VK_SUCCESS);
     context->setResourceName(VK_OBJECT_TYPE_RENDER_PASS, (uint64_t) renderpass, passInfo.name.c_str());
@@ -783,6 +814,7 @@ void DeviceContext::destroySwapChain(){
     for(int i = 0;i<m_swapchainImageCount;++i){
         vkDestroyImageView(m_logicDevice,m_swapchainImageViews[i], nullptr);
         vkDestroyFramebuffer(m_logicDevice, m_swapchainFbos[i], nullptr);
+        //vkDestroyImage(m_logicDevice,m_fbo)
     }
     vkDestroySwapchainKHR(m_logicDevice, m_swapchain, nullptr);
 }
@@ -1165,7 +1197,8 @@ TextureHandle   DeviceContext::createTexture(TextureCreateInfo& tc){
         VkSubmitInfo submitInfo{VK_STRUCTURE_TYPE_SUBMIT_INFO};
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = &tempCommandBuffer->m_commandBuffer;
-        DGASSERT(vkQueueSubmit(m_graphicsQueue,1,&submitInfo,VK_NULL_HANDLE)==VK_SUCCESS);
+        VkResult res = vkQueueSubmit(m_graphicsQueue,1,&submitInfo,VK_NULL_HANDLE);
+        DGASSERT(res==VK_SUCCESS);
         vkQueueWaitIdle(m_graphicsQueue);
         vmaDestroyBuffer(m_vma, stagingBuffer, stagingAllocation);
         vkResetCommandBuffer(tempCommandBuffer->m_commandBuffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
@@ -1187,8 +1220,10 @@ static void vulkanCreateFrameBuffers(DeviceContext* context, FrameBuffer* frameb
         Texture* tex = context->accessTexture(handle);
         attchs.push_back(tex->m_imageInfo.imageView);
     }
-    Texture* depth = context->accessTexture(depthStencilTex);
-    attchs.push_back(depth->m_imageInfo.imageView);
+    if(framebuffer->m_depthStencilAttachment.index!=k_invalid_index){
+        Texture* depth = context->accessTexture(depthStencilTex);
+        attchs.push_back(depth->m_imageInfo.imageView);
+    }
     fboInfo.pAttachments = attchs.data();
     fboInfo.layers = 1;
     fboInfo.width = framebuffer->m_width;
@@ -1196,6 +1231,7 @@ static void vulkanCreateFrameBuffers(DeviceContext* context, FrameBuffer* frameb
     
     vkCreateFramebuffer(context->m_logicDevice, &fboInfo, nullptr, &framebuffer->m_frameBuffer);
     context->setResourceName(VK_OBJECT_TYPE_FRAMEBUFFER, (uint64_t)framebuffer->m_frameBuffer, framebuffer->name.c_str());
+    renderpass->m_frameBuffer = framebuffer->m_frameBuffer;
 }
 
 //自己实现的
@@ -1260,7 +1296,7 @@ RenderPassHandle DeviceContext::createRenderPass( RenderPassCreateInfo& ri){
     for(;c<ri.m_outputTextures.size();++c){
         Texture* texture = accessTexture(ri.m_outputTextures[c]);
         renderPass->m_width = texture->m_extent.width;
-        renderPass->m_width = texture->m_extent.height;
+        renderPass->m_height = texture->m_extent.height;
         renderPass->m_outputTextures[c] = ri.m_outputTextures[c];
     }
     renderPass->m_depthTexture = ri.m_depthTexture;
@@ -1301,7 +1337,7 @@ FrameBufferHandle DeviceContext::createFrameBuffer( FrameBufferCreateInfo& fcf){
     }
     
     vulkanCreateFrameBuffers(this, fbo);
-    setResourceName(VK_OBJECT_TYPE_FRAMEBUFFER, (uint64_t)fbo->m_frameBuffer, fcf.name.c_str());
+
     return handle;
 }
 
@@ -1592,22 +1628,16 @@ PipelineHandle DeviceContext::createPipeline( pipelineCreateInfo& pipelineInfo){
         VkPipelineVertexInputStateCreateInfo vertexInputInfo{VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
         vertexInputInfo.vertexAttributeDescriptionCount = pipelineInfo.m_vertexInput.Attrib.size();
         VkVertexInputAttributeDescription attribDescrib[8];
+        VkVertexInputBindingDescription bindingDescrib[8];
         if(pipelineInfo.m_vertexInput.Attrib.size()){
             for(int i = 0;i<pipelineInfo.m_vertexInput.Attrib.size();++i){
                 attribDescrib[i] = pipelineInfo.m_vertexInput.Attrib[i];
             }
             vertexInputInfo.pVertexAttributeDescriptions = attribDescrib;
-        }else{
-            vertexInputInfo.pVertexAttributeDescriptions = nullptr;
-            vertexInputInfo.vertexAttributeDescriptionCount = 0;
+            vertexInputInfo.vertexBindingDescriptionCount = 1;
+            bindingDescrib[0] = pipelineInfo.m_vertexInput.Binding;
+            vertexInputInfo.pVertexBindingDescriptions = bindingDescrib;
         }
-
-        VkVertexInputBindingDescription bindingDescrib[8];
-
-        vertexInputInfo.vertexBindingDescriptionCount = 1;
-        bindingDescrib[0] = pipelineInfo.m_vertexInput.Binding;
-        vertexInputInfo.pVertexBindingDescriptions = bindingDescrib;
-     
         pipelineCreateInfo.pVertexInputState = &vertexInputInfo;
 
         VkPipelineInputAssemblyStateCreateInfo input_assembly{VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO};
@@ -1690,23 +1720,11 @@ PipelineHandle DeviceContext::createPipeline( pipelineCreateInfo& pipelineInfo){
         RSCreateInfo.depthBiasSlopeFactor = 0.0f;
         pipelineCreateInfo.pRasterizationState = &RSCreateInfo;
 
-        VkViewport viewport = {};
-        viewport.x = 0.0f;
-        viewport.y = 0.0f;
-        viewport.width = (float)m_swapChainWidth;
-        viewport.height = (float)m_swapChainHeight;
-        viewport.minDepth = 0.0f;
-        viewport.maxDepth = 1.0f;
-
-        VkRect2D scissor = {};
-        scissor.offset = {0,0};
-        scissor.extent = {m_swapChainWidth,m_swapChainHeight};
-
         VkPipelineViewportStateCreateInfo viewportInfo{VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO};
         viewportInfo.viewportCount = 1;
-        viewportInfo.pViewports = &viewport;
+        //viewportInfo.pViewports = &viewport;
         viewportInfo.scissorCount = 1;
-        viewportInfo.pScissors = &scissor;
+        //viewportInfo.pScissors = &scissor;
         pipelineCreateInfo.pViewportState = &viewportInfo;
         pipelineCreateInfo.renderPass = accessRenderPass(pipelineInfo.m_renderPassHandle)->m_renderPass;
 
@@ -1758,6 +1776,13 @@ void DeviceContext::init(const ContextCreateInfo& DeviceInfo){
     DG_INFO("Instance created successfully");
 #if defined(VULKAN_DEBUG)
     DebugMessanger::GetInstance()->SetupDebugMessenger(m_instance);
+
+    if(HMODULE mod = GetModuleHandleA("renderdoc.dll")){
+        pRENDERDOC_GetAPI RENDERDOC_GetAPI =
+                (pRENDERDOC_GetAPI)GetProcAddress(mod, "RENDERDOC_GetAPI");
+        int ret = RENDERDOC_GetAPI(eRENDERDOC_API_Version_1_3_0, (void **)&m_renderDoc_api);
+        assert(ret == 1);
+    }
 #endif //VULKAN_DEBUG
     m_swapChainWidth = DeviceInfo.m_windowWidth;
     m_swapChainHeight = DeviceInfo.m_windowHeight;
@@ -1937,6 +1962,7 @@ void DeviceContext::init(const ContextCreateInfo& DeviceInfo){
     m_descriptorSets.init(4096);
     m_renderPasses.init(128);
     m_shaderStates.init(128);
+    m_frameBuffers.init(128);
     DG_INFO("Resource Pools created successfully");
 
     DescriptorSetLayoutCreateInfo bindLessLayout{};
@@ -2126,6 +2152,10 @@ void DeviceContext::present(){
                         destroyDescriptorSetLayoutInstant(rd.handle);
                         break;
                     }
+                    case(ResourceUpdateType::Enum::RenderPass):{
+                        destroyRenderpassInstant(rd.handle);
+                        break;
+                    }
                     case(ResourceUpdateType::Enum::FrameBuffer):
                     {
                         destroyFrameBufferInstant(rd.handle);
@@ -2175,6 +2205,7 @@ void DeviceContext::Destroy(){
     DestroyBuffer(m_viewProjectUniformBuffer);
     DestroyRenderPass(m_swapChainPass);
     DestroySampler(m_defaultSampler);
+    DestroyDescriptorSet(m_bindlessDescriptorSet);
     // DestroyPipeline(m_nprPipeline);
     // DestroyPipeline(m_pbrPipeline);
     // DestroyPipeline(m_rayTracingPipeline);
@@ -2235,6 +2266,7 @@ void DeviceContext::Destroy(){
     vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
     vmaDestroyAllocator(m_vma);
     vkDestroyDescriptorPool(m_logicDevice, m_descriptorPool, nullptr);
+    //vkDestroyDescriptorPool(m_logicDevice, m_descriptorPool, nullptr);
     vkDestroyDescriptorPool(m_logicDevice,m_bindlessDescriptorPool,nullptr);
     vkDestroyDevice(m_logicDevice, nullptr);
     DebugMessanger::GetInstance()->Clear();

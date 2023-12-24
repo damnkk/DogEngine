@@ -44,8 +44,8 @@ int main() {
   renderer.loadFromPath("./models/DamagedHelmet/DamagedHelmet.gltf");
   //renderer.loadFromPath("./models/glTFSponza/Sponza.gltf");
 
-  renderer.addSkyBox("./models/skybox/small_empty_room_4_2k.hdr");
-  //renderer.addSkyBox("./models/skybox/resting_place_2k.hdr");
+  //renderer.addSkyBox("./models/skybox/small_empty_room_4_2k.hdr");
+  renderer.addSkyBox("./models/skybox/resting_place_2k.hdr");
   //renderer.addSkyBox("./models/skybox/farm_sunset_2k.hdr");
   renderer.executeScene();
 

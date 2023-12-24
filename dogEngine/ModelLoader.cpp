@@ -54,14 +54,12 @@ namespace dg{
             }
             if(matPtr!=nullptr){
                 rj.m_material = matPtr;
+                rj.m_material->setIblMap(m_renderer, "E:/repository/Vulkan_learn/models/skybox/graveyard_pathways_2k.hdr");
                 DescriptorSetCreateInfo descInfo;
                 descInfo.setName("base descriptor Set");
                 descInfo.reset().setLayout(matPtr->program->passes[0].descriptorSetLayout[0]);
                 descInfo.buffer(rj.m_GlobalUniform,0).buffer(rj.m_MaterialUniform,1);
-                //.texture(matPtr->LUTTexture->handle,6).texture(matPtr->iradianceTexture->handle, 7).texture(matPtr->iradianceTexture->handle,8);
                 rj.m_descriptors.push_back(m_renderer->getContext()->createDescriptorSet(descInfo));
-                // additional descriptors, like HDR env map or sth;
-                //-------
                 renderobjects.push_back(rj);
             }
         }

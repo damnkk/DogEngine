@@ -159,6 +159,8 @@ private:
     VkQueue graphicsQueue;
     VkQueue presentQueue;
 
+    VkCopyImageToBufferInfo2 test;
+
     VkSwapchainKHR swapChain;
     std::vector<VkImage> swapChainImages;
     VkFormat swapChainImageFormat;
@@ -616,8 +618,8 @@ private:
     }
 
     void createGraphicsPipeline() {
-        auto vertShaderCode = readFile("shaders/second_vert.spv");
-        auto fragShaderCode = readFile("shaders/second_frag.spv");
+        auto vertShaderCode = readFile("shaders/lutvert.spv");
+        auto fragShaderCode = readFile("shaders/lutfrag.spv");
 
         VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
         VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);

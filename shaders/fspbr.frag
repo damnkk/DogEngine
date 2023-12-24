@@ -157,7 +157,7 @@ vec3 PBR(vec3 N,vec3 V,vec3 L,vec3 albedo,vec3 radiance,float roughness,float me
     float NdotH=max(dot(N,H),0);
     float HdotV=max(dot(H,V),0);
     float alpha=roughness*roughness;
-    float k=((alpha+1)*(alpha+1))/8.;
+    float k=alpha/2.;
     vec3 F0=mix(vec3(.04,.04,.04),albedo,metallic);
     
     float D=Trowbridge_Reitz_GGX(NdotH,alpha);
@@ -177,6 +177,9 @@ vec3 PBR(vec3 N,vec3 V,vec3 L,vec3 albedo,vec3 radiance,float roughness,float me
 }
 
 void main(){
+    
+    vec3 test=texture(globalTextures[nonuniformEXT(umat.textureIndices[5])],fragTexCoord).xyz;
+    vec3 test2=texture(globalTextures[nonuniformEXT(umat.textureIndices[6])],fragTexCoord).xyz;
     vec3 V=normalize(ubo.cameraPos-worldPos);
     vec3 L=normalize(lightdirection-worldPos);
     vec3 N=normalize(fragNormal);

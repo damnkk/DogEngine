@@ -25,10 +25,11 @@
         void                bindVertexBuffer(BufferHandle vb, u32 binding, u32 offset);
         void                bindIndexBuffer(BufferHandle ib, u32 offset, VkIndexType index_type);
         void                bindDescriptorSet(std::vector<DescriptorSetHandle> set, u32 firstSet, u32* offsets, u32 numOffsets);
-        
+        void                endpass(){vkCmdEndRenderPass(m_commandBuffer);}
 
         void                setScissor(const Rect2DInt* rect);
         void                setViewport(const ViewPort* viewport);
+        void                setDepthStencilState(VkBool32 enable);
 
         void                clearColor();
         void                clearDepthStencil(float depth, u8 stencil);
@@ -49,7 +50,7 @@
         VkDescriptorSet         m_descriptorSets[16];
         RenderPass*             m_currRenderPass;
         Pipeline*               m_pipeline;
-        FrameBuffer*            m_currFrameBuffer;
+        VkFramebuffer           m_currFrameBuffer;
         std::array<VkClearValue,2>m_clears;
         ResourceHandle          m_handle;
         u32                     m_currentCommand ;

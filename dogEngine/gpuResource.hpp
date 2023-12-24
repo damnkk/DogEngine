@@ -198,7 +198,7 @@ struct ShaderState{
 struct TextureCreateInfo{
     void*                               m_sourceData = nullptr;
     VkExtent3D                          m_textureExtent;
-    u32                                 m_mipmapLevel;
+    u32                                 m_mipmapLevel=1;
     VkFormat                            m_imageFormat;
     TextureType::Enum                   m_imageType = TextureType::Enum::Texture2D;
     std::string                         name;
@@ -443,7 +443,7 @@ struct RenderPassCreateInfo{
     RenderPassType::Enum                m_renderPassType = RenderPassType::Geometry;
 
     std::vector<TextureHandle>          m_outputTextures;
-    TextureHandle                       m_depthTexture;
+    TextureHandle                       m_depthTexture = {k_invalid_index};
 
     float                               m_scalex = 1.0f;
     float                               m_scaley = 1.0f;
@@ -473,13 +473,15 @@ struct FrameBufferCreateInfo{
     float                               m_scaleX = 1.0f;
     float                               m_scaleY = 1.0f;
     u8                                  resize = 1;
-    std::string                         name = nullptr;
+    std::string                         name;
 
     FrameBufferCreateInfo&              reset();
     FrameBufferCreateInfo&              addRenderTarget(TextureHandle texture);
     FrameBufferCreateInfo&              setDepthStencilTexture(TextureHandle depthTexture);
     FrameBufferCreateInfo&              setName(const char* name);
     FrameBufferCreateInfo&              setScaling(float scalex,float scaley, u8 resize);
+    FrameBufferCreateInfo&              setRenderPass(RenderPassHandle rp);
+    FrameBufferCreateInfo&              setExtent(VkExtent2D extent);
 };
 
 struct Pipeline{

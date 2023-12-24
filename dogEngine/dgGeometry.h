@@ -8,11 +8,15 @@
 #include <Vertex.h>
 namespace dg{
     std::vector<Vertex> planeVertexData = {
+            {{-1.0f, 1.0f, 0.0f},{0.0f,-1.0f,0.0f},{0.0f,0.0f}},
+            {{-1.0f,-1.0f, 0.0f},{0.0f,-1.0f,0.0f},{0.0f,1.0f}},
+            {{ 1.0f,-1.0f, 0.0f},{0.0f,-1.0f,0.0f},{1.0f,1.0f}},
+            {{ 1.0f, 1.0f, 0.0f},{0.0f,-1.0f,0.0f},{0.0f,1.0f}},
 
     };
 
     std::vector<u32> planeIndexData = {
-
+        0,1,2,0,2,3
     };
 
     std::vector<Vertex> cubeVertexData = {

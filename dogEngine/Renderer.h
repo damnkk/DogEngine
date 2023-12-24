@@ -72,7 +72,7 @@ struct TextureBind{
 
 struct Material:public Resource{
     struct alignas(16) aliInt{
-        int a;
+        int idx;
     };
 
     struct alignas(16) UniformMaterial{
@@ -87,9 +87,9 @@ struct Material:public Resource{
     } uniformMaterial;
     Material();
     void                                addTexture(Renderer* renderer, std::string name, std::string path);
-    void                                addLutTexture(Renderer* renderer, TextureHandle handle);
     void                                addDiffuseEnvMap(Renderer* renderer, TextureHandle handle);
     void                                addSpecularEnvMap(Renderer* renderer, TextureHandle handle);
+    void                                setIblMap(Renderer* renderer, std::string path);
     void                                updateProgram();
     void                                setDiffuseTexture(TextureHandle handle){
         textureMap["DiffuseTexture"].texture = handle;
@@ -107,6 +107,10 @@ struct Material:public Resource{
         textureMap["AOTexture"].texture = handle;
     }
     void                                setProgram(const std::shared_ptr<Program> &program);
+protected:
+    void                                addLutTexture(Renderer* renderer);
+    void                                setIblMap(Renderer* renderer, TextureHandle handle);
+public:
 
     Renderer*                           renderer;
     u32                                 poolIdx;
@@ -159,6 +163,12 @@ public:
     Material*                                   getDefaultMaterial();
     std::shared_ptr<objLoader>                  getObjLoader(){return m_objLoader;}
     std::shared_ptr<gltfLoader>                 getGltfLoader(){return m_gltfLoader;}
+    ResourceCache&                              getResourceCache(){return this->m_resourceCache;}
+    RenderResourcePool<TextureResource>&        getTextures() {return m_textures;}
+    RenderResourcePool<BufferResource>&         getBuffers(){return m_buffers;}
+    RenderResourcePool<Material>&               getMaterials(){return m_materials;}
+    RenderResourcePool<SamplerResource>&        getSamplers(){return m_samplers;}
+    TextureHandle                               getSkyTexture(){return m_skyTexture;}
     void                                        newFrame();
     void                                        present();
     void                                        drawScene();
@@ -167,6 +177,7 @@ public:
     void                                        executeScene();
 protected:
     void                                        executeSkyBox();
+    void                                        destroySkyBox();
     void                                        makeDefaultMaterial();
 
 private:
