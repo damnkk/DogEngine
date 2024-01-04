@@ -54,7 +54,7 @@ namespace dg{
             }
             if(matPtr!=nullptr){
                 rj.m_material = matPtr;
-                rj.m_material->setIblMap(m_renderer, "E:/repository/Vulkan_learn/models/skybox/graveyard_pathways_2k.hdr");
+                rj.m_material->setIblMap(m_renderer, "./models/skybox/graveyard_pathways_2k.hdr");
                 DescriptorSetCreateInfo descInfo;
                 descInfo.setName("base descriptor Set");
                 descInfo.reset().setLayout(matPtr->program->passes[0].descriptorSetLayout[0]);
@@ -153,8 +153,10 @@ namespace dg{
             mesh.m_meshMaterial = m_renderer->createMaterial(matInfo);
             std::string diffuseTexturePath = basePath + '/' + material.diffuse_texname;
             std::string specularTexturePath = material.specular_texname.empty() ? "" : basePath + '/' + material.specular_texname;
-            mesh.m_meshMaterial->setDiffuseTexture(m_renderer->upLoadTextureToGPU(diffuseTexturePath));
-            mesh.m_meshMaterial->setMRTexture( m_renderer->upLoadTextureToGPU(diffuseTexturePath));
+            TextureCreateInfo texInfo{};
+            texInfo.setMipmapLevel(1).setBindLess(true).setFormat(VK_FORMAT_R8G8B8A8_SRGB).setFlag(TextureFlags::Mask::Default_mask);
+            mesh.m_meshMaterial->setDiffuseTexture(m_renderer->upLoadTextureToGPU(diffuseTexturePath,texInfo));
+            mesh.m_meshMaterial->setMRTexture( m_renderer->upLoadTextureToGPU(diffuseTexturePath,texInfo));
             meshNode.m_meshIndex = m_meshes.size();
             meshNode.m_parentNodePtr= &model;
             model.m_subNodes.push_back(meshNode);
@@ -308,11 +310,13 @@ namespace dg{
                     std::string occlusionTexturePath = material.occlusionTexture.index==-1?"":model.extras_json_string+ model.images[model.textures[material.occlusionTexture.index].source].uri;
                     std::string MRTexturePath = material.pbrMetallicRoughness.metallicRoughnessTexture.index ==-1?"":model.extras_json_string+model.images[model.textures[material.pbrMetallicRoughness.metallicRoughnessTexture.index].source].uri;
                     std::string normalTexturePath = material.normalTexture.index==-1?"":model.extras_json_string + model.images[model.textures[material.normalTexture.index].source].uri;
-                    mesh->m_meshMaterial->setDiffuseTexture(m_renderer->upLoadTextureToGPU(diffuseTexturePath));
-                    mesh->m_meshMaterial->setEmissiveTexture(m_renderer->upLoadTextureToGPU(emissiveTexturePath));
-                    mesh->m_meshMaterial->setAoTexture(m_renderer->upLoadTextureToGPU(occlusionTexturePath));
-                    mesh->m_meshMaterial->setMRTexture(m_renderer->upLoadTextureToGPU(MRTexturePath));
-                    mesh->m_meshMaterial->setNormalTexture(m_renderer->upLoadTextureToGPU(normalTexturePath));
+                    TextureCreateInfo texInfo{};
+                    texInfo.setFlag(TextureFlags::Mask::Default_mask).setFormat(VK_FORMAT_R8G8B8A8_SRGB).setBindLess(true).setMipmapLevel(1);
+                    mesh->m_meshMaterial->setDiffuseTexture(m_renderer->upLoadTextureToGPU(diffuseTexturePath,texInfo));
+                    mesh->m_meshMaterial->setEmissiveTexture(m_renderer->upLoadTextureToGPU(emissiveTexturePath, texInfo));
+                    mesh->m_meshMaterial->setAoTexture(m_renderer->upLoadTextureToGPU(occlusionTexturePath,texInfo));
+                    mesh->m_meshMaterial->setMRTexture(m_renderer->upLoadTextureToGPU(MRTexturePath,texInfo));
+                    mesh->m_meshMaterial->setNormalTexture(m_renderer->upLoadTextureToGPU(normalTexturePath,texInfo));
                 }
             }
         }

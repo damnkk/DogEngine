@@ -5,3 +5,4 @@
 %VULKAN_SDK%\Bin\glslangValidator.exe --target-env vulkan1.2 lut.vert -o lutvert.spv
 %VULKAN_SDK%\Bin\glslangValidator.exe --target-env vulkan1.2 lut.frag -o lutfrag.spv
 %VULKAN_SDK%\Bin\glslangValidator.exe --target-env vulkan1.2 irra.frag -o irrafrag.spv
+%VULKAN_SDK%\Bin\glslangValidator.exe --target-env vulkan1.2 prefilter.frag -o prefilterfrag.spv

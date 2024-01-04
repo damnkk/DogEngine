@@ -148,7 +148,7 @@ public:
     Material*                                   createMaterial( MaterialCreateInfo& matInfo);
     void                                        addSkyBox(std::string skyTexPath);
 
-    TextureHandle                               upLoadTextureToGPU(std::string& texPath);
+    TextureHandle                               upLoadTextureToGPU(std::string& texPath, TextureCreateInfo& texInfo);
     template<typename T>
     BufferHandle                                upLoadBufferToGPU( std::vector<T>& bufferData, const char* meshName);
 

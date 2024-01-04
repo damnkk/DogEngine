@@ -180,6 +180,7 @@ void main(){
     
     vec3 test=texture(globalTextures[nonuniformEXT(umat.textureIndices[5])],fragTexCoord).xyz;
     vec3 test2=texture(globalTextures[nonuniformEXT(umat.textureIndices[6])],fragTexCoord).xyz;
+    vec3 test3=texture(globalTextures[nonuniformEXT(umat.textureIndices[7])],fragTexCoord).xyz;
     vec3 V=normalize(ubo.cameraPos-worldPos);
     vec3 L=normalize(lightdirection-worldPos);
     vec3 N=normalize(fragNormal);

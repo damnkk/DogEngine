@@ -38,5 +38,5 @@ cmake-build-debug-mingw/
 cmake-build-debug-visual-studio/
 .vs/
 models/sponza
-models/*
+
 .cache/

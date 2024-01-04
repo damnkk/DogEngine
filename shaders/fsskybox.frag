@@ -48,7 +48,7 @@ vec2 SampleSphericalMap(vec3 v){
 void main(){
 	vec3 sampleVector=worldPos-ubo.cameraPos;
 	vec2 uv=SampleSphericalMap(normalize(worldPos));
-	vec3 envColor=texture(globalTextures[nonuniformEXT(umat.textureIndices[0])],uv).xyz;
+	vec3 envColor=textureLod(globalTextures[nonuniformEXT(umat.textureIndices[0])],uv,0).xyz;
 	envColor=ACESToneMapping(envColor,1.5f);
 	outColor=vec4(envColor,1.f);
 	

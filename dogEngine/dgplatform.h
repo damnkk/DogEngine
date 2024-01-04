@@ -64,6 +64,25 @@ namespace TextureType{
     }
 }
 
+namespace TextureFlags {
+    enum Enum {
+        Default, RenderTarget, Compute, Sparse, ShadingRate, Count
+    };
+
+    enum Mask {
+        Default_mask = 1 << 0, RenderTarget_mask = 1 << 1, Compute_mask = 1 << 2, Sparse_mask = 1 << 3, ShadingRate_mask = 1 << 4
+    };
+
+    static const char* s_value_names[] = {
+            "Default", "RenderTarget", "Compute", "Count"
+    };
+
+    static const char* ToString( Enum e ) {
+        return ((u32)e < Enum::Count ? s_value_names[(int)e] : "unsupported" );
+    }
+
+} // namespace TextureFlags
+
 namespace VertexComponentFormat {
     enum Enum {
         Float, Float2, Float3, Float4, Mat4, Byte, Byte4N, UByte, UByte4N, Short2, Short2N, Short4, Short4N, Uint, Uint2, Uint4, Count
