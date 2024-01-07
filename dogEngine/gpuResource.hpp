@@ -101,7 +101,7 @@ namespace dg {
         RESOURCE_STATE_COMMON = 0x2000,
         RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE = 0x4000,
         RESOURCE_STATE_SHADING_RATE_SOURCE = 0x8000,
-    } ResourceState;
+    };
 
     struct Texture {
         VkImage m_image;
@@ -382,8 +382,15 @@ namespace dg {
         u16 height = 0;
     };
 
+    struct Rect2DFloat {
+        float x = 0.0f;
+        float y = 0.0f;
+        float width = 0.0f;
+        float height = 0.0f;
+    };
+
     struct ViewPort {
-        Rect2DInt rect;
+        Rect2DFloat rect;
         float min_depth = 0.0f;
         float max_depth = 0.0f;
     };
@@ -450,7 +457,7 @@ namespace dg {
         DescriptorSetLayoutCreateInfo &setSetIndex(u32 index);
     };
 
-    struct pipelineCreateInfo {
+    struct PipelineCreateInfo {
 
         RasterizationCreation m_rasterization;
         DepthStencilCreation m_depthStencil;
@@ -461,11 +468,13 @@ namespace dg {
         RenderPassOutput m_renderPassOutput;
         RenderPassHandle m_renderPassHandle;
         DescriptorSetLayoutHandle m_descLayout[k_max_descriptor_set_layouts];
+        std::vector<VkPushConstantRange> m_pushConstants;
         const ViewPortState *m_viewport = nullptr;
 
         u32 m_numActivateLayouts = 0;
         std::string name;
-        pipelineCreateInfo &addDescriptorSetlayout(const DescriptorSetLayoutHandle &handle);
+        PipelineCreateInfo &addDescriptorSetlayout(const DescriptorSetLayoutHandle &handle);
+        PipelineCreateInfo &addPushConstants(VkPushConstantRange push);
         RenderPassOutput &renderPassOutput();
     };
 
@@ -475,7 +484,7 @@ namespace dg {
 
         std::vector<TextureHandle> m_outputTextures;
         TextureHandle m_depthTexture = {k_invalid_index};
-
+        VkImageLayout m_finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         float m_scalex = 1.0f;
         float m_scaley = 1.0f;
         u32 resize = 1;
@@ -486,6 +495,7 @@ namespace dg {
 
         std::string name;
         RenderPassCreateInfo &setName(const char *name);
+        RenderPassCreateInfo &setFinalLayout(VkImageLayout finalLayout);
         RenderPassCreateInfo &addRenderTexture(TextureHandle handle);
         RenderPassCreateInfo &setScale(float x, float y, u32 resize);
         RenderPassCreateInfo &setDepthStencilTexture(TextureHandle handle);
@@ -520,7 +530,7 @@ namespace dg {
         VkPipelineLayout m_pipelineLayout;
         VkPipelineBindPoint m_bindPoint;
         ShaderStateHandle m_shaderState;
-        const DescriptorSetLayout *m_DescriptorSetLayout[k_max_descriptor_set_layouts];
+        DescriptorSetLayout *m_DescriptorSetLayout[k_max_descriptor_set_layouts];
         DescriptorSetLayoutHandle m_DescriptorSetLayoutHandle[k_max_descriptor_set_layouts];
         u32 m_activeLayouts = 0;
 

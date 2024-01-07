@@ -30,7 +30,8 @@ namespace dg {
     }
 
     void mouseCallback(GLFWwindow *window, double xPos, double yPos) {
-        std::cout << "xPos: " << xPos << "   yPos: " << yPos << "\r";
+        std::cout << "xPos: " << xPos << "   yPos: " << yPos ;
+        std::cout<< '\r';
         if (click) {
             lastX = xPos;
             lastY = yPos;
@@ -259,10 +260,6 @@ namespace dg {
         return m_pipelines.accessResource(handle.index);
     }
 
-    const Pipeline *DeviceContext::accessPipeline(PipelineHandle handle) const {
-        return m_pipelines.accessResource(handle.index);
-    }
-
     FrameBuffer *DeviceContext::accessFrameBuffer(FrameBufferHandle handle) {
         return m_frameBuffers.accessResource(handle.index);
     }
@@ -272,7 +269,7 @@ namespace dg {
     }
 
     //Resource indirect destroy
-    void DeviceContext::DestroyTexture(TextureHandle texIndex) {
+    void DeviceContext::DestroyTexture(TextureHandle &texIndex) {
         if (texIndex.index > m_textures.m_poolSize) {
             DG_WARN("You are trying to add an invalid texture in delection queue");
         }
@@ -280,7 +277,7 @@ namespace dg {
         texIndex = {k_invalid_index};
     }
 
-    void DeviceContext::DestroyBuffer(BufferHandle bufferIndex) {
+    void DeviceContext::DestroyBuffer(BufferHandle &bufferIndex) {
         if (bufferIndex.index > m_buffers.m_poolSize) {
             DG_WARN("You are trying to add an invalid buffer in delection queue");
         }
@@ -288,7 +285,7 @@ namespace dg {
         bufferIndex = {k_invalid_index};
     }
 
-    void DeviceContext::DestroyRenderPass(RenderPassHandle passIndex) {
+    void DeviceContext::DestroyRenderPass(RenderPassHandle &passIndex) {
         if (passIndex.index > m_renderPasses.m_poolSize) {
             DG_WARN("You are trying to add an invalid renderPass in delection queue");
         }
@@ -296,7 +293,7 @@ namespace dg {
         passIndex = {k_invalid_index};
     }
 
-    void DeviceContext::DestroyPipeline(PipelineHandle pipelineIndex) {
+    void DeviceContext::DestroyPipeline(PipelineHandle &pipelineIndex) {
         if (pipelineIndex.index > m_pipelines.m_poolSize) {
             DG_WARN("You are trying to add an invalid pipeline in deletion queue");
         }
@@ -310,7 +307,7 @@ namespace dg {
         pipelineIndex = {k_invalid_index};
     }
 
-    void DeviceContext::DestroyDescriptorSet(DescriptorSetHandle dsIndex) {
+    void DeviceContext::DestroyDescriptorSet(DescriptorSetHandle &dsIndex) {
         if (dsIndex.index > m_descriptorSets.m_poolSize) {
             DG_WARN("You are trying to add an invalid descriptor set in delection queue");
         }
@@ -318,7 +315,7 @@ namespace dg {
         dsIndex = {k_invalid_index};
     }
 
-    void DeviceContext::DestroyDescriptorSetLayout(DescriptorSetLayoutHandle dsLayoutIndex) {
+    void DeviceContext::DestroyDescriptorSetLayout(DescriptorSetLayoutHandle &dsLayoutIndex) {
         if (dsLayoutIndex.index > m_descriptorSetLayouts.m_poolSize) {
             DG_WARN("You are trying to add an invalid descriptor set layout in delection queue");
         }
@@ -326,7 +323,7 @@ namespace dg {
         dsLayoutIndex = {k_invalid_index};
     }
 
-    void DeviceContext::DestroyShaderState(ShaderStateHandle ssHandle) {
+    void DeviceContext::DestroyShaderState(ShaderStateHandle &ssHandle) {
         if (ssHandle.index > m_shaderStates.m_poolSize) {
             DG_WARN("You are trying to add an invalid shader state in delection queue");
         }
@@ -334,7 +331,7 @@ namespace dg {
         ssHandle = {k_invalid_index};
     }
 
-    void DeviceContext::DestroySampler(SamplerHandle sampHandle) {
+    void DeviceContext::DestroySampler(SamplerHandle &sampHandle) {
         if (sampHandle.index > m_samplers.m_poolSize) {
             DG_WARN("You are trying to add an invalid smapler to delection queue");
         }
@@ -342,7 +339,7 @@ namespace dg {
         sampHandle = {k_invalid_index};
     }
 
-    void DeviceContext::DestroyFrameBuffer(FrameBufferHandle fboHandle, bool destroyTexture) {
+    void DeviceContext::DestroyFrameBuffer(FrameBufferHandle &fboHandle, bool destroyTexture) {
         if (fboHandle.index == k_invalid_index) {
             DG_WARN("You are trying to add an invalid FramBuffer to delection queue");
             return;
@@ -705,7 +702,7 @@ namespace dg {
             attDesc.stencilLoadOp = stencilOp;
             attDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
             attDesc.initialLayout = tex->m_imageInfo.imageLayout;
-            attDesc.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            attDesc.finalLayout = passInfo.m_finalLayout;
 
             VkAttachmentReference &attref = color_ref[i];
             attref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -959,12 +956,13 @@ namespace dg {
                 begininfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
                 vkBeginCommandBuffer(cmd->m_commandBuffer, &begininfo);
                 vkCmdCopyBuffer(cmd->m_commandBuffer, stagingbuf->m_buffer, buffer->m_buffer, 1, &cpy);
-                vkEndCommandBuffer(cmd->m_commandBuffer);
-                VkSubmitInfo submitInfo{VK_STRUCTURE_TYPE_SUBMIT_INFO};
-                submitInfo.commandBufferCount = 1;
-                submitInfo.pCommandBuffers = &cmd->m_commandBuffer;
-                vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-                vkQueueWaitIdle(m_graphicsQueue);
+                // vkEndCommandBuffer(cmd->m_commandBuffer);
+                // VkSubmitInfo submitInfo{VK_STRUCTURE_TYPE_SUBMIT_INFO};
+                // submitInfo.commandBufferCount = 1;
+                // submitInfo.pCommandBuffers = &cmd->m_commandBuffer;
+                // vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+                // vkQsueueWaitIdle(m_graphicsQueue);
+                cmd->flush(m_graphicsQueue);
                 DestroyBuffer(staginghandle);
                 staginghandle.index = k_invalid_index;
             }
@@ -976,7 +974,7 @@ namespace dg {
         return handle;
     }
 
-    static void addImageBarrier(VkCommandBuffer cmdBuffer, Texture *texture, ResourceState oldState, ResourceState newState, u32 baseMipLevel, u32 mipCount, bool isDepth) {
+    void DeviceContext::addImageBarrier(VkCommandBuffer cmdBuffer, Texture *texture, ResourceState oldState, ResourceState newState, u32 baseMipLevel, u32 mipCount, bool isDepth) {
         VkImageMemoryBarrier imageBarrier{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
         imageBarrier.image = texture->m_image;
         imageBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -1118,20 +1116,21 @@ namespace dg {
         subresourceRange.baseMipLevel = 0;
         subresourceRange.levelCount = tc.m_mipmapLevel;
         subresourceRange.layerCount = 6;
-        addImageBarrier(cmd->m_commandBuffer, tex, tex->m_resourceState, ResourceState::RESOURCE_STATE_COPY_DEST, 0, 1, false);
+        context->addImageBarrier(cmd->m_commandBuffer, tex, tex->m_resourceState, ResourceState::RESOURCE_STATE_COPY_DEST, 0, 1, false);
         vkCmdCopyBufferToImage(cmd->m_commandBuffer, stagingBuffer, tex->m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, bufferCopyResgions.size(), bufferCopyResgions.data());
         tex->m_imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        addImageBarrier(cmd->m_commandBuffer, tex, ResourceState::RESOURCE_STATE_COPY_DEST, ResourceState ::RESOURCE_STATE_SHADER_RESOURCE, 0, 1, false);
-        vkEndCommandBuffer(cmd->m_commandBuffer);
-        VkSubmitInfo subInfo{VK_STRUCTURE_TYPE_SUBMIT_INFO};
-        subInfo.commandBufferCount = 1;
-        subInfo.pCommandBuffers = &cmd->m_commandBuffer;
-        subInfo.signalSemaphoreCount = 0;
-        subInfo.pSignalSemaphores = nullptr;
-        subInfo.waitSemaphoreCount = 0;
-        subInfo.pWaitSemaphores = nullptr;
-        vkQueueSubmit(context->m_graphicsQueue, 1, &subInfo, VK_NULL_HANDLE);
-        vkQueueWaitIdle(context->m_graphicsQueue);
+        context->addImageBarrier(cmd->m_commandBuffer, tex, ResourceState::RESOURCE_STATE_COPY_DEST, ResourceState ::RESOURCE_STATE_SHADER_RESOURCE, 0, 1, false);
+        //        vkEndCommandBuffer(cmd->m_commandBuffer);
+        //        VkSubmitInfo subInfo{VK_STRUCTURE_TYPE_SUBMIT_INFO};
+        //        subInfo.commandBufferCount = 1;
+        //        subInfo.pCommandBuffers = &cmd->m_commandBuffer;
+        //        subInfo.signalSemaphoreCount = 0;
+        //        subInfo.pSignalSemaphores = nullptr;
+        //        subInfo.waitSemaphoreCount = 0;
+        //        subInfo.pWaitSemaphores = nullptr;
+        //        vkQueueSubmit(context->m_graphicsQueue, 1, &subInfo, VK_NULL_HANDLE);
+        //        vkQueueWaitIdle(context->m_graphicsQueue);
+        cmd->flush(context->m_graphicsQueue);
         //create image view
         VkImageViewCreateInfo imageViewInfo = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
         imageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
@@ -1181,18 +1180,18 @@ namespace dg {
         bufferImagecp.imageSubresource.layerCount = 1;
         bufferImagecp.imageSubresource.mipLevel = 0;
 
-        addImageBarrier(tempCommandBuffer->m_commandBuffer, texture, texture->m_resourceState, ResourceState::RESOURCE_STATE_COPY_DEST, 0, 1, false);
+        context->addImageBarrier(tempCommandBuffer->m_commandBuffer, texture, texture->m_resourceState, ResourceState::RESOURCE_STATE_COPY_DEST, 0, 1, false);
         vkCmdCopyBufferToImage(tempCommandBuffer->m_commandBuffer, stagingBuffer, texture->m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &bufferImagecp);
         //addImageBarrier(tempCommandBuffer->m_commandBuffer, texture, ResourceState::RESOURCE_STATE_COPY_DEST,ResourceState::RESOURCE_STATE_SHADER_RESOURCE,  0,1,false);
         if (texture->m_mipLevel > 1) {
-            addImageBarrier(tempCommandBuffer->m_commandBuffer, texture, ResourceState ::RESOURCE_STATE_COPY_DEST, ResourceState ::RESOURCE_STATE_COPY_SOURCE, 0, 1, false);
+            context->addImageBarrier(tempCommandBuffer->m_commandBuffer, texture, ResourceState ::RESOURCE_STATE_COPY_DEST, ResourceState ::RESOURCE_STATE_COPY_SOURCE, 0, 1, false);
         }
 
         int w = texture->m_extent.width;
         int h = texture->m_extent.height;
 
         for (int mipIdx = 1; mipIdx < texture->m_mipLevel; ++mipIdx) {
-            addImageBarrier(tempCommandBuffer->m_commandBuffer, texture, ResourceState ::RESOURCE_STATE_UNDEFINED, ResourceState ::RESOURCE_STATE_COPY_DEST, mipIdx, 1, false);
+            context->addImageBarrier(tempCommandBuffer->m_commandBuffer, texture, ResourceState ::RESOURCE_STATE_UNDEFINED, ResourceState ::RESOURCE_STATE_COPY_DEST, mipIdx, 1, false);
             VkImageBlit blit_region{};
             blit_region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
             blit_region.srcSubresource.mipLevel = mipIdx - 1;
@@ -1209,17 +1208,18 @@ namespace dg {
             blit_region.dstOffsets[0] = {0, 0, 0};
             blit_region.dstOffsets[1] = {w, h, 1};
             vkCmdBlitImage(tempCommandBuffer->m_commandBuffer, texture->m_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, texture->m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit_region, VK_FILTER_LINEAR);
-            addImageBarrier(tempCommandBuffer->m_commandBuffer, texture, ResourceState::RESOURCE_STATE_COPY_DEST, RESOURCE_STATE_COPY_SOURCE, mipIdx, 1, false);
+            context->addImageBarrier(tempCommandBuffer->m_commandBuffer, texture, ResourceState::RESOURCE_STATE_COPY_DEST, RESOURCE_STATE_COPY_SOURCE, mipIdx, 1, false);
         }
 
-        addImageBarrier(tempCommandBuffer->m_commandBuffer, texture, (texture->m_mipLevel > 1) ? ResourceState::RESOURCE_STATE_COPY_SOURCE : ResourceState::RESOURCE_STATE_COPY_DEST, ResourceState::RESOURCE_STATE_SHADER_RESOURCE, 0, texture->m_mipLevel, false);
-        vkEndCommandBuffer(tempCommandBuffer->m_commandBuffer);
-        VkSubmitInfo submitInfo{VK_STRUCTURE_TYPE_SUBMIT_INFO};
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &tempCommandBuffer->m_commandBuffer;
-        res = vkQueueSubmit(context->m_graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-        DGASSERT(res == VK_SUCCESS);
-        vkQueueWaitIdle(context->m_graphicsQueue);
+        context->addImageBarrier(tempCommandBuffer->m_commandBuffer, texture, (texture->m_mipLevel > 1) ? ResourceState::RESOURCE_STATE_COPY_SOURCE : ResourceState::RESOURCE_STATE_COPY_DEST, ResourceState::RESOURCE_STATE_SHADER_RESOURCE, 0, texture->m_mipLevel, false);
+        //        vkEndCommandBuffer(tempCommandBuffer->m_commandBuffer);
+        //        VkSubmitInfo submitInfo{VK_STRUCTURE_TYPE_SUBMIT_INFO};
+        //        submitInfo.commandBufferCount = 1;
+        //        submitInfo.pCommandBuffers = &tempCommandBuffer->m_commandBuffer;
+        //        res = vkQueueSubmit(context->m_graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+        //        DGASSERT(res == VK_SUCCESS);
+        //        vkQueueWaitIdle(context->m_graphicsQueue);
+        tempCommandBuffer->flush(context->m_graphicsQueue);
         vmaDestroyBuffer(context->m_vma, stagingBuffer, stagingAllocation);
         vkResetCommandBuffer(tempCommandBuffer->m_commandBuffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
         texture->m_resourceState = RESOURCE_STATE_SHADER_RESOURCE;
@@ -1640,7 +1640,7 @@ namespace dg {
         return handle;
     }
 
-    PipelineHandle DeviceContext::createPipeline(pipelineCreateInfo &pipelineInfo) {
+    PipelineHandle DeviceContext::createPipeline(PipelineCreateInfo &pipelineInfo) {
         PipelineHandle handle = {m_pipelines.obtainResource()};
         if (handle.index == k_invalid_index) return handle;
         ShaderStateHandle shaderState = createShaderState(pipelineInfo.m_shaderState);
@@ -1658,15 +1658,11 @@ namespace dg {
             dSetLayouts[i] = pipeline->m_DescriptorSetLayout[i]->m_descriptorSetLayout;
         }
 
-        VkPushConstantRange pushConstant;
-        pushConstant.offset = 0;
-        pushConstant.size = sizeof(ConstentData);
-        pushConstant.stageFlags = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
         VkPipelineLayoutCreateInfo pipLayoutInfo{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
         pipLayoutInfo.setLayoutCount = pipelineInfo.m_numActivateLayouts;
         pipLayoutInfo.pSetLayouts = dSetLayouts;
-        pipLayoutInfo.pushConstantRangeCount = 1;
-        pipLayoutInfo.pPushConstantRanges = &pushConstant;
+        pipLayoutInfo.pushConstantRangeCount = pipelineInfo.m_pushConstants.size();
+        pipLayoutInfo.pPushConstantRanges = pipelineInfo.m_pushConstants.data();
 
         VkPipelineLayout pipelineLayout;
         DGASSERT(vkCreatePipelineLayout(m_logicDevice, &pipLayoutInfo, nullptr, &pipelineLayout) == VK_SUCCESS);

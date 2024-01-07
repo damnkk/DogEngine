@@ -30,10 +30,12 @@ layout(set=1,binding=0)uniform sampler2D globalTextures[];
 
 layout(location=0)in vec3 fragNormal;
 layout(location=1)in vec2 fragTexCoord;
-layout(location=2)in vec3 worldPos;
+layout(location=2)in vec4 tangent;
+layout(location=3)in vec3 worldPos;
 
 layout(location=0)out vec4 outColor;
 #define PI 3.14159265359
+const int k_invalid_index = -1;
 
 vec3 lightdirection=vec3(0.f,200.f,00.f);
 
@@ -52,22 +54,14 @@ float heaviside(float v){
 }
 
 vec3 addNormTex(vec3 initNormal,vec2 fragTexCoord){
-    mat3 TBN=mat3(1.);
-    
-    vec3 T=normalize(cross(initNormal,vec3(1.,0,0)));
-    vec3 B=normalize(cross(initNormal,T));
-    
-    // the transpose of texture-to-eye space matrix
-    TBN=mat3(
-        T,
-        B,
-        normalize(initNormal)
-    );
-    
-    vec3 N=normalize(texture(globalTextures[nonuniformEXT(umat.textureIndices[3])],fragTexCoord).rgb*2.-1.);
-    N=normalize(TBN*N);
-    return N;
-    
+    vec3 v = normalize(texture(globalTextures[nonuniformEXT(umat.textureIndices[3])],fragTexCoord).rgb*2.-1.);
+    if(length(v)<0.001)
+    {return initNormal;}
+    vec3 N = normalize(initNormal);
+	vec3 T = normalize(vec3(tangent));
+	vec3 B = normalize(cross(N, T));
+    mat3 TBN = mat3(T, B, N);
+    return normalize(TBN*v);
 }
 
 vec3 decode_srgb(vec3 c){
@@ -147,6 +141,31 @@ float SchlickGGX(float NdotV,float k)
     return nom/denom;
 }
 
+vec3 FresnelSchlickRoughness(float NdotV, vec3 f0, float roughness)
+{
+    float r1 = 1.0f - roughness;
+    return f0 + (max(vec3(r1, r1, r1), f0) - f0) * pow(1 - NdotV, 5.0f);
+}
+
+vec2 SampleSphericalMap(vec3 v){
+    vec2 uv=vec2(atan(v.z,v.x),asin(v.y));
+    uv/=vec2(2.*PI,PI);
+    uv+=.5;
+    uv.y=1.-uv.y;
+    return uv;
+}
+vec3 ACESToneMapping(vec3 color,float adapted_lum)
+{
+    const float A=2.51f;
+    const float B=.03f;
+    const float C=2.43f;
+    const float D=.59f;
+    const float E=.14f;
+    
+    color*=adapted_lum;
+    return(color*(A*color+B))/(color*(C*color+D)+E);
+}
+
 vec3 PBR(vec3 N,vec3 V,vec3 L,vec3 albedo,vec3 radiance,float roughness,float metallic)
 {
     roughness=max(roughness,.05);// 保证光滑物体也有高光
@@ -157,7 +176,8 @@ vec3 PBR(vec3 N,vec3 V,vec3 L,vec3 albedo,vec3 radiance,float roughness,float me
     float NdotH=max(dot(N,H),0);
     float HdotV=max(dot(H,V),0);
     float alpha=roughness*roughness;
-    float k=alpha/2.;
+    // float k=alpha/2.;
+    float k= ((alpha+1) * (alpha+1)) / 8.0;
     vec3 F0=mix(vec3(.04,.04,.04),albedo,metallic);
     
     float D=Trowbridge_Reitz_GGX(NdotH,alpha);
@@ -169,28 +189,58 @@ vec3 PBR(vec3 N,vec3 V,vec3 L,vec3 albedo,vec3 radiance,float roughness,float me
     vec3 f_diffuse=albedo/PI;
     vec3 f_specular=(D*F*G)/(4.*NdotV*NdotL+.0001);
     f_diffuse*=PI;
-    //f_specular*=PI;
+    f_specular*=PI;
     
     vec3 color=(k_d*f_diffuse+f_specular)*radiance*NdotL;
     
     return color;
 }
 
+//texture(globalTextures[nonuniformEXT(umat.textureIndices[2])],fragTexCoord).r
+vec3 IBL(vec3 N,vec3 V, vec3 albedo,float roughness, float metallic){
+    roughness = min(roughness,0.999);
+    vec3 H = normalize(N);
+    float NdotV = max(dot(N,V),0);
+    float HdotV = max(dot(H,V),0);
+    vec3 R = normalize(reflect(-V,N));
+    vec3 F0=mix(vec3(.04,.04,.04),albedo,metallic);
+    vec3 F = FresnelSchlickRoughness(HdotV,F0,roughness); 
+    vec3 k_s = F;
+    vec3 k_d = (1.0-k_s)*(1.0-metallic);
+    vec3 IBLd = texture(globalTextures[nonuniformEXT(umat.textureIndices[6])],SampleSphericalMap(N)).rgb;
+    vec3 diffuse = k_d*albedo*IBLd;
+
+    float rgh = roughness*(1.7-0.7*roughness);
+    float lod = 10.0*rgh;
+    vec3 IBLs = textureLod(globalTextures[nonuniformEXT(umat.textureIndices[7])],SampleSphericalMap(R),lod).rgb;
+    vec2 brdf = texture(globalTextures[nonuniformEXT(umat.textureIndices[5])],vec2(NdotV,roughness)).rg;
+    vec3 specular = IBLs*(F0*brdf.x+brdf.y);
+    vec3 ambient = diffuse+specular;
+    return ambient;
+}
+
+vec3 saturation(vec3 initColor, float weight){
+    float illuminate = 0.2*initColor.x+0.7*initColor.y+0.1*initColor.z;
+    return mix(vec3(illuminate),initColor, weight);
+}
+
 void main(){
-    
-    vec3 test=texture(globalTextures[nonuniformEXT(umat.textureIndices[5])],fragTexCoord).xyz;
-    vec3 test2=texture(globalTextures[nonuniformEXT(umat.textureIndices[6])],fragTexCoord).xyz;
-    vec3 test3=texture(globalTextures[nonuniformEXT(umat.textureIndices[7])],fragTexCoord).xyz;
     vec3 V=normalize(ubo.cameraPos-worldPos);
     vec3 L=normalize(lightdirection-worldPos);
     vec3 N=normalize(fragNormal);
-    N=addNormTex(N,fragTexCoord);
+    if(umat.textureIndices[3]!=k_invalid_index){
+       N=addNormTex(N,fragTexCoord);
+    }
     vec3 H=normalize(L+V);
     float roughness=texture(globalTextures[nonuniformEXT(umat.textureIndices[1])],fragTexCoord).y;
     float metallic=texture(globalTextures[nonuniformEXT(umat.textureIndices[1])],fragTexCoord).z;
+    float ao = texture(globalTextures[nonuniformEXT(umat.textureIndices[2])],fragTexCoord).r;
     vec4 baseColor=vec4(decode_srgb(texture(globalTextures[nonuniformEXT(umat.textureIndices[0])],fragTexCoord).xyz),texture(globalTextures[nonuniformEXT(umat.textureIndices[0])],fragTexCoord).a);
     vec3 emission=vec3(decode_srgb(texture(globalTextures[nonuniformEXT(umat.textureIndices[4])],fragTexCoord).xyz));
     vec3 color=PBR(N,V,L,baseColor.xyz,vec3(2.f),roughness,metallic)+emission;
-    //color=vec3(texture(globalTextures[nonuniformEXT(umat.textureIndices[2])],fragTexCoord));
-    outColor=vec4(color,1.);
+    vec3 ambient = IBL(N,V,baseColor.xyz,roughness,metallic);
+    color +=ambient;//*(step(ao,0.0)*ao);
+    color +=emission;
+    outColor=vec4(saturation(encode_srgb(color),1.2),1.);
+    //outColor=vec4(saturation(encode_srgb(N*0.5+0.5),2.2),1.);
 }

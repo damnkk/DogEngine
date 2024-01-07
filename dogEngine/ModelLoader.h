@@ -55,9 +55,9 @@ public:
     virtual void destroy();
     virtual ~BaseLoader() {};
     virtual void                        loadFromPath(std::string path){}; 
-    virtual std::vector<RenderObject>   Execute(const SceneNode& rootNode);
+    virtual std::vector<RenderObject>   Execute(const SceneNode& rootNode,glm::mat4 modelMatrix= glm::mat4(1.0f));
     virtual bool                        haveContent(){return m_haveContent;}
-    virtual SceneNode&                  getSceneNode(){return m_sceneRoot;}
+    virtual SceneNode&                  getSceneRoot(){return m_sceneRoot;}
     virtual std::vector<RenderObject>&  getRenderObject(){return m_renderObjects;}
     virtual std::vector<Mesh>&          getMeshes(){return m_meshes;}
 

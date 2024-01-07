@@ -15,6 +15,7 @@ namespace dg{
 struct Vertex{
     glm::vec3 pos = glm::vec3(0.0f);
     glm::vec3 normal = glm::vec3(0.0f);
+    glm::vec4 tangent = glm::vec4(0.0f);
     glm::vec2 texCoord = glm::vec2(0.0f);
 
     static VkVertexInputBindingDescription getBindingDescription();

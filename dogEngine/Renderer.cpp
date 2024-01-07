@@ -97,6 +97,38 @@ namespace dg {
         materials.clear();
     }
 
+    TextureResource* ResourceCache::queryTexture(const std::string &name) {
+        auto find = this->textures.find(name);
+        if(find != this->textures.end()){
+            return find->second;
+        }
+        return nullptr;
+    }
+
+    SamplerResource* ResourceCache::querySampler(const std::string &name) {
+        auto find = this->samplers.find(name);
+        if(find != this->samplers.end()){
+            return find->second;
+        }
+        return nullptr;
+    }
+
+    BufferResource* ResourceCache::QueryBuffer(const std::string &name){
+        auto find = this->buffers.find(name);
+        if(find != this->buffers.end()){
+            return find->second;
+        }
+        return nullptr;
+    }
+
+    Material* ResourceCache::QueryMaterial(const std::string &name){
+        auto find = this->materials.find(name);
+        if(find != this->materials.end()){
+            return find->second;
+        }
+        return nullptr;
+    }
+
     MaterialCreateInfo &MaterialCreateInfo::setRenderOrder(u32 renderOrder) {
         this->renderOrder = renderOrder;
         return *this;
@@ -115,7 +147,7 @@ namespace dg {
         descInfo.addBinding({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, 1, "MaterialUniformBuffer"});
         descInfo.setName("defaultDescLayout");
         DescriptorSetLayoutHandle descLayout = m_context->createDescriptorSetLayout(descInfo);
-        pipelineCreateInfo pipelineInfo{};
+        PipelineCreateInfo pipelineInfo{};
         pipelineInfo.m_renderPassHandle = m_context->m_swapChainPass;
         pipelineInfo.m_depthStencil.setDepth(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
         pipelineInfo.m_vertexInput.Attrib = Vertex::getAttributeDescriptions();
@@ -137,9 +169,9 @@ namespace dg {
         m_context = context;
         GUI::getInstance().init(context);
         m_buffers.init(4096);
-        m_textures.init(256);
-        m_samplers.init(256);
-        m_materials.init(32);
+        m_textures.init(512);
+        m_samplers.init(512);
+        m_materials.init(512);
         m_objLoader = std::make_shared<objLoader>(this);
         m_gltfLoader = std::make_shared<gltfLoader>(this);
         makeDefaultMaterial();
@@ -169,9 +201,18 @@ namespace dg {
             DG_INFO("There is a Texture with the same name:{} in resourceCache, renderer will reuse it", textureInfo.name);
             return findRes->second;
         }
+        textureInfo.setMipmapLevel(std::min(textureInfo.m_mipmapLevel, CalcuMipMap(textureInfo.m_textureExtent.width, textureInfo.m_textureExtent.height)));
         auto textureRes = m_textures.obtain();
         textureRes->name = textureInfo.name;
         textureRes->handle = m_context->createTexture(textureInfo);
+        if(textureInfo.m_mipmapLevel>1){
+            SamplerCreateInfo sampleInfo{};
+            sampleInfo.set_min_mag_mip(VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_SAMPLER_MIPMAP_MODE_LINEAR).set_LodMinMaxBias(0,(float)textureInfo.m_mipmapLevel,0)
+                    .set_address_uvw(VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT,VK_SAMPLER_ADDRESS_MODE_REPEAT).set_name(textureInfo.name.c_str());
+            auto* sampleResource = this->createSampler(sampleInfo);
+            Texture* tex = m_context->accessTexture(textureRes->handle);
+            tex->setSampler(this->m_context,sampleResource->handle);
+        }
         m_resourceCache.textures[textureInfo.name] = textureRes;
         return textureRes;
     }
@@ -181,9 +222,10 @@ namespace dg {
             DG_ERROR("Buffer created by renderer must have an unique name");
             exit(-1);
         }
-        if (m_resourceCache.buffers.find(bufferInfo.name) != m_resourceCache.buffers.end()) {
-            DG_ERROR("You are trying to create a buffer which has a same name with an existing buffer, through renderer");
-            exit(-1);
+        auto find = m_resourceCache.buffers.find(bufferInfo.name);
+        if (find != m_resourceCache.buffers.end()) {
+            DG_WARN("You are trying to create a buffer which has a same name{} with an existing buffer, through renderer",bufferInfo.name);
+            return find->second;
         }
         auto bufferRes = m_buffers.obtain();
         bufferRes->name = bufferInfo.name;
@@ -320,11 +362,11 @@ namespace dg {
     void Renderer::executeScene() {
         if (have_skybox) executeSkyBox();
         if (m_objLoader->haveContent()) {
-            m_objLoader->Execute(m_objLoader->getSceneNode());
+            m_objLoader->Execute(m_objLoader->getSceneRoot());
             m_renderObjects.insert(m_renderObjects.end(), m_objLoader->getRenderObject().begin(), m_objLoader->getRenderObject().end());
         }
         if (m_gltfLoader->haveContent()) {
-            m_gltfLoader->Execute(m_gltfLoader->getSceneNode());
+            m_gltfLoader->Execute(m_gltfLoader->getSceneRoot());
             m_renderObjects.insert(m_renderObjects.end(), m_gltfLoader->getRenderObject().begin(), m_gltfLoader->getRenderObject().end());
         }
     }
@@ -341,7 +383,9 @@ namespace dg {
             ViewPort viewPort;
             viewPort.max_depth = 1.0f;
             viewPort.min_depth = 0.0f;
-            viewPort.rect = scissor;
+            viewPort.rect.width = scissor.width;
+            viewPort.rect.height = scissor.height;
+
             cmd->setViewport(&viewPort);
             cmd->bindVertexBuffer(currRenderObject.m_vertexBuffer, 0, 0);
             cmd->bindIndexBuffer(currRenderObject.m_indexBuffer, 0, VK_INDEX_TYPE_UINT32);
@@ -359,7 +403,6 @@ namespace dg {
             udata.cameraDirectory = m_context->m_camera->direction;
             static auto startTime = std::chrono::high_resolution_clock::now();
             auto endTime = std::chrono::high_resolution_clock::now();
-            float time = std::chrono::duration<float, std::chrono::seconds::period>(endTime - startTime).count();
 
             udata.projectMatrix = m_context->m_camera->getProjectMatrix();
             udata.viewMatrix = m_context->m_camera->getViewMatrix();
@@ -423,17 +466,20 @@ namespace dg {
             ktxTexture = nullptr;
             return handle;
         }
-        int imgWidth, imgHeight, imgChannel;
-        stbi_uc *ptr = stbi_load(texPath.c_str(), &imgWidth, &imgHeight, &imgChannel, 4);
         u32 foundHead = texPath.find_last_of("/\\");
         u32 foundEnd = texPath.find_last_not_of(".");
         std::string texName = texPath.substr(foundHead + 1, foundEnd);
+        auto* resource = this->m_resourceCache.queryTexture(texName);
+        if(resource){
+            return resource->handle;
+        }
+        int imgWidth, imgHeight, imgChannel;
+        stbi_uc *ptr = stbi_load(texPath.c_str(), &imgWidth, &imgHeight, &imgChannel, 4);
         texInfo.setName(texName.c_str()).setData(ptr).setExtent({(u32) imgWidth, (u32) imgHeight, 1}).setMipmapLevel(std::min(texInfo.m_mipmapLevel, CalcuMipMap(imgWidth, imgHeight)));
         TextureHandle texHandle = createTexture(texInfo)->handle;
         if (texInfo.m_mipmapLevel > 1) {
             SamplerCreateInfo samplerCI{};
             samplerCI.set_name(texName.c_str()).set_min_mag_mip(VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_LINEAR).set_LodMinMaxBias(0.0f, (float) (texInfo.m_mipmapLevel), 0.0f);
-            int isHdr = stbi_is_hdr_from_memory(ptr, 4 * imgWidth * imgHeight);
             auto *samplerPtr = createSampler(samplerCI);
             Texture *tex = this->m_context->accessTexture(texHandle);
             tex->setSampler(this->m_context, samplerPtr->handle);
@@ -441,6 +487,10 @@ namespace dg {
         delete ptr;
         ptr = nullptr;
         return texHandle;
+    }
+
+    void Renderer::addImageBarrier(VkCommandBuffer cmdBuffer, Texture *texture, ResourceState oldState, ResourceState newState, u32 baseMipLevel, u32 mipCount, bool isDepth) {
+        this->m_context->addImageBarrier(cmdBuffer, texture, oldState, newState, baseMipLevel, mipCount, isDepth);
     }
 
     void Renderer::executeSkyBox() {
@@ -465,7 +515,7 @@ namespace dg {
         DescriptorSetLayoutCreateInfo skyLayoutInfo{};
         skyLayoutInfo.reset().addBinding({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, 1, "globalUniform"}).addBinding({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, 1, "MaterialUniform"});
         skyLayoutInfo.setName("skyDescLayout");
-        pipelineCreateInfo pipelineInfo;
+        PipelineCreateInfo pipelineInfo;
         pipelineInfo.m_renderPassHandle = m_context->m_swapChainPass;
         pipelineInfo.m_depthStencil.setDepth(false, false, VK_COMPARE_OP_LESS_OR_EQUAL);
         pipelineInfo.m_vertexInput.Attrib = Vertex::getAttributeDescriptions();
@@ -535,7 +585,7 @@ namespace dg {
         lutFrameBuffer.reset().addRenderTarget(LUTTexture).setRenderPass(lutRenderPass).setExtent({512, 512});
         FrameBufferHandle lutFBO = renderer->getContext()->createFrameBuffer(lutFrameBuffer);
 
-        pipelineCreateInfo pipelineInfo;
+        PipelineCreateInfo pipelineInfo;
         pipelineInfo.m_renderPassHandle = lutRenderPass;
         pipelineInfo.m_depthStencil.setDepth(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
         pipelineInfo.m_rasterization.m_cullMode = VK_CULL_MODE_NONE;
@@ -560,18 +610,13 @@ namespace dg {
         ViewPort viewport;
         viewport.max_depth = 1.0f;
         viewport.min_depth = 0.0f;
-        viewport.rect = scissor;
+        viewport.rect.width = scissor.width;
+        viewport.rect.height = scissor.height;
         cmd->setViewport(&viewport);
         cmd->setDepthStencilState(VK_TRUE);
         cmd->draw(TopologyType::Triangle, 0, 3, 0, 1);
         cmd->endpass();
-        vkEndCommandBuffer(cmd->m_commandBuffer);
-
-        VkSubmitInfo submitInfo{VK_STRUCTURE_TYPE_SUBMIT_INFO};
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &cmd->m_commandBuffer;
-        VkResult res = vkQueueSubmit(renderer->getContext()->m_graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-        vkQueueWaitIdle(renderer->getContext()->m_graphicsQueue);
+        cmd->flush(renderer->getContext()->m_graphicsQueue);
         renderer->getContext()->DestroyPipeline(lutPipeline);
         renderer->getContext()->DestroyFrameBuffer(lutFBO, false);
         renderer->getContext()->DestroyRenderPass(lutRenderPass);
@@ -581,7 +626,11 @@ namespace dg {
     void Material::addLutTexture(Renderer *renderer) {
         auto LUTTextureFind = renderer->getResourceCache().textures.find("LUTTexture");
         if (LUTTextureFind != renderer->getResourceCache().textures.end()) {
-            textureMap["LUTTexture"] = {LUTTextureFind->second->handle, (u32) textureMap.size()};
+            if(textureMap.find("LUTTexture")!=textureMap.end()){
+                textureMap["LUTTexture"].texture = LUTTextureFind->second->handle;
+                return;
+            }
+            textureMap["LUTTexture"] = {LUTTextureFind->second->handle, (u32) this->textureMap.size()};
             return;
         }
         TextureCreateInfo lutCI{};
@@ -613,7 +662,7 @@ namespace dg {
         diffFrameBufferCI.reset().addRenderTarget(handle).setRenderPass(irraRenderPass).setExtent({irraDTexture->m_extent.width, irraDTexture->m_extent.height});
         FrameBufferHandle irraFBO = renderer->getContext()->createFrameBuffer(diffFrameBufferCI);
         //RDOC_CATCH_START
-        pipelineCreateInfo pipelineInfo{};
+        PipelineCreateInfo pipelineInfo{};
         pipelineInfo.m_renderPassHandle = irraRenderPass;
         pipelineInfo.m_depthStencil.setDepth(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
         pipelineInfo.m_rasterization.m_cullMode = VK_CULL_MODE_NONE;
@@ -639,23 +688,15 @@ namespace dg {
         ViewPort viewport;
         viewport.max_depth = 1.0f;
         viewport.min_depth = 0.0f;
-        viewport.rect = scissor;
+        viewport.rect.width = scissor.width;
+        viewport.rect.height = scissor.height;
         cmd->setViewport(&viewport);
         cmd->setDepthStencilState(VK_FALSE);
         cmd->bindDescriptorSet({descHandle}, 0, nullptr, 0);
         cmd->bindDescriptorSet({renderer->getContext()->m_bindlessDescriptorSet}, 1, nullptr, 0);
         cmd->draw(TopologyType::Enum::Triangle, 0, 3, 0, 1);
         cmd->endpass();
-        vkEndCommandBuffer(cmd->m_commandBuffer);
-
-        VkSubmitInfo submitInfo{VK_STRUCTURE_TYPE_SUBMIT_INFO};
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &cmd->m_commandBuffer;
-        VkResult res = vkQueueSubmit(renderer->getContext()->m_graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-        DGASSERT(res == VK_SUCCESS)
-
-        vkQueueWaitIdle(renderer->getContext()->m_graphicsQueue);
-        //RDOC_CATCH_END
+        cmd->flush(renderer->getContext()->m_graphicsQueue);
         renderer->getContext()->DestroyPipeline(irraPipeline);
         renderer->getContext()->DestroyFrameBuffer(irraFBO, false);
         renderer->getContext()->DestroyRenderPass(irraRenderPass);
@@ -665,42 +706,50 @@ namespace dg {
     }
 
     void Material::addDiffuseEnvMap(Renderer *renderer, TextureHandle HDRTexture) {
-        addLutTexture(renderer);
-        auto DiffuseTextureFind = this->textureMap.find("DiffuseEnvMap");
-        if (DiffuseTextureFind != this->textureMap.end()) {
+        Texture *HDR = renderer->getContext()->accessTexture(HDRTexture);
+        std::string name = "irradianceTex";
+        name +=HDR->m_name;
+        auto Find = renderer->getResourceCache().textures.find(name);
+        if (Find != renderer->getResourceCache().textures.end()) {
+            if(textureMap.find("DiffuseEnvMap")!=textureMap.end()){
+                textureMap["DiffuseEnvMap"].texture = Find->second->handle;
+                return;
+            }
+            textureMap["DiffuseEnvMap"] = {Find->second->handle, (u32)textureMap.size()};
             return;
         }
-        Texture *HDR = renderer->getContext()->accessTexture(HDRTexture);
         TextureCreateInfo DiffTexCI{};
-        DiffTexCI.setBindLess(true).setName("irradianceTex").setExtent({HDR->m_extent.width / 2, HDR->m_extent.height / 2, 1}).setFormat(VK_FORMAT_R16G16B16A16_SFLOAT).setFlag(TextureFlags::Mask::Default_mask | TextureFlags::Mask::RenderTarget_mask).setMipmapLevel(1).setTextureType(TextureType::Enum::Texture2D);
+        DiffTexCI.setBindLess(true).setName(name.c_str()).setExtent({HDR->m_extent.width / 2, HDR->m_extent.height / 2, 1}).setFormat(VK_FORMAT_R8G8B8A8_SRGB).setFlag(TextureFlags::Mask::Default_mask | TextureFlags::Mask::RenderTarget_mask).setMipmapLevel(1).setTextureType(TextureType::Enum::Texture2D);
         TextureHandle handle = renderer->createTexture(DiffTexCI)->handle;
         generateDiffuseEnvTexture(renderer, handle, HDRTexture);
         textureMap["DiffuseEnvMap"] = {handle, (u32) textureMap.size()};
     };
 
     void generateSpecularEnvTexture(Renderer *renderer, TextureHandle handle, TextureHandle envMap) {
-        Material::aliInt um = {(int) envMap.index};
-        BufferCreateInfo bufferCI{};
-        bufferCI.reset().setName("ENVMapIdx").setUsageSize(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(Material::aliInt)).setDeviceOnly(false).setData(&um);
-        BufferHandle bufHandle = renderer->getContext()->createBuffer(bufferCI);
+        struct PushBlock {
+            int EnvIdx;
+            float roughness;
+        } pushBlock;
 
-        DescriptorSetLayoutCreateInfo descLayoutInfo{};
-        descLayoutInfo.reset().setName("ENVMapIdx").addBinding({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, 1, "Idx"});
-        DescriptorSetLayoutHandle descLayoutHandle = renderer->getContext()->createDescriptorSetLayout(descLayoutInfo);
-
-        DescriptorSetCreateInfo descCI{};
-        descCI.reset().buffer(bufHandle, 0).setName("ENVMapIdx").setLayout(descLayoutHandle);
-        DescriptorSetHandle descHandle = renderer->getContext()->createDescriptorSet(descCI);
+        Texture *specTexture = renderer->getContext()->accessTexture(handle);
+        TextureCreateInfo fboTex{};
+        fboTex.setName("fbo").setMipmapLevel(1).setBindLess(true).setFormat(VK_FORMAT_R8G8B8A8_SRGB).setExtent(specTexture->m_extent).setFlag(TextureFlags::Mask::Default_mask | TextureFlags::Mask::RenderTarget_mask);
+        TextureHandle fboHandle = renderer->getContext()->createTexture(fboTex);
+        Texture *fboTexture = renderer->getContext()->accessTexture(fboHandle);
 
         RenderPassCreateInfo specRenderPassCI{};
-        specRenderPassCI.setName("specRenderPass").addRenderTexture(handle).setOperations(RenderPassOperation::Enum::Clear, RenderPassOperation::Enum::Clear, RenderPassOperation::Enum::Clear);
+        specRenderPassCI.setName("specRenderPass").addRenderTexture(fboHandle).setOperations(RenderPassOperation::Enum::Clear, RenderPassOperation::Enum::Clear, RenderPassOperation::Enum::Clear).setFinalLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
         RenderPassHandle specRenderPass = renderer->getContext()->createRenderPass(specRenderPassCI);
-        Texture *specTexture = renderer->getContext()->accessTexture(handle);
+
         FrameBufferCreateInfo specFrameBufferCI{};
-        specFrameBufferCI.reset().addRenderTarget(handle).setRenderPass(specRenderPass).setExtent({specTexture->m_extent.width, specTexture->m_extent.height});
+        specFrameBufferCI.reset().addRenderTarget(fboHandle).setRenderPass(specRenderPass).setExtent({specTexture->m_extent.width, specTexture->m_extent.height});
         FrameBufferHandle specFBO = renderer->getContext()->createFrameBuffer(specFrameBufferCI);
-        //RDOC_CATCH_START
-        pipelineCreateInfo pipelineInfo{};
+
+        VkPushConstantRange push{};
+        push.size = sizeof(PushBlock);
+        push.offset = 0;
+        push.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        PipelineCreateInfo pipelineInfo{};
         pipelineInfo.m_renderPassHandle = specRenderPass;
         pipelineInfo.m_depthStencil.setDepth(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
         pipelineInfo.m_rasterization.m_cullMode = VK_CULL_MODE_NONE;
@@ -710,68 +759,91 @@ namespace dg {
         pipelineInfo.m_shaderState.addStage(vsCode.data(), vsCode.size(), VK_SHADER_STAGE_VERTEX_BIT);
         pipelineInfo.m_shaderState.addStage(fsCode.data(), fsCode.size(), VK_SHADER_STAGE_FRAGMENT_BIT);
         pipelineInfo.m_shaderState.setName("irraPipeline");
-        pipelineInfo.addDescriptorSetlayout(descLayoutHandle);
         pipelineInfo.addDescriptorSetlayout(renderer->getContext()->m_bindlessDescriptorSetLayout);
+        pipelineInfo.addPushConstants(push);
         PipelineHandle specPipeline = renderer->getContext()->createPipeline(pipelineInfo);
         CommandBuffer *cmd = renderer->getContext()->getInstantCommandBuffer();
-
+        //RDOC_CATCH_START
         VkCommandBufferBeginInfo cmdBeginInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
-        cmdBeginInfo.flags = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        cmdBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
         vkBeginCommandBuffer(cmd->m_commandBuffer, &cmdBeginInfo);
-        cmd->bindPass(specRenderPass);
-        cmd->bindPipeline(specPipeline);
-        Rect2DInt scissor;
-        scissor = {0, 0, (u16) specTexture->m_extent.width, (u16) specTexture->m_extent.height};
-        cmd->setScissor(&scissor);
-        ViewPort viewport;
-        viewport.max_depth = 1.0f;
-        viewport.min_depth = 0.0f;
-        viewport.rect = scissor;
-        cmd->setViewport(&viewport);
-        cmd->setDepthStencilState(VK_FALSE);
-        cmd->bindDescriptorSet({descHandle}, 0, nullptr, 0);
-        cmd->bindDescriptorSet({renderer->getContext()->m_bindlessDescriptorSet}, 1, nullptr, 0);
-        cmd->draw(TopologyType::Enum::Triangle, 0, 3, 0, 1);
-        cmd->endpass();
-        vkEndCommandBuffer(cmd->m_commandBuffer);
+        renderer->getContext()->addImageBarrier(cmd->m_commandBuffer, fboTexture, ResourceState::RESOURCE_STATE_UNDEFINED, ResourceState::RESOURCE_STATE_RENDER_TARGET, 0, 1, false);
+        renderer->getContext()->addImageBarrier(cmd->m_commandBuffer, specTexture, ResourceState::RESOURCE_STATE_UNDEFINED, ResourceState::RESOURCE_STATE_COPY_DEST, 0, specTexture->m_mipLevel, false);
+        for (u32 i = 0; i < specTexture->m_mipLevel; ++i) {
+            pushBlock.roughness = (float) i / (float) (specTexture->m_mipLevel - 1);
+            pushBlock.EnvIdx = envMap.index;
+            cmd->bindPass(specRenderPass);
+            cmd->bindPipeline(specPipeline);
+            Rect2DInt scissor;
+            scissor = {0, 0, (u16) specTexture->m_extent.width, (u16) specTexture->m_extent.height};
+            cmd->setScissor(&scissor);
+            ViewPort viewport;
+            viewport.max_depth = 1.0f;
+            viewport.min_depth = 0.0f;
+            viewport.rect.width = static_cast<float>(scissor.width * std::pow(0.5f, i));
+            viewport.rect.height = static_cast<float>(scissor.height * std::pow(0.5f, i));
+            cmd->setViewport(&viewport);
+            cmd->setDepthStencilState(VK_FALSE);
+            cmd->bindPushConstants<PushBlock>(VK_SHADER_STAGE_FRAGMENT_BIT, &pushBlock);
+            cmd->bindDescriptorSet({renderer->getContext()->m_bindlessDescriptorSet}, 0, nullptr, 0);
+            cmd->draw(TopologyType::Enum::Triangle, 0, 3, 0, 1);
+            cmd->endpass();
+            renderer->addImageBarrier(cmd->m_commandBuffer, fboTexture, ResourceState::RESOURCE_STATE_RENDER_TARGET, ResourceState ::RESOURCE_STATE_COPY_SOURCE, 0, 1, false);
+            VkImageCopy copyRegion = {};
+            copyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            copyRegion.srcSubresource.layerCount = 1;
+            copyRegion.srcSubresource.baseArrayLayer = 0;
+            copyRegion.srcSubresource.mipLevel = 0;
+            copyRegion.srcOffset = {0, 0, 0};
 
-        VkSubmitInfo submitInfo{VK_STRUCTURE_TYPE_SUBMIT_INFO};
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &cmd->m_commandBuffer;
-        VkResult res = vkQueueSubmit(renderer->getContext()->m_graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-        DGASSERT(res == VK_SUCCESS)
+            copyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            copyRegion.dstSubresource.baseArrayLayer = 0;
+            copyRegion.dstSubresource.mipLevel = i;
+            copyRegion.dstSubresource.layerCount = 1;
+            copyRegion.dstOffset = {0, 0, 0};
 
-        vkQueueWaitIdle(renderer->getContext()->m_graphicsQueue);
+            copyRegion.extent.width = static_cast<u32>(viewport.rect.width);
+            copyRegion.extent.height = static_cast<u32>(viewport.rect.height);
+            copyRegion.extent.depth = 1;
+            if (copyRegion.extent.width != 0 && copyRegion.extent.height != 0) {
+                vkCmdCopyImage(cmd->m_commandBuffer, fboTexture->m_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, specTexture->m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
+            }
+            renderer->addImageBarrier(cmd->m_commandBuffer, fboTexture, ResourceState::RESOURCE_STATE_COPY_SOURCE, ResourceState::RESOURCE_STATE_RENDER_TARGET, 0, 1, false);
+        }
+        renderer->addImageBarrier(cmd->m_commandBuffer, specTexture, ResourceState::RESOURCE_STATE_COPY_DEST, ResourceState::RESOURCE_STATE_SHADER_RESOURCE, 0, specTexture->m_mipLevel, false);
+        cmd->flush(renderer->getContext()->m_graphicsQueue);
         //RDOC_CATCH_END
         renderer->getContext()->DestroyPipeline(specPipeline);
-        renderer->getContext()->DestroyFrameBuffer(specFBO, false);
+        renderer->getContext()->DestroyFrameBuffer(specFBO, true);
         renderer->getContext()->DestroyRenderPass(specRenderPass);
-        renderer->getContext()->DestroyBuffer(bufHandle);
-        renderer->getContext()->DestroyDescriptorSet(descHandle);
         cmd->destroy();
     }
 
     void Material::addSpecularEnvMap(Renderer *renderer, TextureHandle HDRTexture) {
-        addLutTexture(renderer);
-        auto SpecTextureFind = this->textureMap.find("SpecularEnvMap");
-        if (SpecTextureFind != this->textureMap.end()) {
+        Texture *HDR = renderer->getContext()->accessTexture(HDRTexture);
+        std::string name = "SpecularTex";
+        name +=HDR->m_name;
+        auto Find = renderer->getResourceCache().textures.find(name);
+        if (Find != renderer->getResourceCache().textures.end()) {
+            if(textureMap.find("SpecularEnvMap")!=textureMap.end()){
+                textureMap["SpecularEnvMap"].texture = Find->second->handle;
+            }
+            textureMap["SpecularEnvMap"] = {Find->second->handle, (u32)textureMap.size()};
             return;
         }
-        Texture *HDR = renderer->getContext()->accessTexture(HDRTexture);
         TextureCreateInfo SpecTexCI{};
-        SpecTexCI.setBindLess(true).setName("SpecularTex").setExtent({HDR->m_extent.width, (u32) (HDR->m_extent.height * 1.5), 1}).setFormat(VK_FORMAT_R16G16B16A16_SFLOAT).setFlag(TextureFlags::Mask::Default_mask | TextureFlags::Mask::RenderTarget_mask).setMipmapLevel(1).setTextureType(TextureType::Enum::Texture2D);
+        SpecTexCI.setBindLess(true).setName(name.c_str()).setExtent({HDR->m_extent.width, HDR->m_extent.height, 1}).setFormat(VK_FORMAT_R8G8B8A8_SRGB).setFlag(TextureFlags::Mask::Default_mask).setMipmapLevel(k_max_mipmap_level).setTextureType(TextureType::Enum::Texture2D);
         TextureHandle handle = renderer->createTexture(SpecTexCI)->handle;
         generateSpecularEnvTexture(renderer, handle, HDRTexture);
         textureMap["SpecularEnvMap"] = {handle, (u32) textureMap.size()};
     }
 
     void Material::setIblMap(Renderer *renderer, std::string path) {
-        //RDOC_CATCH_START;
         TextureCreateInfo texInfo{};
         texInfo.setFlag(TextureFlags::Mask::Default_mask).setFormat(VK_FORMAT_R8G8B8A8_SRGB).setMipmapLevel(6).setBindLess(true);
         TextureHandle hdrTex = this->renderer->upLoadTextureToGPU(path, texInfo);
         Texture *hdr = renderer->getContext()->accessTexture(hdrTex);
-        renderer->getContext()->m_descriptorSetUpdateQueue.pop_back();
+        //renderer->getContext()->m_descriptorSetUpdateQueue.pop_back();
         VkWriteDescriptorSet write{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         write.descriptorCount = 1;
         write.dstArrayElement = hdrTex.index;
@@ -780,9 +852,9 @@ namespace dg {
         write.dstBinding = k_bindless_sampled_texture_bind_index;
         write.pImageInfo = &hdr->m_imageInfo;
         vkUpdateDescriptorSets(renderer->getContext()->m_logicDevice, 1, &write, 0, nullptr);
+        addLutTexture(renderer);
         addDiffuseEnvMap(this->renderer, hdrTex);
         addSpecularEnvMap(this->renderer, hdrTex);
-        //RDOC_CATCH_END;
         bool isSameWithSkyTex = (hdrTex.index == renderer->getSkyTexture().index);
         if (!isSameWithSkyTex) {
             auto hdrResource = renderer->getResourceCache().textures[hdr->m_name];

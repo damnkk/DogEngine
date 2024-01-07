@@ -73,7 +73,7 @@ void main()
         vec3 sampleVectorInNormalSpace=vec3(cos(phi)*sinTheta,sin(phi)*sinTheta,cosTheta);
         vec3 sampleVector=sampleVectorInNormalSpace.x*right+sampleVectorInNormalSpace.y*up+sampleVectorInNormalSpace.z*N;
         vec2 UV=SampleSphericalMap(sampleVector);
-        color+=texture(textureArray[nonuniformEXT(ubo.index)],UV).xyz,1.5f*cosTheta*sinTheta;
+        color+=texture(textureArray[nonuniformEXT(ubo.index)],UV).xyz*cosTheta*sinTheta;
     }
     
     outColor=vec4(PI*color/float(sampleCount),1.);

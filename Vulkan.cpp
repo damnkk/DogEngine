@@ -37,16 +37,17 @@ int main() {
   Renderer renderer;
   renderer.init(context);
 
-  //renderer.loadFromPath("./models/nanosuit/nanosuit.obj");
-  //renderer.loadFromPath("./models/Sponza/sponza.obj");
-  //renderer.loadFromPath("./models/duck/12248_Bird_v1_L2.obj");
-  //renderer.loadFromPath("./models/FlightHelmet/FlightHelmet.gltf");
-  renderer.loadFromPath("./models/DamagedHelmet/DamagedHelmet.gltf");
-  //renderer.loadFromPath("./models/glTFSponza/Sponza.gltf");
+  //renderer.loadFromPath("./models/BoomBoxWithAxes/BoomBoxWithAxes.gltf");
+  renderer.loadFromPath("./models/Sponza/Sponza.gltf");
+  //renderer.loadFromPath("./models/Suzanne/Suzanne.gltf");
+  //renderer.loadFromPath("./models/Camera_01_2k/Camera_01_2k.gltf");
+  //renderer.loadFromPath("./models/DamagedHelmet/DamagedHelmet.gltf");
+  //renderer.loadFromPath("./models/MetalRoughSpheres/MetalRoughSpheres.gltf");
+
 
   //renderer.addSkyBox("./models/skybox/small_empty_room_4_2k.hdr");
+  //renderer.addSkyBox("./models/skybox/small_empty_room_1_2k.hdr");
   renderer.addSkyBox("./models/skybox/graveyard_pathways_2k.hdr");
-  //renderer.addSkyBox("./models/skybox/farm_sunset_2k.hdr");
   renderer.executeScene();
 
   while(!glfwWindowShouldClose(context->m_window)){

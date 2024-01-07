@@ -126,6 +126,11 @@ namespace dg {
         return *this;
     }
 
+    RenderPassCreateInfo &RenderPassCreateInfo::setFinalLayout(VkImageLayout finalLayout) {
+        this->m_finalLayout = finalLayout;
+        return *this;
+    }
+
     RenderPassCreateInfo &RenderPassCreateInfo::addRenderTexture(TextureHandle handle) {
         this->m_outputTextures.push_back(handle);
         m_rtNums = m_outputTextures.size();
@@ -365,7 +370,7 @@ namespace dg {
         return *this;
     }
 
-    pipelineCreateInfo &pipelineCreateInfo::addDescriptorSetlayout(const DescriptorSetLayoutHandle &info) {
+    PipelineCreateInfo &PipelineCreateInfo::addDescriptorSetlayout(const DescriptorSetLayoutHandle &info) {
         if (m_numActivateLayouts >= k_max_descriptor_set_layouts) {
             DG_ERROR("The max descriptor set layout num for per pipeline is limited to ", std::to_string(k_max_descriptor_set_layouts), " can't add more layout info!")
             exit(-1);
@@ -373,8 +378,12 @@ namespace dg {
         m_descLayout[m_numActivateLayouts++] = info;
         return *this;
     }
+    PipelineCreateInfo &PipelineCreateInfo::addPushConstants(VkPushConstantRange push) {
+        m_pushConstants.push_back(push);
+        return *this;
+    }
 
-    RenderPassOutput &pipelineCreateInfo::renderPassOutput() {
+    RenderPassOutput &PipelineCreateInfo::renderPassOutput() {
         return m_renderPassOutput;
     }
 

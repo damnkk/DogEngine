@@ -2,11 +2,12 @@
 
 #extension GL_EXT_nonuniform_qualifier:enable
 #extension GL_EXT_scalar_block_layout:enable
-layout(set=0,binding=0)uniform textureIndex{
+layout(push_constant)uniform textureIndex{
     int idx;
+    float roughness;
 }TXIdx;
 
-layout(set=1,binding=0)uniform sampler2D textureArray[];
+layout(set=0,binding=0)uniform sampler2D textureArray[];
 
 layout(location=0) in vec2 inUV;
 layout(location=0)out vec4 outColor;
@@ -61,12 +62,28 @@ float D_GGX(float dotNH, float roughness)
 	return (alpha2)/(PI * denom*denom); 
 }
 
+vec2 SampleSphericalMap(vec3 v){
+    vec2 uv=vec2(atan(v.z,v.x),asin(v.y));
+    uv/=vec2(2.*PI,PI);
+    uv+=.5;
+    uv.y=1.-uv.y;
+    return uv;
+}
+
+vec3 TwoDimVectorTo3D(vec2 uv){
+    vec3 outVec=vec3(1.f);
+    outVec.y=cos(uv.y*PI);
+    outVec.x=sin(uv.y*PI)*cos(uv.x*2.f*PI);
+    outVec.z=sin(uv.y*PI)*sin(uv.x*2.f*PI);
+    return normalize(outVec);
+}
+
 vec3 prefilterEnvMap(vec3 R, float roughness){
     vec3 N = R;
     vec3 V = R;
     vec3 color = vec3(0.0);
     float totalWeight = 0.0;
-    //float envMapDim = float()
+    float envMapDim = float(textureSize(textureArray[nonuniformEXT(TXIdx.idx)], 0).s);
     for(uint i = 0;i<sampleCount;++i){
         vec2 xi = hammersley2d(i,sampleCount);
         vec3 H = importanceSample_GGX(xi, roughness,N);
@@ -78,14 +95,17 @@ vec3 prefilterEnvMap(vec3 R, float roughness){
 
             float pdf = D_GGX(dotNH,roughness)*dotNH/(4.0*dotVH)+0.0001;
             float omegaS = 1.0/(float(sampleCount)*pdf);
-            //float omegaP = 4.0*PI/(6.0*);
+            float omegaP = 4.0*PI/(6.0*envMapDim*envMapDim);
+            float mipLevel = roughness==0.0?0.0:max(0.5*log2(omegaS/omegaP)+1.0,0.0f);
+            color +=textureLod(textureArray[nonuniformEXT(TXIdx.idx)],SampleSphericalMap(L),mipLevel).rgb*dotNL;
+            totalWeight+=dotNL;
         }
     }
-    return vec3(1.0f);
+    return vec3(color/totalWeight);
 }
 
 
 void main(){
-    vec3 color = texture(textureArray[nonuniformEXT(TXIdx.idx)],inUV).xyz;
-    outColor=vec4(color,1.f);
+    vec3 N = normalize(TwoDimVectorTo3D(inUV));
+    outColor=vec4(prefilterEnvMap(N, TXIdx.roughness),1.f);
 }

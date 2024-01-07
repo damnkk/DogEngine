@@ -29,7 +29,7 @@ namespace dg{
 
     //renderObject的提取顺序：先renderpass,再加载纹理和顶点缓冲,再设置Uniform buffer,
     //再创建描述符集和描述符集布局,有了这些再去创建管线(后期学习一下管线缓存)
-    std::vector<RenderObject> BaseLoader::Execute(const SceneNode& rootNode){
+    std::vector<RenderObject> BaseLoader::Execute(const SceneNode& rootNode, glm::mat4 modelMatrix){
         if(rootNode.m_subNodes.empty()&&rootNode.m_meshIndex==-1) return {};
         std::vector<RenderObject> renderobjects;
         if(rootNode.m_meshIndex!=-1){
@@ -43,6 +43,7 @@ namespace dg{
             rj.m_indexCount = mesh.m_indices.size();
             rj.m_vertexCount = mesh.m_vertices.size();
             rj.m_GlobalUniform = m_renderer->getContext()->m_viewProjectUniformBuffer;
+            rj.m_modelMatrix = modelMatrix;
             BufferCreateInfo matUniformBufferInfo{};
             std::string bufferName = mesh.name +"MaterialUniformBuffer";
             matUniformBufferInfo.reset().setName(bufferName.c_str()).setDeviceOnly(false).setUsageSize(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,sizeof(Material::UniformMaterial));
@@ -66,7 +67,7 @@ namespace dg{
         if(!rootNode.m_subNodes.empty()){
             std::vector<RenderObject> subNodeRenderobjects;
             for(auto& i: rootNode.m_subNodes){
-                auto subRenderObjects = Execute(i);
+                auto subRenderObjects = Execute(i,rootNode.m_modelMatrix*modelMatrix);
                 subNodeRenderobjects.insert(subNodeRenderobjects.end(),subRenderObjects.begin(),subRenderObjects.end());
             }
             renderobjects.insert(renderobjects.end(),subNodeRenderobjects.begin(),subNodeRenderobjects.end());
@@ -151,12 +152,15 @@ namespace dg{
             MaterialCreateInfo matInfo{};
             matInfo.setName(mesh.name);
             mesh.m_meshMaterial = m_renderer->createMaterial(matInfo);
+            mesh.m_meshMaterial->setProgram(m_renderer->getDefaultMaterial()->program);
             std::string diffuseTexturePath = basePath + '/' + material.diffuse_texname;
             std::string specularTexturePath = material.specular_texname.empty() ? "" : basePath + '/' + material.specular_texname;
+            std::string normalTexturePath = material.normal_texname.empty()?"":basePath+'/'+material.normal_texname;
             TextureCreateInfo texInfo{};
             texInfo.setMipmapLevel(1).setBindLess(true).setFormat(VK_FORMAT_R8G8B8A8_SRGB).setFlag(TextureFlags::Mask::Default_mask);
             mesh.m_meshMaterial->setDiffuseTexture(m_renderer->upLoadTextureToGPU(diffuseTexturePath,texInfo));
-            mesh.m_meshMaterial->setMRTexture( m_renderer->upLoadTextureToGPU(diffuseTexturePath,texInfo));
+            mesh.m_meshMaterial->setMRTexture( m_renderer->upLoadTextureToGPU(specularTexturePath,texInfo));
+            mesh.m_meshMaterial->setNormalTexture(m_renderer->upLoadTextureToGPU(normalTexturePath,texInfo));
             meshNode.m_meshIndex = m_meshes.size();
             meshNode.m_parentNodePtr= &model;
             model.m_subNodes.push_back(meshNode);
@@ -195,7 +199,7 @@ namespace dg{
 
         if(inputNode.rotation.size()==4){
             glm::quat q = glm::make_quat(inputNode.rotation.data());
-            //currNode.m_modelMatrix *=glm::mat4(q);
+            currNode.m_modelMatrix *=glm::mat4(q);
         }
     
         if(inputNode.scale.size()==3){
@@ -224,7 +228,7 @@ namespace dg{
                 primitiveNode.m_meshIndex = m_meshes.size();
                 m_meshes.emplace_back();
                 mesh = &m_meshes.back();
-                if(!gltfMesh.name.empty()) mesh->name = gltfMesh.name;
+                if(!gltfMesh.name.empty()) mesh->name = gltfMesh.name+std::to_string(m_meshes.size());
                 else mesh->name = "mesh"+std::to_string(m_meshes.size());
                 m_haveContent = true;
 
@@ -239,6 +243,7 @@ namespace dg{
                 {
                     const float* positionBuffer = nullptr;
                     const float* normalBuffer = nullptr;
+                    const float* tangentBuffer = nullptr;
                     const float* texcoordsBuffer = nullptr;
                     //get the position data
                     if(primitive.attributes.find("POSITION") != primitive.attributes.end()){
@@ -255,6 +260,13 @@ namespace dg{
                         normalBuffer = reinterpret_cast<float*>(&(model.buffers[view.buffer].data[view.byteOffset + accessor.byteOffset]));
                     }
 
+                    // get tangent data
+                    if(primitive.attributes.find("TANGENT") != primitive.attributes.end()){
+                        const tinygltf::Accessor& accessor = model.accessors[primitive.attributes.find("TANGENT")->second];
+                        const tinygltf::BufferView& view = model.bufferViews[accessor.bufferView];
+                        tangentBuffer = reinterpret_cast<float*>(&(model.buffers[view.buffer].data[view.byteOffset + accessor.byteOffset]));
+                    }
+
                     //get the texcoord data
                     if(primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end()){
                         const tinygltf::Accessor& accessor = model.accessors[primitive.attributes.find("TEXCOORD_0")->second];
@@ -266,7 +278,8 @@ namespace dg{
                         Vertex vt;
                         vt.pos = glm::vec3(glm::make_vec3(&positionBuffer[v*3]));
                         vt.normal = glm::vec3(glm::make_vec3(&normalBuffer[v*3]));
-                        vt.texCoord = glm::vec2(glm::make_vec2(&texcoordsBuffer[v*2]));
+                        vt.tangent = tangentBuffer?glm::vec4(glm::make_vec4(&tangentBuffer[v*4])):glm::vec4(0.0f);
+                        vt.texCoord = texcoordsBuffer?glm::vec2(glm::make_vec2(&texcoordsBuffer[v*2])):glm::vec2(0.0f);
                         mesh->m_vertices.push_back(vt);
                     }
                 }
