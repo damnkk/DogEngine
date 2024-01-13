@@ -55,14 +55,28 @@ float heaviside(float v){
 
 vec3 addNormTex(vec3 initNormal,vec2 fragTexCoord){
     vec3 v = normalize(texture(globalTextures[nonuniformEXT(umat.textureIndices[3])],fragTexCoord).rgb*2.-1.);
-    if(length(v)<0.001)
-    {return initNormal;}
+  
     vec3 N = normalize(initNormal);
 	vec3 T = normalize(vec3(tangent));
 	vec3 B = normalize(cross(N, T));
     mat3 TBN = mat3(T, B, N);
     return normalize(TBN*v);
 }
+
+// vec3 addNormTex(vec3 initNormal,vec2 fragTexCoord){
+//     vec3 v = normalize(texture(globalTextures[nonuniformEXT(umat.textureIndices[3])],fragTexCoord).rgb*2.-1.);
+//     vec3 q1 = dFdx(worldPos);
+// 	vec3 q2 = dFdy(worldPos);
+// 	vec2 st1 = dFdx(fragTexCoord);
+// 	vec2 st2 = dFdy(fragTexCoord);
+
+// 	vec3 N = normalize(initNormal);
+// 	vec3 T = normalize(q1 * st2.t - q2 * st1.t);
+// 	vec3 B = -normalize(cross(N, T));
+// 	mat3 TBN = mat3(T, B, N);
+
+// 	return normalize(TBN * v);
+// }
 
 vec3 decode_srgb(vec3 c){
     vec3 result;
