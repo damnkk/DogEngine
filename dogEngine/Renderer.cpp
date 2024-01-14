@@ -5,6 +5,7 @@
 #include "ktx.h"
 #include "ktxvulkan.h"
 #include "unordered_set"
+#include "dgShaderCompiler.hpp"
 
 namespace dg {
 
@@ -153,10 +154,10 @@ namespace dg {
         pipelineInfo.m_vertexInput.Attrib = Vertex::getAttributeDescriptions();
         pipelineInfo.m_vertexInput.Binding = Vertex::getBindingDescription();
         pipelineInfo.m_shaderState.reset();
-        auto vsCode = readFile("./shaders/pbrvert.spv");
-        auto fsCode = readFile("./shaders/pbrfrag.spv");
-        pipelineInfo.m_shaderState.addStage(vsCode.data(), vsCode.size(), VK_SHADER_STAGE_VERTEX_BIT);
-        pipelineInfo.m_shaderState.addStage(fsCode.data(), fsCode.size(), VK_SHADER_STAGE_FRAGMENT_BIT);
+        auto vsShader = ShaderCompiler::compileShader("./shaders/vspbr.vert");
+        auto fsShader = ShaderCompiler::compileShader("./shaders/fspbr.frag");
+        pipelineInfo.m_shaderState.addStage(vsShader.spvData.data(), vsShader.spvData.size()*sizeof(unsigned int), VK_SHADER_STAGE_VERTEX_BIT);
+        pipelineInfo.m_shaderState.addStage(fsShader.spvData.data(), fsShader.spvData.size()*sizeof(unsigned int), VK_SHADER_STAGE_FRAGMENT_BIT);
         pipelineInfo.m_shaderState.setName("defaultPipeline");
         pipelineInfo.name = pipelineInfo.m_shaderState.name;
         pipelineInfo.addDescriptorSetlayout(descLayout);
@@ -168,18 +169,21 @@ namespace dg {
     void Renderer::init(std::shared_ptr<DeviceContext> context) {
         m_context = context;
         GUI::getInstance().init(context);
+        ShaderCompiler::init();
         m_buffers.init(4096);
         m_textures.init(512);
         m_samplers.init(512);
         m_materials.init(512);
         m_objLoader = std::make_shared<objLoader>(this);
         m_gltfLoader = std::make_shared<gltfLoader>(this);
+
         makeDefaultMaterial();
     }
 
     void Renderer::destroy() {
         vkDeviceWaitIdle(m_context->m_logicDevice);
         GUI::getInstance().Destroy();
+        ShaderCompiler::destroy();
         m_resourceCache.destroy(this);
         m_gltfLoader->destroy();
         m_objLoader->destroy();
@@ -524,10 +528,10 @@ namespace dg {
         RasterizationCreation resCI{};
         resCI.m_cullMode = VK_CULL_MODE_FRONT_BIT;
         pipelineInfo.m_rasterization = resCI;
-        auto vsCode = readFile("./shaders/skyvert.spv");
-        auto fsCode = readFile("./shaders/skyfrag.spv");
-        pipelineInfo.m_shaderState.addStage(vsCode.data(), vsCode.size(), VK_SHADER_STAGE_VERTEX_BIT);
-        pipelineInfo.m_shaderState.addStage(fsCode.data(), fsCode.size(), VK_SHADER_STAGE_FRAGMENT_BIT);
+        auto vsShader = ShaderCompiler::compileShader("./shaders/vsskybox.vert");
+        auto fsShader = ShaderCompiler::compileShader("./shaders/fsskybox.frag");
+        pipelineInfo.m_shaderState.addStage(vsShader.spvData.data(), vsShader.spvData.size()*sizeof(unsigned int), VK_SHADER_STAGE_VERTEX_BIT);
+        pipelineInfo.m_shaderState.addStage(fsShader.spvData.data(), fsShader.spvData.size()*sizeof(unsigned int), VK_SHADER_STAGE_FRAGMENT_BIT);
         pipelineInfo.m_shaderState.setName("skyPipeline");
         pipelineInfo.addDescriptorSetlayout(m_context->createDescriptorSetLayout(skyLayoutInfo));
         pipelineInfo.addDescriptorSetlayout(m_context->m_bindlessDescriptorSetLayout);
@@ -590,10 +594,10 @@ namespace dg {
         pipelineInfo.m_depthStencil.setDepth(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
         pipelineInfo.m_rasterization.m_cullMode = VK_CULL_MODE_NONE;
         pipelineInfo.m_shaderState.reset();
-        auto vsCode = readFile("./shaders/lutvert.spv");
-        auto fsCode = readFile("./shaders/lutfrag.spv");
-        pipelineInfo.m_shaderState.addStage(vsCode.data(), vsCode.size(), VK_SHADER_STAGE_VERTEX_BIT);
-        pipelineInfo.m_shaderState.addStage(fsCode.data(), fsCode.size(), VK_SHADER_STAGE_FRAGMENT_BIT);
+        auto vsShader = ShaderCompiler::compileShader("./shaders/lut.vert");
+        auto fsShader = ShaderCompiler::compileShader("./shaders/lut.frag");
+        pipelineInfo.m_shaderState.addStage(vsShader.spvData.data(), vsShader.spvData.size()*sizeof(unsigned int), VK_SHADER_STAGE_VERTEX_BIT);
+        pipelineInfo.m_shaderState.addStage(fsShader.spvData.data(), fsShader.spvData.size()*sizeof(unsigned int), VK_SHADER_STAGE_FRAGMENT_BIT);
         pipelineInfo.m_shaderState.setName("lutPipeline");
         pipelineInfo.addDescriptorSetlayout(renderer->getContext()->m_bindlessDescriptorSetLayout);
         PipelineHandle lutPipeline = renderer->getContext()->createPipeline(pipelineInfo);
@@ -667,10 +671,10 @@ namespace dg {
         pipelineInfo.m_depthStencil.setDepth(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
         pipelineInfo.m_rasterization.m_cullMode = VK_CULL_MODE_NONE;
         pipelineInfo.m_shaderState.reset();
-        auto vsCode = readFile("./shaders/lutvert.spv");
-        auto fsCode = readFile("./shaders/irrafrag.spv");
-        pipelineInfo.m_shaderState.addStage(vsCode.data(), vsCode.size(), VK_SHADER_STAGE_VERTEX_BIT);
-        pipelineInfo.m_shaderState.addStage(fsCode.data(), fsCode.size(), VK_SHADER_STAGE_FRAGMENT_BIT);
+        auto vsShader = ShaderCompiler::compileShader("./shaders/lut.vert");
+        auto fsShader = ShaderCompiler::compileShader("./shaders/irra.frag");
+        pipelineInfo.m_shaderState.addStage(vsShader.spvData.data(), vsShader.spvData.size()*sizeof(unsigned int), VK_SHADER_STAGE_VERTEX_BIT);
+        pipelineInfo.m_shaderState.addStage(fsShader.spvData.data(), fsShader.spvData.size()*sizeof(unsigned int), VK_SHADER_STAGE_FRAGMENT_BIT);
         pipelineInfo.m_shaderState.setName("irraPipeline");
         pipelineInfo.addDescriptorSetlayout(descLayoutHandle);
         pipelineInfo.addDescriptorSetlayout(renderer->getContext()->m_bindlessDescriptorSetLayout);
@@ -754,10 +758,10 @@ namespace dg {
         pipelineInfo.m_depthStencil.setDepth(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
         pipelineInfo.m_rasterization.m_cullMode = VK_CULL_MODE_NONE;
         pipelineInfo.m_shaderState.reset();
-        auto vsCode = readFile("./shaders/lutvert.spv");
-        auto fsCode = readFile("./shaders/prefilterfrag.spv");
-        pipelineInfo.m_shaderState.addStage(vsCode.data(), vsCode.size(), VK_SHADER_STAGE_VERTEX_BIT);
-        pipelineInfo.m_shaderState.addStage(fsCode.data(), fsCode.size(), VK_SHADER_STAGE_FRAGMENT_BIT);
+        auto vsShader = ShaderCompiler::compileShader("./shaders/lut.vert");
+        auto fsShader = ShaderCompiler::compileShader("./shaders/prefilter.frag");
+        pipelineInfo.m_shaderState.addStage(vsShader.spvData.data(), vsShader.spvData.size()*sizeof(unsigned int), VK_SHADER_STAGE_VERTEX_BIT);
+        pipelineInfo.m_shaderState.addStage(fsShader.spvData.data(), fsShader.spvData.size()*sizeof(unsigned int), VK_SHADER_STAGE_FRAGMENT_BIT);
         pipelineInfo.m_shaderState.setName("irraPipeline");
         pipelineInfo.addDescriptorSetlayout(renderer->getContext()->m_bindlessDescriptorSetLayout);
         pipelineInfo.addPushConstants(push);

@@ -24,9 +24,11 @@ target_include_directories(dogEngine PUBLIC
                         "${CMAKE_SOURCE_DIR}/external/spdlog/include"
                         "${CMAKE_SOURCE_DIR}/external/tinyobjloader"
                         "${CMAKE_SOURCE_DIR}/external/tinygltf"
+                        "${CMAKE_SOURCE_DIR}/external/glslang/glslang/include"
+                        "${CMAKE_SOURCE_DIR}/external/glslang/glslang"
                         "./ktx/include"
                         "${CMAKE_SOURCE_DIR}/external/stb"
                         "${CMAKE_CURRENT_SOURCE_DIR}"
                         "${CMAKE_CURRENT_SOURCE_DIR}/GUI"
-
                         )
+target_link_libraries(dogEngine PUBLIC glslang  glslang-default-resource-limits Vulkan::Vulkan glfw SPIRV)

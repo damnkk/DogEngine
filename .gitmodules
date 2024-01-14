@@ -25,3 +25,7 @@
 [submodule "external/ktx"]
 	path = external/ktx
 	url = https://github.com/KhronosGroup/KTX-Software.git
+
+[submodule "external/glslang"]
+	path = external/glslang
+	url = https://github.com/KhronosGroup/glslang.git

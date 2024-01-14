@@ -358,7 +358,7 @@ namespace dg {
     };
 
     struct ShaderStage {
-        const char *m_code;
+        void *m_code;
         u32 m_codeSize;
         VkShaderStageFlagBits m_type = VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM;
     };
@@ -371,7 +371,7 @@ namespace dg {
 
         ShaderStateCreation &reset();
         ShaderStateCreation &setName(const char *name);
-        ShaderStateCreation &addStage(const char *code, u32 codeSize, VkShaderStageFlagBits type);
+        ShaderStateCreation &addStage(void *code, u32 codeSize, VkShaderStageFlagBits type);
         ShaderStateCreation &setSpvInput(bool value);
     };
 

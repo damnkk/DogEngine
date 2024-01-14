@@ -325,7 +325,7 @@ namespace dg {
         return *this;
     }
 
-    ShaderStateCreation &ShaderStateCreation::addStage(const char *code, u32 codeSize, VkShaderStageFlagBits type) {
+    ShaderStateCreation &ShaderStateCreation::addStage(void *code, u32 codeSize, VkShaderStageFlagBits type) {
         if (m_stageCount >= k_max_shader_stages) {
             DG_ERROR("Max number of shader stages is ", std::to_string(k_max_shader_stages), " can't add more shader stage!")
             exit(-1);
