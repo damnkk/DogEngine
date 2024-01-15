@@ -149,6 +149,11 @@ namespace dg {
         descInfo.setName("defaultDescLayout");
         DescriptorSetLayoutHandle descLayout = m_context->createDescriptorSetLayout(descInfo);
         PipelineCreateInfo pipelineInfo{};
+//        BlendStateCreation blendState{};
+//        blendState.add_blend_state();
+//        blendState.m_blendStates[0].m_blendEnabled = true;
+//        blendState.m_blendStates[0].m_separateBlend = false;
+//        pipelineInfo.m_BlendState =blendState;
         pipelineInfo.m_renderPassHandle = m_context->m_swapChainPass;
         pipelineInfo.m_depthStencil.setDepth(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
         pipelineInfo.m_vertexInput.Attrib = Vertex::getAttributeDescriptions();

@@ -255,6 +255,6 @@ void main(){
     vec3 ambient = IBL(N,V,baseColor.xyz,roughness,metallic);
     color +=ambient;//*(step(ao,0.0)*ao);
     color +=emission;
-    outColor=vec4(saturation(encode_srgb(color),1.2),1.);
-    //outColor=vec4(saturation(encode_srgb(N*0.5+0.5),2.2),1.);
+    outColor=vec4(saturation(encode_srgb(color),1.2),baseColor.w);
+    //outColor=vec4(baseColor.w);
 }

@@ -11,8 +11,14 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/external/spdlog)
 add_subdirectory(${CMAKE_SOURCE_DIR}/external/glslang)
 find_package(Vulkan REQUIRED)
 add_subdirectory(dogEngine)
-#set(GLSLangLib ${VULKAN_SDK_PATH}/lib/glslangd.lib)
-#message("${GLSLangLib}")
+execute_process(
+        COMMAND python ./update_glslang_sources.py
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/external/glslang"
+        RESULT_VARIABLE SPIRV_TOOLS_CLONE
+)
+if(NOT SPIRV_TOOLS_CLONE EQUAL "0")
+    message(FATAL_ERROR "Can not clone spirv-tools, glslang will not be compile successfully")
+endif()
 add_executable(vulkan_learning Vulkan.cpp)
 target_include_directories(vulkan_learning PUBLIC
                             #${VULKAN_SDK_PATH}/Include

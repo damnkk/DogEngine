@@ -6,7 +6,12 @@
     <mapping directory="$PROJECT_DIR$/external/VMA" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/external/glfw" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/external/glm" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/external/glslang" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/external/glslang/External/googletest" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/external/glslang/External/spirv-tools" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/external/glslang/External/spirv-tools/external/spirv-headers" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/external/ktx" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/external/ktx/tests/cts" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/external/spdlog" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/external/stb" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/external/tinyGltf" vcs="Git" />

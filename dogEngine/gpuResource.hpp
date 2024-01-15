@@ -322,7 +322,7 @@ namespace dg {
 
         ColorWriteEnabled::Mask m_colorWriteMask = ColorWriteEnabled::All_mask;
 
-        bool m_blendEnabled = false;
+        bool m_blendEnabled = true;
         bool m_separateBlend = true;
         u32 m_pad = 6;
 
