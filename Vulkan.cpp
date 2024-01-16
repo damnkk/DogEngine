@@ -6,15 +6,6 @@
 
 using namespace dg;
 
-GLFWwindow* createGLTFWindow(u32 width,u32 height) {
-  DG_INFO("Window Initiation")
-  glfwInit();
-  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-  GLFWwindow* window = glfwCreateWindow(width, height, "DogEngine", nullptr, nullptr);
-  glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR);
-  return window;
-}
-
 bool isMinimized = false;
 void windowIconifyCallback(GLFWwindow* window, int iconified){
   if(iconified){
@@ -25,7 +16,7 @@ void windowIconifyCallback(GLFWwindow* window, int iconified){
 }
 
 int main() {
-  auto window = createGLTFWindow(1380,720);
+  auto window = createGLFWWindow(1380,720);
   glfwSetWindowIconifyCallback(window, windowIconifyCallback);
   ContextCreateInfo contextInfo;
   int width,height;
@@ -39,10 +30,10 @@ int main() {
   renderer.init(context);
 
   //renderer.loadFromPath("./models/BoomBoxWithAxes/BoomBoxWithAxes.gltf");
-  renderer.loadFromPath("./models/Sponza/Sponza.gltf");
+  //renderer.loadFromPath("./models/Sponza/Sponza.gltf");
   //renderer.loadFromPath("./models/Suzanne/Suzanne.gltf");
   //renderer.loadFromPath("./models/Camera_01_2k/Camera_01_2k.gltf");
-  //renderer.loadFromPath("./models/DamagedHelmet/DamagedHelmet.gltf");
+  renderer.loadFromPath("./models/DamagedHelmet/DamagedHelmet.gltf");
   //renderer.loadFromPath("./models/MetalRoughSpheres/MetalRoughSpheres.gltf");
   //renderer.loadFromPath("./models/ship_pinnace_1k/ship_pinnace_4k.gltf");
 
@@ -54,10 +45,12 @@ int main() {
 
   while(!glfwWindowShouldClose(context->m_window)){
     glfwPollEvents();
-    keycallback(context->m_window);
+    GUI::getInstance().eventListen();
     if(isMinimized) continue;
     renderer.newFrame();
+    ImGui::BeginChild("GameView",ImVec2(400,300),true);
     renderer.drawScene();
+    ImGui::EndChild();
     renderer.drawUI();
     renderer.present();
   }

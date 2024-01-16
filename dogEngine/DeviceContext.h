@@ -200,6 +200,17 @@ namespace dg {
         const FrameBuffer *accessFrameBuffer(FrameBufferHandle handle) const;
     };
 
+    static GLFWwindow* createGLFWWindow(u32 width,u32 height) {
+        DG_INFO("Window Initiation")
+        if(!glfwInit()){
+            exit(-1);
+        }
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+        GLFWwindow* window = glfwCreateWindow(width, height, "DogEngine", nullptr, nullptr);
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR);
+        return window;
+    }
+
 }//namespace dg
 
 #endif//CONTEXT_H

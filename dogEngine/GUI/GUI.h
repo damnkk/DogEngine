@@ -31,17 +31,23 @@ public:
     void newGUIFrame();
     void OnGUI();
     void endGUIFrame();
-    void Render();
+    void setConfigFlag(ImGuiConfigFlags_ flag){this->m_io->ConfigFlags |=flag;}
+    void setBackEndFlag(ImGuiBackendFlags_ flag){this->m_io->BackendFlags|=flag;}
     ImDrawData* GetDrawData();
+    void eventListen();
     void KeysControl(bool* keys);
     void Destroy();
+    ImGuiIO* getIO(){return m_io;}
 private:
+    void keycallback();
     GUI(){};
     GUI(const GUI& ){};
     ~GUI(){};
     GUI& operator=(const GUI &);
-    
-    GLFWwindow* m_Window = nullptr;
+
+    VkRenderPass  m_uiRenderPass;
+    ImGuiIO*     m_io = nullptr;
+    GLFWwindow* m_window = nullptr;
     SettingsData* m_SettingsData = nullptr;
     float* m_LightSpeed = nullptr;
     int* m_LightIdx;

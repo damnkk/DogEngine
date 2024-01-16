@@ -20,43 +20,6 @@ namespace dg {
         return std::floor(std::log2(std::max(width, height))) + 1;
     }
 
-    void keycallback(GLFWwindow *window) {
-        float sensitivity = 0.07;
-
-        if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-            sensitivity = 1.0;
-        }
-        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-            glfwSetWindowShouldClose(window, true);
-        }
-        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-            DeviceContext::m_camera->pos += sensitivity * DeviceContext::m_camera->direction;
-        }
-        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-            DeviceContext::m_camera->pos -= sensitivity * DeviceContext::m_camera->direction;
-        }
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-            DeviceContext::m_camera->pos -=
-                    sensitivity * glm::normalize(glm::cross(DeviceContext::m_camera->direction, DeviceContext::m_camera->up));
-        }
-        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-            DeviceContext::m_camera->pos +=
-                    sensitivity * glm::normalize(glm::cross(DeviceContext::m_camera->direction, DeviceContext::m_camera->up));
-        }
-        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-            DeviceContext::m_camera->pos += sensitivity * glm::vec3(0, 1, 0);
-        }
-        if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
-            DeviceContext::m_camera->pos -= sensitivity * glm::vec3(0, 1, 0);
-        }
-        if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-            sensitivity = 0.7;
-        }
-        if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE) {
-            sensitivity = 0.007;
-        }
-    }
-
     void ResourceCache::destroy(Renderer *renderer) {
         for (auto it = textures.begin(); it != textures.end(); ++it) {
             if (!it->second) {
@@ -435,6 +398,7 @@ namespace dg {
             //cmd->draw(TopologyType::Enum::Triangle, 0, currRenderObject.m_vertexCount, 0, 0);
             cmd->drawIndexed(TopologyType::Enum::Triangle, currRenderObject.m_indexCount, 1, 0, 0, 0);
         }
+        //cmd->endpass();
     }
 
     void Renderer::setDefaultMaterial(Material *mat) {
@@ -456,6 +420,8 @@ namespace dg {
         GUI::getInstance().endGUIFrame();
         auto cmd = m_context->getCommandBuffer(QueueType::Enum::Graphics, false);
         auto drawData = GUI::getInstance().GetDrawData();
+        //VkRenderPassBeginInfo passBeginInfo{VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
+        //passBeginInfo.
         ImGui_ImplVulkan_RenderDrawData(drawData, cmd->m_commandBuffer);
         m_context->queueCommandBuffer(cmd);
     }

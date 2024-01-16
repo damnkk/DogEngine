@@ -608,12 +608,22 @@ namespace dg {
         subpass_desc.pDepthStencilAttachment = &depth_ref;
 
         std::array<VkAttachmentDescription, 2> attchs = {color_attach, depth_attach};
+        VkSubpassDependency dependency = {};
+        dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+        dependency.dstSubpass = 0;
+        dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependency.srcAccessMask = 0;
+        dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
         VkRenderPassCreateInfo passInfo{VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO};
         passInfo.attachmentCount = attchs.size();
         passInfo.pAttachments = attchs.data();
         passInfo.subpassCount = 1;
         passInfo.pSubpasses = &subpass_desc;
+        //这里是为了规避imgui docking 错误，增加了dependency这条，原本是没有的
+//      passInfo.dependencyCount =1;
+//      passInfo.pDependencies = &dependency;
         DGASSERT(vkCreateRenderPass(context->m_logicDevice, &passInfo, nullptr, &pass->m_renderPass) == VK_SUCCESS);
         pass->m_width = context->m_swapChainWidth;
         pass->m_height = context->m_swapChainHeight;

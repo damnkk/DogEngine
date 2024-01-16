@@ -1,21 +1,58 @@
 #include "GUI.h"
 #include "DeviceContext.h"
 namespace dg{
-	
+
+void GUI::keycallback() {
+    float sensitivity = 0.07;
+
+    if (m_io->KeysDown[ImGuiKey_LeftShift]) {
+        sensitivity = 0.7;
+    }else{
+        sensitivity = 0.07;
+    }
+
+    if (m_io->KeysDown[ImGuiKey_Escape]) {
+        glfwSetWindowShouldClose(m_window, true);
+    }
+    if (m_io->KeysDown[ImGuiKey_W]) {
+        DeviceContext::m_camera->pos += sensitivity * DeviceContext::m_camera->direction;
+    }
+    if (m_io->KeysDown[ImGuiKey_S]) {
+        DeviceContext::m_camera->pos -= sensitivity * DeviceContext::m_camera->direction;
+    }
+    if (m_io->KeysDown[ImGuiKey_A]) {
+        DeviceContext::m_camera->pos -=
+                sensitivity * glm::normalize(glm::cross(DeviceContext::m_camera->direction, DeviceContext::m_camera->up));
+    }
+    if (m_io->KeysDown[ImGuiKey_D]) {
+        DeviceContext::m_camera->pos +=
+                sensitivity * glm::normalize(glm::cross(DeviceContext::m_camera->direction, DeviceContext::m_camera->up));
+    }
+    if (m_io->KeysDown[ImGuiKey_Space]) {
+        DeviceContext::m_camera->pos += sensitivity * glm::vec3(0, 1, 0);
+    }
+    if (m_io->KeysDown[ImGuiKey_LeftCtrl]) {
+        DeviceContext::m_camera->pos -= sensitivity * glm::vec3(0, 1, 0);
+    }
+}
+
 void GUI::init(std::shared_ptr<DeviceContext> context){
-	m_Window = context->m_window;
+	m_window = context->m_window;
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO();
+    this->m_io = &ImGui::GetIO();
+    setConfigFlag(ImGuiConfigFlags_DockingEnable);
+    setConfigFlag(ImGuiConfigFlags_ViewportsEnable);
+    setBackEndFlag(ImGuiBackendFlags_PlatformHasViewports);
     ImGui::StyleColorsDark();  //dark theme
 	//ImGui::StyleColorsLight();
-
-    ImGui_ImplGlfw_InitForVulkan(m_Window, true);
+    ImGui_ImplGlfw_InitForVulkan(m_window, true);
     // Prepare the init struct for ImGui_ImplVulkan_Init in LoadFontsToGPU
     init_info.Instance 			= context->m_instance;
     init_info.PhysicalDevice 	= context->m_physicalDevice;
     init_info.Device 			= context->m_logicDevice;
     init_info.PipelineCache 	= VK_NULL_HANDLE;
+    init_info.Subpass           = 0;
     init_info.Allocator 		= nullptr;
     init_info.QueueFamily 		= context->m_graphicQueueIndex;
     init_info.Queue 			= context->m_graphicsQueue;
@@ -23,8 +60,7 @@ void GUI::init(std::shared_ptr<DeviceContext> context){
     init_info.MinImageCount 	= dg::k_max_swapchain_images;
     init_info.ImageCount 		= dg::k_max_swapchain_images;
     init_info.CheckVkResultFn 	= nullptr;
-	auto* swapchainPass = context->accessRenderPass(context->m_swapChainPass);
-    ImGui_ImplVulkan_Init(&init_info, swapchainPass->m_renderPass);
+    ImGui_ImplVulkan_Init(&init_info, context->accessRenderPass(context->m_swapChainPass)->m_renderPass);
 
 	m_SettingsData = new SettingsData();
 	m_LightSpeed = new float(1.0f);
@@ -40,9 +76,9 @@ void GUI::init(std::shared_ptr<DeviceContext> context){
 //     begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 //     begin_info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 //     vkBeginCommandBuffer(command_buffer,&begin_info);
-
+//
 //     ImGui_ImplVulkan_CreateFontsTexture(command_buffer);
-
+//
 //     VkSubmitInfo end_info = {};
 //     end_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 //     end_info.commandBufferCount = 1;
@@ -57,17 +93,15 @@ void GUI::newGUIFrame(){
 	ImGui_ImplVulkan_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
-
-	ImGuiWindowFlags window_flags{ ImGuiWindowFlags_NoResize };
-	ImGui::SetNextWindowSize(ImVec2(350.f, 480.f), 0);
-	ImGui::SetNextWindowPos(ImVec2(50.f, 50.f), ImGuiCond_FirstUseEver);
-	
-	ImGui::Begin("Settings", NULL, window_flags);
 }
 
 void GUI::OnGUI()
 {
-	
+	ImGuiWindowFlags window_flags{ ImGuiWindowFlags_NoResize };
+	ImGui::SetNextWindowSize(ImVec2(350.f, 480.f), 0);
+	ImGui::SetNextWindowPos(ImVec2(50.f, 50.f), ImGuiCond_FirstUseEver);
+	ImGui::Begin("Settings", NULL, window_flags);
+
 	ImGui::Combo("Render Target", &m_SettingsData->render_target, "Position\0Normals\0Albedo\0Deferred Rendering\0");
 
 	switch (m_SettingsData->render_target)
@@ -101,13 +135,24 @@ void GUI::OnGUI()
 	m_LightCol->r = m_Col[0];
 	m_LightCol->g = m_Col[1];
 	m_LightCol->b = m_Col[2];
+	ImGui::End();
 
 }
 
+void GUI::eventListen() {
+    keycallback();
+}
+
 void GUI::endGUIFrame(){
-	ImGui::End();
 	//你可以理解这个函数可以初始化ImDrawData
 	ImGui::Render();
+    if(m_io->ConfigFlags&ImGuiConfigFlags_ViewportsEnable){
+        if(m_window){
+            ImGui::UpdatePlatformWindows();
+            ImGui::RenderPlatformWindowsDefault();
+            glfwMakeContextCurrent(m_window);
+        }
+    }
 
 }
 
