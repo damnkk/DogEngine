@@ -53,30 +53,32 @@ float heaviside(float v){
     else return 0.;
 }
 
-vec3 addNormTex(vec3 initNormal,vec2 fragTexCoord){
-    vec3 v = normalize(texture(globalTextures[nonuniformEXT(umat.textureIndices[3])],fragTexCoord).rgb*2.-1.);
-  
-    vec3 N = normalize(initNormal);
-	vec3 T = normalize(vec3(tangent));
-	vec3 B = normalize(cross(N, T));
-    mat3 TBN = mat3(T, B, N);
-    return normalize(TBN*v);
-}
+//vec3 addNormTex(vec3 initNormal,vec2 fragTexCoord){
+//    vec3 v = normalize(texture(globalTextures[nonuniformEXT(umat.textureIndices[3])],fragTexCoord).rgb*2.-1.);
+//
+//    vec3 helper = vec3(1.0,0.0,0.0);
+//    helper = dot(helper,initNormal)>0.999999?vec3(0.0,0.0,1.0):vec3(1.0,0.0,0.0);
+//
+//    vec3 tangent = normalize(cross(initNormal,helper));
+//    vec3 biTangent = normalize(cross(initNormal,tangent));
+//    mat3 TBN = mat3(tangent,biTangent,normalize(initNormal));
+//    return normalize(TBN*v);
+//}
 
-// vec3 addNormTex(vec3 initNormal,vec2 fragTexCoord){
-//     vec3 v = normalize(texture(globalTextures[nonuniformEXT(umat.textureIndices[3])],fragTexCoord).rgb*2.-1.);
-//     vec3 q1 = dFdx(worldPos);
-// 	vec3 q2 = dFdy(worldPos);
-// 	vec2 st1 = dFdx(fragTexCoord);
-// 	vec2 st2 = dFdy(fragTexCoord);
+ vec3 addNormTex(vec3 initNormal,vec2 fragTexCoord){
+     vec3 v = normalize(texture(globalTextures[nonuniformEXT(umat.textureIndices[3])],fragTexCoord).xyz*2.-1.);
+     vec3 q1 = dFdx(worldPos);
+     vec3 q2 = dFdy(worldPos);
+ 	 vec2 st1 = dFdx(fragTexCoord);
+ 	 vec2 st2 = dFdy(fragTexCoord);
 
-// 	vec3 N = normalize(initNormal);
-// 	vec3 T = normalize(q1 * st2.t - q2 * st1.t);
-// 	vec3 B = -normalize(cross(N, T));
-// 	mat3 TBN = mat3(T, B, N);
+ 	 vec3 N = normalize(initNormal);
+ 	 vec3 T = normalize(q1 * st2.t - q2 * st1.t);
+ 	 vec3 B = -normalize(cross(N, T));
+ 	 mat3 TBN = mat3(T, B, N);
 
-// 	return normalize(TBN * v);
-// }
+ 	 return normalize(T * v.x+B*v.y+N*v.z);
+ }
 
 vec3 decode_srgb(vec3 c){
     vec3 result;
@@ -185,8 +187,8 @@ vec3 PBR(vec3 N,vec3 V,vec3 L,vec3 albedo,vec3 radiance,float roughness,float me
     roughness=max(roughness,.05);// 保证光滑物体也有高光
     
     vec3 H=normalize(L+V);
-    float NdotL=max(dot(N,L),0);
-    float NdotV=max(dot(N,V),0);
+    float NdotL=clamp(dot(N,L),0.001,1.0);
+    float NdotV=clamp(dot(N,V),0.001,1.0);
     float NdotH=max(dot(N,H),0);
     float HdotV=max(dot(H,V),0);
     float alpha=roughness*roughness;
@@ -256,5 +258,5 @@ void main(){
     color +=ambient;//*(step(ao,0.0)*ao);
     color +=emission;
     outColor=vec4(saturation(encode_srgb(color),1.2),baseColor.w);
-    //outColor=vec4(baseColor.w);
+    //outColor=vec4(N*0.5+0.5,1.0f);
 }

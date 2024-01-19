@@ -329,6 +329,7 @@ namespace dg{
                     mesh->m_meshMaterial->setEmissiveTexture(m_renderer->upLoadTextureToGPU(emissiveTexturePath, texInfo));
                     mesh->m_meshMaterial->setAoTexture(m_renderer->upLoadTextureToGPU(occlusionTexturePath,texInfo));
                     mesh->m_meshMaterial->setMRTexture(m_renderer->upLoadTextureToGPU(MRTexturePath,texInfo));
+                    texInfo.setFormat(VK_FORMAT_R8G8B8A8_UNORM);
                     mesh->m_meshMaterial->setNormalTexture(m_renderer->upLoadTextureToGPU(normalTexturePath,texInfo));
                 }
             }

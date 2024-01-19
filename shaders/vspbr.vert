@@ -33,7 +33,10 @@ layout(location=3)out vec3 worldPos;
 
 void main(){
     gl_Position=ubo.proj*ubo.view*umat.modelMatrix*vec4(inPosition,1.);
-    worldPos=(umat.modelMatrix*vec4(inPosition,1.)).xyz/(umat.modelMatrix*vec4(inPosition,1.)).w;
+    vec4 tempPos=(umat.modelMatrix*vec4(inPosition,1.));
+    //tempPos.y = -tempPos.y;
+    worldPos = tempPos.xyz/tempPos.w;
+
     vec3 helper = normalize(vec3(1,1,0));
     if(abs(dot(helper,inNormal))>0.99999){
         helper += normalize(-vec3(0,0,1));
@@ -43,6 +46,7 @@ void main(){
     calcuTangent = vec4(normalize(vec3(cross(inNormal,helper))),1.0);
 
     outTangent = vec4(mat3(transpose(inverse(umat.modelMatrix)))*calcuTangent.xyz,calcuTangent.w);
-    fragNormal=normalize(mat3(transpose(inverse(umat.modelMatrix)))*inNormal);
+    fragNormal=normalize(transpose(inverse(mat3(umat.modelMatrix)))*inNormal);
+
     fragTexCoord=inTexCoord;
 }
