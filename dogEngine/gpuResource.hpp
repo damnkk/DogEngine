@@ -71,15 +71,6 @@ namespace dg {
         BufferHandle buffer;
     };
 
-    struct Resource {
-        void addReference() { ++references; }
-        void removeReference() {
-            DGASSERT(references == 0);
-            --references;
-        }
-        u64 references = 0;
-        std::string name;
-    };
 
     typedef enum ResourceState {
         RESOURCE_STATE_UNDEFINED = 0,

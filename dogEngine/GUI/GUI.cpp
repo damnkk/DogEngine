@@ -97,6 +97,13 @@ void GUI::newGUIFrame(){
 
 void GUI::OnGUI()
 {
+    //ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
+    ImGui::BeginMainMenuBar();
+//    ImGui::BeginMenu("test1",true);
+//    ImGui::EndMenu();
+//    ImGui::BeginMenu("test2",false);
+//    ImGui::EndMenu();
+    ImGui::EndMainMenuBar();
 	ImGuiWindowFlags window_flags{ ImGuiWindowFlags_NoResize };
 	ImGui::SetNextWindowSize(ImVec2(350.f, 480.f), 0);
 	ImGui::SetNextWindowPos(ImVec2(50.f, 50.f), ImGuiCond_FirstUseEver);

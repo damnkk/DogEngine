@@ -29,11 +29,11 @@ int main() {
   Renderer renderer;
   renderer.init(context);
 
-  //renderer.loadFromPath("./models/BoomBoxWithAxes/BoomBoxWithAxes.gltf");
+  renderer.loadFromPath("./models/BoomBoxWithAxes/BoomBoxWithAxes.gltf");
   //renderer.loadFromPath("./models/Sponza/Sponza.gltf");
   //renderer.loadFromPath("./models/Suzanne/Suzanne.gltf");
   //renderer.loadFromPath("./models/Camera_01_2k/Camera_01_2k.gltf");
-  renderer.loadFromPath("./models/DamagedHelmet/DamagedHelmet.gltf");
+  //renderer.loadFromPath("./models/DamagedHelmet/DamagedHelmet.gltf");
   //renderer.loadFromPath("./models/MetalRoughSpheres/MetalRoughSpheres.gltf");
   //renderer.loadFromPath("./models/ship_pinnace_1k/ship_pinnace_4k.gltf");
 
@@ -48,9 +48,7 @@ int main() {
     GUI::getInstance().eventListen();
     if(isMinimized) continue;
     renderer.newFrame();
-    ImGui::BeginChild("GameView",ImVec2(400,300),true);
     renderer.drawScene();
-    ImGui::EndChild();
     renderer.drawUI();
     renderer.present();
   }
