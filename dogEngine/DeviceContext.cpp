@@ -30,8 +30,6 @@ namespace dg {
     }
 
     void mouseCallback(GLFWwindow *window, double xPos, double yPos) {
-        std::cout << "xPos: " << xPos << "   yPos: " << yPos ;
-        std::cout<< '\r';
         if (click) {
             lastX = xPos;
             lastY = yPos;
@@ -622,8 +620,8 @@ namespace dg {
         passInfo.subpassCount = 1;
         passInfo.pSubpasses = &subpass_desc;
         //这里是为了规避imgui docking 错误，增加了dependency这条，原本是没有的
-//      passInfo.dependencyCount =1;
-//      passInfo.pDependencies = &dependency;
+        //      passInfo.dependencyCount =1;
+        //      passInfo.pDependencies = &dependency;
         DGASSERT(vkCreateRenderPass(context->m_logicDevice, &passInfo, nullptr, &pass->m_renderPass) == VK_SUCCESS);
         pass->m_width = context->m_swapChainWidth;
         pass->m_height = context->m_swapChainHeight;

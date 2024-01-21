@@ -1,13 +1,7 @@
-#ifndef SHADERCOMPILER_H
-#define SHADERCOMPILER_H
+#include "dgShaderCompiler.h"
 
-#include "glslang/Include/glslang_c_interface.h"
-#include "glslang/Public/ShaderLang.h"
-#include "dgpch.h"
-#include "dgLog.hpp"
 namespace dg{
-
-TBuiltInResource make_default_builtin_rsc() {
+    TBuiltInResource make_default_builtin_rsc(){
     TBuiltInResource builtin_rsc {};
     builtin_rsc.maxLights = 32;
     builtin_rsc.maxClipPlanes = 6;
@@ -113,28 +107,6 @@ TBuiltInResource make_default_builtin_rsc() {
     builtin_rsc.limits.generalConstantMatrixVectorIndexing = 1;
     return builtin_rsc;
 }
-struct ShaderCompiler{
-    struct spvObject{
-        std::vector<unsigned int> spvData;
-        size_t  binarySize = 0;
-    };
-
-    static void init(){
-       bool isInitSuccess = glslang_initialize_process();
-       if(isInitSuccess){
-           DG_INFO("Shader Compiler is inited successfully")
-       }else{
-           DG_ERROR("Shader Compiler init error")
-           exit(-1);
-       }
-    }
-    static std::string readShaderFile(const char* path);
-    static spvObject compileShader(std::string code);
-    static void destroy(){
-        glslang_finalize_process();
-        DG_INFO("Shader Copmiler destroied done")
-    }
-};
 
 bool endsWith(const char* s, const char* part){
     return (strstr( s, part ) - s) == (strlen( s ) - strlen( part ));
@@ -255,6 +227,4 @@ ShaderCompiler::spvObject ShaderCompiler::compileShader(std::string path) {
     }
     return {};
 }
-
 }
-#endif //SHADERCOMPILER_H

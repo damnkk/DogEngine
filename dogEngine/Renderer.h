@@ -1,7 +1,6 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 #include "DeviceContext.h"
-#include "GUI/gui.h"
 #include "ModelLoader.h"
 #include "Vertex.h"
 #include <chrono>
@@ -68,7 +67,6 @@ namespace dg {
         void drawUI();
         void loadFromPath(const std::string &path);
         void executeScene();
-
 
     protected:
         void executeSkyBox();

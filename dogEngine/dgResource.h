@@ -1,11 +1,11 @@
 #ifndef DGRESOURCE_H
 #define DGRESOURCE_H
-#include "dgplatform.h"
 #include "dgLog.hpp"
+#include "dgplatform.h"
 #include "gpuResource.hpp"
-namespace dg{
+namespace dg {
     struct Renderer;
-    
+
     struct Resource {
         void addReference() { ++references; }
         void removeReference() {
@@ -16,7 +16,7 @@ namespace dg{
         std::string name;
     };
 
-       struct TextureResource : public Resource {
+    struct TextureResource : public Resource {
         u32 poolIdx;
         TextureHandle handle;
         static const std::string k_type;
@@ -27,7 +27,6 @@ namespace dg{
         BufferHandle handle;
         static const std::string k_type;
     };
-
 
     struct SamplerResource : public Resource {
         u32 poolIdx;
@@ -63,7 +62,6 @@ namespace dg{
         u32 bindIdx = -1;
     };
 
-
     struct MaterialCreateInfo {
         MaterialCreateInfo &setRenderOrder(u32 renderOrder);
         MaterialCreateInfo &setName(std::string name);
@@ -71,7 +69,7 @@ namespace dg{
         u32 renderOrder = -1;
         Renderer *renderer;
     };
-    
+
     struct Material : public Resource {
         struct alignas(16) aliInt {
             int idx;
@@ -79,12 +77,16 @@ namespace dg{
 
         struct alignas(16) UniformMaterial {
             alignas(16) glm::mat4 modelMatrix = glm::mat4(1.0f);
-            alignas(16) glm::vec4 baseColorFactor = glm::vec4(glm::vec3(0.0f), 1.0f);
+            alignas(16) glm::vec4 baseColorFactor = glm::vec4(glm::vec3(0.7f), 1.0f);
             alignas(16) glm::vec3 emissiveFactor = glm::vec3(0.0f);
-            //transparnt, uvscale, envRotate
-            alignas(16) glm::vec3 tueFactor = glm::vec3(1.0f, 1.0f, 0.0f);
-            //metallic, roughness, __undefined_placeholder__
-            alignas(16) glm::vec3 mrFactor = glm::vec3(1.0f, 1.0f, 0.0f);
+
+            //envrotate, envExposure, envGamma
+            alignas(16) glm::vec3 envFactor = glm::vec3(1.0f, 2.5f, 1.2f);
+            //metallic, roughness, ao intensity
+            alignas(16) glm::vec3 mrFactor = glm::vec3(1.0f, 1.0f, 1.0f);
+            //normal intensity,emissive intensity,______
+            alignas(16) glm::vec4 intensity = glm::vec4(1.0f);
+            alignas(16) aliInt textureUseSetting[4] = {1, 1, 1, 1};
             alignas(16) aliInt textureIndices[k_max_bindless_resource];
         } uniformMaterial;
         Material();
@@ -123,9 +125,14 @@ namespace dg{
         //render state
         bool depthTest = true;
         bool depthWrite = true;
-        VkCullModeFlagBits cullModel = VK_CULL_MODE_BACK_BIT;
+        bool useAlbedoTexture = true;
+        bool useNormalTexture = true;
+        bool useMRTexture = true;
+        bool useEmisTexture = true;
+        int depthModeIdx = 0;
+        int cullModeIdx = 0;
         VkBlendOp blendOp;
     };
-}
+}// namespace dg
 
 #endif DGRESOURCE_H

@@ -1,17 +1,8 @@
 #ifndef COMMANDBUFFERHANDLER_H
 #define COMMANDBUFFERHANDLER_H
-// #include "pch.h"
-// #include "GraphicsPipeline.h"
-// #include "RenderPassHandler.h"
-// #include "Mesh&Model.h"
-// #include "DataStructures.h"
 #include "DeviceContext.h"
 #include <vulkan/vulkan.h>
 
-// // DEAR IMGUI
-// #include "imgui.h"
-// #include "imgui_impl_glfw.h"
-// #include "imgui_impl_vulkan.h"
 
 namespace dg {
 
