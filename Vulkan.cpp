@@ -46,7 +46,7 @@ int main() {
     glfwPollEvents();
     if (isMinimized) continue;
     renderer.newFrame();
-    //renderer.drawScene();
+    renderer.drawScene();
     renderer.drawUI();
     renderer.present();
   }

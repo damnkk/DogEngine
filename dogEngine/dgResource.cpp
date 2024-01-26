@@ -10,6 +10,15 @@ namespace dg {
         return *this;
     }
 
+    FrameBufferCreateInfo &FrameBufferCreateInfo::setDepthStencilTexture(dg::TextureHandle depthTexture) {
+      if (depthTexture.index == k_invalid_index) {
+        DG_ERROR("Can not set an invalid depth texture for frame buffer")
+        exit(-1);
+      }
+      m_depthStencilTexture = depthTexture;
+      return *this;
+    }
+
     MaterialCreateInfo &MaterialCreateInfo::setName(std::string name) {
         this->name = name;
         return *this;

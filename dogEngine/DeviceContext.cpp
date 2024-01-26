@@ -16,36 +16,6 @@ GLFWwindow *DeviceContext::m_window = nullptr;
 
 std::shared_ptr<Camera> DeviceContext::m_camera = nullptr;
 
-float lastX = 300, lastY = 300;
-bool click = true;
-
-void mouseButtonCallback(GLFWwindow *window, int button, int action, int mods) {
-  if (action == GLFW_PRESS)
-    switch (button) {
-      case GLFW_MOUSE_BUTTON_RIGHT:
-        click = false;
-        break;
-    }
-  if (action == GLFW_RELEASE)
-    click = true;
-}
-
-void mouseCallback(GLFWwindow *window, double xPos, double yPos) {
-  if (click) {
-    lastX = xPos;
-    lastY = yPos;
-  }
-  float sensitive = 0.35;
-  float yDif = yPos - lastY;
-  float xDif = xPos - lastX;
-
-  DeviceContext::m_camera->pitch += sensitive * yDif;
-  DeviceContext::m_camera->pitch = glm::clamp(DeviceContext::m_camera->pitch, -89.0f, 89.0f);
-  DeviceContext::m_camera->yaw += sensitive * xDif;
-  lastX = xPos;
-  lastY = yPos;
-}
-
 void framebufferResizeCallback(GLFWwindow *window, int width,
                                int height) {
   auto context = reinterpret_cast<DeviceContext *>(glfwGetWindowUserPointer(window));
@@ -653,7 +623,7 @@ static VkRenderPass vulkanCreateRenderPass(DeviceContext *context, const RenderP
   switch (passInfo.m_color) {
     case RenderPassOperation::Clear: {
       colorOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-      colorInitial = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+      colorInitial = VK_IMAGE_LAYOUT_UNDEFINED;
       break;
     }
     case RenderPassOperation::Load: {
@@ -676,7 +646,7 @@ static VkRenderPass vulkanCreateRenderPass(DeviceContext *context, const RenderP
     }
     case RenderPassOperation::Clear: {
       depthOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-      DepthInitial = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+      DepthInitial = VK_IMAGE_LAYOUT_UNDEFINED;
       break;
     }
     default: {
@@ -717,8 +687,9 @@ static VkRenderPass vulkanCreateRenderPass(DeviceContext *context, const RenderP
     attref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     attref.attachment = i;
   }
-  VkAttachmentDescription depthDesc;
-  VkAttachmentReference depthRef;
+  std::vector<VkAttachmentDescription> attach = color_attch;
+  VkAttachmentDescription depthDesc{};
+  VkAttachmentReference depthRef{};
   if (passInfo.m_depthTexture.index != k_invalid_index) {
     Texture *depthTex = context->m_textures.accessResource(passInfo.m_depthTexture.index);
     depthDesc.format = depthTex->m_format;
@@ -732,11 +703,12 @@ static VkRenderPass vulkanCreateRenderPass(DeviceContext *context, const RenderP
     depthDesc.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
     depthRef.attachment = passInfo.m_outputTextures.size();
     depthRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    attach.push_back(depthDesc);
   }
 
   VkSubpassDescription subpassDesc{};
   subpassDesc.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-  subpassDesc.colorAttachmentCount = color_attch.size();
+  subpassDesc.colorAttachmentCount = color_ref.size();
   subpassDesc.pColorAttachments = color_ref.data();
   if (passInfo.m_depthTexture.index != k_invalid_index) {
     subpassDesc.pDepthStencilAttachment = &depthRef;
@@ -760,8 +732,8 @@ static VkRenderPass vulkanCreateRenderPass(DeviceContext *context, const RenderP
   dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
   VkRenderPassCreateInfo renderPassInfo{VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO};
-  renderPassInfo.attachmentCount = color_attch.size();
-  renderPassInfo.pAttachments = color_attch.data();
+  renderPassInfo.attachmentCount = attach.size();
+  renderPassInfo.pAttachments = attach.data();
   renderPassInfo.subpassCount = 1;
   renderPassInfo.pSubpasses = &subpassDesc;
   renderPassInfo.dependencyCount = 2;
@@ -1443,7 +1415,7 @@ DescriptorSetLayoutHandle DeviceContext::createDescriptorSetLayout(DescriptorSet
     vkBinding.descriptorCount = 1;
     vkBinding.descriptorType = input_binding.m_type;
 
-    vkBinding.stageFlags = VK_SHADER_STAGE_ALL;
+    vkBinding.stageFlags = tempBinding.stageFlags;
     vkBinding.pImmutableSamplers = nullptr;
   }
 
@@ -1855,8 +1827,6 @@ void DeviceContext::init(const ContextCreateInfo &DeviceInfo) {
   m_window = window;
   m_camera = std::make_shared<Camera>();
   m_camera->aspect = float((float) DeviceInfo.m_windowWidth / (float) DeviceInfo.m_windowHeight);
-  glfwSetMouseButtonCallback(m_window, mouseButtonCallback);
-  glfwSetCursorPosCallback(m_window, mouseCallback);
   glfwSetWindowUserPointer(m_window, this);
   glfwSetFramebufferSizeCallback(m_window, framebufferResizeCallback);
 
@@ -2078,6 +2048,43 @@ void DeviceContext::init(const ContextCreateInfo &DeviceInfo) {
   RenderPassCreateInfo renderpassInfo{};
   renderpassInfo.setName("SwapChain pass").setType(RenderPassType::Enum::SwapChain).setOperations(RenderPassOperation::Enum::Clear, RenderPassOperation::Enum::Clear, RenderPassOperation::Clear);
   m_swapChainPass = createRenderPass(renderpassInfo);
+
+  {
+    //m_gameViewImageCount = m_swapchainImageCount;
+    m_gameViewFrameTextures.resize(m_gameViewImageCount);
+    m_gameViewFrameBuffers.resize(m_gameViewImageCount);
+    m_gameViewTextureDescs.resize(m_gameViewImageCount);
+    m_gameViewWidth = m_swapChainWidth / 2;
+    m_gameViewHeight = m_swapChainHeight / 2;
+    DescriptorSetLayoutCreateInfo gameViewLayoutInfo{};
+    gameViewLayoutInfo.reset().setName("GameViewDescLayout").addBinding({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, 1, "GameViewDescLayout", VK_SHADER_STAGE_FRAGMENT_BIT});
+    m_gameViewDescLayout = createDescriptorSetLayout(gameViewLayoutInfo);
+
+    TextureCreateInfo gameViewFrameTextureInfo{};
+    gameViewFrameTextureInfo.setName("gameViewFrameTextureInfo").setExtent({m_gameViewWidth, m_gameViewHeight, 1}).setFormat(VK_FORMAT_R8G8B8A8_UNORM).setFlag(TextureFlags::Mask::Default_mask | TextureFlags::Mask::RenderTarget_mask).setMipmapLevel(1).setTextureType(TextureType::Texture2D);
+    //create image\imageView\fbo
+    for (int i = 0; i < m_gameViewImageCount; ++i) {
+      m_gameViewFrameTextures[i] = createTexture(gameViewFrameTextureInfo);
+      DescriptorSetCreateInfo descInfo{};
+      descInfo.reset().setName("gameViewFrameDesc").setLayout(m_gameViewDescLayout).texture(m_gameViewFrameTextures[i], 0);
+      m_gameViewTextureDescs[i] = createDescriptorSet(descInfo);
+    }
+    TextureCreateInfo tc{nullptr, {m_gameViewWidth, m_gameViewHeight, 1}, 1, VK_FORMAT_D32_SFLOAT, TextureType::Enum::Texture2D, "GameView_Depth_Texture", TextureFlags::Mask::Default_mask};
+    m_gameViewDepthTexture = createTexture(tc);
+
+    RenderPassCreateInfo gameViewPassInfo{};
+    gameViewPassInfo.setName("GameViewPass").setType(RenderPassType::Enum::Geometry).setOperations(RenderPassOperation::Enum::Clear, RenderPassOperation::Enum::Clear, RenderPassOperation::Enum::Clear).setFinalLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL).setDepthStencilTexture(m_gameViewDepthTexture).addRenderTexture(m_gameViewFrameTextures[0]);
+    m_gameViewPass = createRenderPass(gameViewPassInfo);
+    RenderPass *gameviewPassPtr = accessRenderPass(m_gameViewPass);
+    if (m_gameViewImageCount > 1) {
+      gameviewPassPtr->m_type = RenderPassType::SwapChain;
+    }
+    for (int i = 0; i < m_gameViewImageCount; ++i) {
+      FrameBufferCreateInfo gameViewFboInfo{};
+      gameViewFboInfo.reset().setName("gameViewFrameBuffer").setExtent({m_gameViewWidth, m_gameViewHeight}).setDepthStencilTexture(m_gameViewDepthTexture).addRenderTarget(m_gameViewFrameTextures[i]).setRenderPass(m_gameViewPass);
+      m_gameViewFrameBuffers[i] = createFrameBuffer(gameViewFboInfo);
+    }
+  }
 }
 
 void DeviceContext::newFrame() {
@@ -2257,6 +2264,19 @@ void DeviceContext::Destroy() {
     vkDestroySemaphore(m_logicDevice, m_render_complete_semaphore[i], nullptr);
     vkDestroyFence(m_logicDevice, m_render_queue_complete_fence[i], nullptr);
   }
+
+  // destroy game view pass
+  {
+    DestroyDescriptorSetLayout(m_gameViewDescLayout);
+    DestroyRenderPass(m_gameViewPass);
+    DestroyTexture(m_gameViewDepthTexture);
+    for (int i = 0; i < m_gameViewImageCount; ++i) {
+      DestroyTexture(m_gameViewFrameTextures[i]);
+      FrameBuffer *fbo = accessFrameBuffer(m_gameViewFrameBuffers[i]);
+      vkDestroyFramebuffer(m_logicDevice, fbo->m_frameBuffer, nullptr);
+    }
+  }
+
   vkDestroySemaphore(m_logicDevice, m_image_acquired_semaphore, nullptr);
   DestroyTexture(m_DummyTexture);
   DestroyDescriptorSetLayout(m_bindlessDescriptorSetLayout);

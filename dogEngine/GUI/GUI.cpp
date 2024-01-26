@@ -1,5 +1,6 @@
 #include "GUI.h"
 #include "Renderer.h"
+#include "Component/GameViewer.cpp"
 namespace dg {
 
 void GUI::keycallback() {
@@ -94,6 +95,7 @@ void GUI::init(Renderer *render) {
   m_LightIdx = new int(0);
 
   addViewer(std::make_shared<MaterialViewer>("Material"));
+  addViewer(std::make_shared<GameViewer>("GameViewer"));
 }
 
 // void GUI::LoadFontsToGPU(){

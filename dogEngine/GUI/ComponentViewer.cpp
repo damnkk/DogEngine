@@ -1,5 +1,9 @@
 #include "ComponentViewer.h"
 namespace dg{
+namespace dgUI {
+float itemTab = 150;  //set the item position per line
+float itemWidth = 200;// set the item width, like:combo|slideFloat etc.
+}// name
     ComponentViewer::ComponentViewer(){
 
     }

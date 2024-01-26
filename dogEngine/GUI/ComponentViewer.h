@@ -8,10 +8,10 @@
 #include "imguiBase/imgui_impl_vulkan.h"
 #include "glm/gtc/type_ptr.hpp"
 namespace dg{
-    namespace dgUI{
-        static float itemTab=150;//set the item position per line
-        static float itemWidth = 200;// set the item width, like:combo|slideFloat etc.
-    }
+namespace dgUI {
+extern float itemTab;  //set the item position per line
+extern float itemWidth;// set the item width, like:combo|slideFloat etc.
+}// n
 
 struct Renderer;
 class ComponentViewer{

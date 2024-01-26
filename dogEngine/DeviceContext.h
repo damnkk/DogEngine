@@ -142,6 +142,17 @@ namespace dg {
         std::vector<VkFramebuffer> m_swapchainFbos;
         bool m_resized = false;
 
+        //load From "imgui.ini" file
+        u32 m_gameViewWidth;
+        u32 m_gameViewHeight;
+        u32 m_gameViewImageCount = 1;
+        std::vector<TextureHandle> m_gameViewFrameTextures;
+        std::vector<FrameBufferHandle> m_gameViewFrameBuffers;
+        std::vector<DescriptorSetHandle> m_gameViewTextureDescs;
+        DescriptorSetLayoutHandle m_gameViewDescLayout;
+        RenderPassHandle m_gameViewPass;
+        TextureHandle m_gameViewDepthTexture;
+
         u32 m_graphicQueueIndex = -1;
         u32 m_computeQueueIndex = -1;
         u32 m_transferQueueIndex = -1;

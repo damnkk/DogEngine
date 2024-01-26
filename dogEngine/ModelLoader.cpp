@@ -35,7 +35,7 @@ namespace dg {
         if (rootNode.m_meshIndex != -1) {
             Mesh &mesh = m_meshes[rootNode.m_meshIndex];
             RenderObject rj;
-            rj.m_renderPass = m_renderer->getContext()->m_swapChainPass;
+            rj.m_renderPass = m_renderer->getContext()->m_gameViewPass;
             rj.m_material = mesh.m_meshMaterial;
             // del with buffer
             rj.m_vertexBuffer = m_renderer->upLoadBufferToGPU(mesh.m_vertices, mesh.name.c_str());

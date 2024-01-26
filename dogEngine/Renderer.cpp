@@ -107,7 +107,7 @@ void Renderer::makeDefaultMaterial() {
   //        blendState.m_blendStates[0].m_blendEnabled = true;
   //        blendState.m_blendStates[0].m_separateBlend = false;
   //        pipelineInfo.m_BlendState =blendState;
-  pipelineInfo.m_renderPassHandle = m_context->m_swapChainPass;
+  pipelineInfo.m_renderPassHandle = m_context->m_gameViewPass;
   pipelineInfo.m_depthStencil.setDepth(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
   pipelineInfo.m_vertexInput.Attrib = Vertex::getAttributeDescriptions();
   pipelineInfo.m_vertexInput.Binding = Vertex::getBindingDescription();
@@ -381,6 +381,7 @@ void Renderer::drawScene() {
     //cmd->draw(TopologyType::Enum::Triangle, 0, currRenderObject.m_vertexCount, 0, 0);
     cmd->drawIndexed(TopologyType::Enum::Triangle, currRenderObject.m_indexCount, 1, 0, 0, 0);
   }
+  this->m_context->queueCommandBuffer(cmd);
 }
 
 void Renderer::setDefaultMaterial(Material *mat) {
@@ -461,7 +462,7 @@ void Renderer::executeSkyBox() {
   m_renderObjects.emplace_back();
   RenderObject &skybox = m_renderObjects.back();
   //render data prepare
-  skybox.m_renderPass = m_context->m_swapChainPass;
+  skybox.m_renderPass = m_context->m_gameViewPass;
   skybox.m_vertexBuffer = upLoadBufferToGPU(cubeVertexData, "skyMesh");
   skybox.m_indexBuffer = upLoadBufferToGPU(cubeIndexData, "skyMesh");
   skybox.m_vertexCount = cubeVertexData.size();
@@ -475,7 +476,7 @@ void Renderer::executeSkyBox() {
   skyLayoutInfo.reset().addBinding({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, 1, "globalUniform"}).addBinding({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, 1, "MaterialUniform"});
   skyLayoutInfo.setName("skyDescLayout");
   PipelineCreateInfo pipelineInfo;
-  pipelineInfo.m_renderPassHandle = m_context->m_swapChainPass;
+  pipelineInfo.m_renderPassHandle = m_context->m_gameViewPass;
   pipelineInfo.m_depthStencil.setDepth(false, false, VK_COMPARE_OP_LESS_OR_EQUAL);
   pipelineInfo.m_vertexInput.Attrib = Vertex::getAttributeDescriptions();
   pipelineInfo.m_vertexInput.Binding = Vertex::getBindingDescription();
