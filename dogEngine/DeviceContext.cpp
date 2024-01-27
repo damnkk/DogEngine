@@ -14,7 +14,7 @@ namespace dg {
 
 GLFWwindow *DeviceContext::m_window = nullptr;
 
-std::shared_ptr<Camera> DeviceContext::m_camera = nullptr;
+//std::shared_ptr<Camera> DeviceContext::m_camera = nullptr;
 
 void framebufferResizeCallback(GLFWwindow *window, int width,
                                int height) {
@@ -842,7 +842,6 @@ void DeviceContext::reCreateSwapChain() {
   renderPassCreation.setType(RenderPassType::Enum::SwapChain).setName("SwapChain");
   vulkanCreateSwapChainPass(this, renderPassCreation, swapChainPass);
   vkDeviceWaitIdle(m_logicDevice);
-  m_camera->aspect = (float) m_swapChainWidth / (float) m_swapChainHeight;
 }
 
 void DeviceContext::updateDescriptorSet(DescriptorSetHandle set) {
@@ -1825,8 +1824,8 @@ void DeviceContext::init(const ContextCreateInfo &DeviceInfo) {
   DGASSERT(result == VK_SUCCESS);
 
   m_window = window;
-  m_camera = std::make_shared<Camera>();
-  m_camera->aspect = float((float) DeviceInfo.m_windowWidth / (float) DeviceInfo.m_windowHeight);
+  //m_camera = std::make_shared<Camera>();
+  //m_camera->aspect = float((float) DeviceInfo.m_windowWidth / (float) DeviceInfo.m_windowHeight);
   glfwSetWindowUserPointer(m_window, this);
   glfwSetFramebufferSizeCallback(m_window, framebufferResizeCallback);
 

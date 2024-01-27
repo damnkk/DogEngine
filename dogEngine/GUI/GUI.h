@@ -55,6 +55,8 @@ class GUI {
   void KeysControl(bool *keys);
   ImGuiIO *getIO() { return m_io; }
 
+  static float deltaTime;
+
  private:
   void keycallback();
   GUI(){};
@@ -66,7 +68,7 @@ class GUI {
   VkCommandPool m_commandPool;
   std::vector<CommandBuffer> m_commandBuffers = std::vector<CommandBuffer>(3);
   VkSemaphore m_uiFinishSemaphore;
-  
+
   //Imgui about
   ImGuiIO *m_io = nullptr;
   GLFWwindow *m_window = nullptr;

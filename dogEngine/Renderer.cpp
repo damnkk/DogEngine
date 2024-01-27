@@ -102,11 +102,8 @@ void Renderer::makeDefaultMaterial() {
   descInfo.setName("defaultDescLayout");
   DescriptorSetLayoutHandle descLayout = m_context->createDescriptorSetLayout(descInfo);
   PipelineCreateInfo pipelineInfo{};
-  //        BlendStateCreation blendState{};
-  //        blendState.add_blend_state();
-  //        blendState.m_blendStates[0].m_blendEnabled = true;
-  //        blendState.m_blendStates[0].m_separateBlend = false;
-  //        pipelineInfo.m_BlendState =blendState;
+
+  pipelineInfo.m_BlendState.add_blend_state().setColor(VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, VK_BLEND_OP_ADD);
   pipelineInfo.m_renderPassHandle = m_context->m_gameViewPass;
   pipelineInfo.m_depthStencil.setDepth(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
   pipelineInfo.m_vertexInput.Attrib = Vertex::getAttributeDescriptions();
@@ -126,6 +123,8 @@ void Renderer::makeDefaultMaterial() {
 
 void Renderer::init(std::shared_ptr<DeviceContext> context) {
   m_context = context;
+  m_camera = std::make_shared<Camera>();
+  m_camera->getAspect() = (float) m_context->m_swapChainWidth / (float) m_context->m_swapChainHeight;
   ShaderCompiler::init();
   m_buffers.init(4096);
   m_textures.init(512);
@@ -293,8 +292,12 @@ void Renderer::destroyMaterial(Material *material) {
   }
   m_materials.release(material);
 }
-
+double oldTimeStamp = 0.0f;
 void Renderer::newFrame() {
+  double newTimeStamp = glfwGetTime();
+  deltaTime = newTimeStamp - oldTimeStamp;
+  oldTimeStamp = newTimeStamp;
+  m_camera->updatePosition(deltaTime, m_context->m_window);
   GUI::getInstance().eventListen();
   m_context->newFrame();
   GUI::getInstance().newGUIFrame();
@@ -337,7 +340,7 @@ void Renderer::drawScene() {
     cmd->bindPass(currRenderObject.m_renderPass);
     cmd->bindPipeline(currRenderObject.m_material->program->passes[0].pipeline);
     Rect2DInt scissor;
-    scissor = {0, 0, (u16) m_context->m_swapChainWidth, (u16) m_context->m_swapChainHeight};
+    scissor = {0, 0, (u16) m_context->m_gameViewWidth, (u16) m_context->m_gameViewHeight};
     cmd->setScissor(&scissor);
     ViewPort viewPort;
     viewPort.max_depth = 1.0f;
@@ -358,13 +361,13 @@ void Renderer::drawScene() {
     vmaMapMemory(m_context->m_vma, globalUniformBuffer->m_allocation, &data);
     UniformData udata{};
     size_t test = sizeof(UniformData);
-    udata.cameraPos = m_context->m_camera->pos;
-    udata.cameraDirectory = m_context->m_camera->direction;
+    udata.cameraPos = m_camera->getPosition();
+    udata.cameraDirectory = m_camera->getDirectVector();
     static auto startTime = std::chrono::high_resolution_clock::now();
     auto endTime = std::chrono::high_resolution_clock::now();
 
-    udata.projectMatrix = m_context->m_camera->getProjectMatrix();
-    udata.viewMatrix = m_context->m_camera->getViewMatrix();
+    udata.projectMatrix = m_camera->getProjectMatrix();
+    udata.viewMatrix = m_camera->getViewMatrix();
     memcpy(data, &udata, sizeof(UniformData));
     vmaUnmapMemory(m_context->m_vma, globalUniformBuffer->m_allocation);
     Material::UniformMaterial um{};

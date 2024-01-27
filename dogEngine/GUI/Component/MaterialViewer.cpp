@@ -105,6 +105,14 @@ void MaterialViewer::OnGUI() {
 
     ImGui::TextColored({217.0 / 255.0, 128.0 / 255.0, 250.0 / 255.0, 1.0f}, "Env Control");
     ImGui::Separator();
+    ImGui::Text("use env texture");
+    ImGui::SameLine(ImGui::GetContentRegionAvail().x - 12.5);
+    ImGui::Checkbox("##use env texture", &m_material->useEnvTexture);
+    if (!m_material->useEnvTexture) ImGui::BeginDisabled(true);
+    ImGui::Text("env Texture");
+    ImGui::SameLine(ImGui::GetContentRegionAvail().x - 12.50);
+    int envTextureIdx = 0;
+    ImGui::Combo("##env texture", &envTextureIdx, Textures, IM_ARRAYSIZE(Textures), IM_ARRAYSIZE(Textures));
     ImGui::Text("env rotate");
     ImGui::SameLine(dgUI::itemTab);
     ImGui::SliderFloat("##env rotate", &m_material->uniformMaterial.envFactor.x, 0.0f, 10.0f, "%0.3f", ImGuiSliderFlags_AlwaysClamp);
@@ -114,7 +122,7 @@ void MaterialViewer::OnGUI() {
     ImGui::Text("env gamma");
     ImGui::SameLine(dgUI::itemTab);
     ImGui::SliderFloat("##env gamma", &m_material->uniformMaterial.envFactor.z, 0.0f, 5.0f, "%0.3f", ImGuiSliderFlags_AlwaysClamp);
-
+    if (!m_material->useEnvTexture) ImGui::EndDisabled();
     ImGui::SeparatorText("Render State");
     HelpMarker("Render state is about to render pipeline reconstruction, switching rendering states frequently will affect rendering efficiency.");
     ImGui::Text("Depth Test");

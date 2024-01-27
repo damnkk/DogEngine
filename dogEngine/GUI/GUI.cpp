@@ -1,7 +1,9 @@
 #include "GUI.h"
-#include "Renderer.h"
 #include "Component/GameViewer.cpp"
+#include "Renderer.h"
+
 namespace dg {
+float GUI::deltaTime = 0.0f;
 
 void GUI::keycallback() {
   float sensitivity = 0.07;
@@ -12,28 +14,30 @@ void GUI::keycallback() {
     sensitivity = 0.07;
   }
 
-  if (m_io->KeysDown[ImGuiKey_Escape]) {
+  if (glfwGetKey(m_renderer->getContext()->m_window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
     glfwSetWindowShouldClose(m_window, true);
   }
+  std::shared_ptr<Camera> camera = m_renderer->getCamera();
+
   if (m_io->KeysDown[ImGuiKey_W]) {
-    DeviceContext::m_camera->pos += sensitivity * DeviceContext::m_camera->direction;
+    camera->getPosition() += sensitivity * camera->getDirectVector();
   }
   if (m_io->KeysDown[ImGuiKey_S]) {
-    DeviceContext::m_camera->pos -= sensitivity * DeviceContext::m_camera->direction;
+    camera->getPosition() -= sensitivity * camera->getDirectVector();
   }
   if (m_io->KeysDown[ImGuiKey_A]) {
-    DeviceContext::m_camera->pos -=
-        sensitivity * glm::normalize(glm::cross(DeviceContext::m_camera->direction, DeviceContext::m_camera->up));
+    camera->getPosition() -=
+        sensitivity * glm::normalize(glm::cross(camera->getDirectVector(), camera->getUpVector()));
   }
   if (m_io->KeysDown[ImGuiKey_D]) {
-    DeviceContext::m_camera->pos +=
-        sensitivity * glm::normalize(glm::cross(DeviceContext::m_camera->direction, DeviceContext::m_camera->up));
+    camera->getPosition() +=
+        sensitivity * glm::normalize(glm::cross(camera->getDirectVector(), camera->getUpVector()));
   }
   if (m_io->KeysDown[ImGuiKey_Space]) {
-    DeviceContext::m_camera->pos += sensitivity * glm::vec3(0, 1, 0);
+    camera->getPosition() += sensitivity * glm::vec3(0, 1, 0);
   }
   if (m_io->KeysDown[ImGuiKey_LeftCtrl]) {
-    DeviceContext::m_camera->pos -= sensitivity * glm::vec3(0, 1, 0);
+    camera->getPosition() -= sensitivity * glm::vec3(0, 1, 0);
   }
 }
 
@@ -127,7 +131,7 @@ void GUI::newGUIFrame() {
 }
 
 void GUI::OnGUI() {
-  //ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
+  ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
   ImGui::BeginMainMenuBar();
 
   ImGui::EndMainMenuBar();
@@ -138,7 +142,7 @@ void GUI::OnGUI() {
 }
 
 void GUI::eventListen() {
-  keycallback();
+  //keycallback();
 }
 
 void GUI::endGUIFrame() {

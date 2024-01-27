@@ -179,7 +179,7 @@ namespace dg {
         VkQueue m_computeQueue;
         VkQueue m_graphicsQueue;
         VkQueue m_transferQueue;
-        static std::shared_ptr<Camera> m_camera;
+        //static std::shared_ptr<Camera> m_camera;
 
         VmaAllocator m_vma;
         RENDERDOC_API_1_3_0 *m_renderDoc_api = NULL;
