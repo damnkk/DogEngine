@@ -1271,7 +1271,6 @@ static void vulkanCreateFrameBuffers(DeviceContext *context, FrameBuffer *frameb
 
   vkCreateFramebuffer(context->m_logicDevice, &fboInfo, nullptr, &framebuffer->m_frameBuffer);
   context->setResourceName(VK_OBJECT_TYPE_FRAMEBUFFER, (uint64_t) framebuffer->m_frameBuffer, framebuffer->name.c_str());
-  renderpass->m_frameBuffer = framebuffer->m_frameBuffer;
 }
 
 //自己实现的
@@ -1329,7 +1328,7 @@ RenderPassHandle DeviceContext::createRenderPass(RenderPassCreateInfo &ri) {
   renderPass->m_dispatchy = 0;
   renderPass->m_dispatchz = 0;
   renderPass->m_resize = ri.resize;
-  renderPass->m_frameBuffer = nullptr;
+  renderPass->m_frameBuffers = {};
   renderPass->m_width = m_swapChainWidth;
   renderPass->m_height = m_swapChainHeight;
   u32 c = 0;
@@ -1361,7 +1360,12 @@ RenderPassHandle DeviceContext::createRenderPass(RenderPassCreateInfo &ri) {
 FrameBufferHandle DeviceContext::createFrameBuffer(FrameBufferCreateInfo &fcf) {
   FrameBufferHandle handle = {m_frameBuffers.obtainResource()};
   FrameBuffer *fbo = accessFrameBuffer(handle);
-  fbo->m_renderPassHandle = fcf.m_renderPassHandle;
+  if (fcf.m_renderPassHandle.index != k_invalid_index) {
+    fbo->m_renderPassHandle = fcf.m_renderPassHandle;
+  } else {
+    DG_ERROR("A valid renderPass handle must be set in FrameBufferCreateInfo");
+    exit(-1);
+  }
   fbo->m_depthStencilAttachment = fcf.m_depthStencilTexture;
   fbo->m_height = fcf.m_height;
   fbo->m_width = fcf.m_width;
@@ -1372,9 +1376,9 @@ FrameBufferHandle DeviceContext::createFrameBuffer(FrameBufferCreateInfo &fcf) {
   for (int i = 0; i < fcf.m_numRenderTargets; ++i) {
     fbo->m_colorAttachments[i] = fcf.m_outputTextures[i];
   }
-
+  RenderPass *renderpass = this->accessRenderPass(fcf.m_renderPassHandle);
+  renderpass->m_frameBuffers.push_back(handle);
   vulkanCreateFrameBuffers(this, fbo);
-
   return handle;
 }
 
@@ -1790,14 +1794,20 @@ void DeviceContext::init(const ContextCreateInfo &DeviceInfo) {
   VkApplicationInfo appInfo = {VK_STRUCTURE_TYPE_APPLICATION_INFO, nullptr, DeviceInfo.m_applicatonName, VK_MAKE_VERSION(1, 0, 0), "DogEngine", VK_MAKE_VERSION(1, 0, 0), VK_API_VERSION_1_3};
   getRequiredExtensions(instanceExtensions);
 
-  VkInstanceCreateInfo instanceInfo = {VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO, nullptr, 0, &appInfo,
+  VkInstanceCreateInfo instanceInfo = { VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+                                        nullptr,
+                                        0,
+                                        &appInfo,
 
 #if defined(VULKAN_DEBUG)
-                                       static_cast<u32>(validationLayers.size()), validationLayers.data(),
+                                        static_cast<u32>(validationLayers.size()),
+                                        validationLayers.data(),
 #else
-                                       0, nullptr,
+                                        0,
+                                        nullptr,
 #endif//VULKAN_DEBUG
-                                       static_cast<u32>(instanceExtensions.size()), instanceExtensions.data()};
+                                        static_cast<u32>(instanceExtensions.size()),
+                                        instanceExtensions.data() };
   result = vkCreateInstance(&instanceInfo, nullptr, &m_instance);
   DGASSERT(result == VK_SUCCESS);
   DG_INFO("Instance created successfully");

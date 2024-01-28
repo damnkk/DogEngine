@@ -16,7 +16,7 @@ class Camera {
   glm::mat4 getViewMatrix(bool useEularAngle = true);
   glm::mat4 getProjectMatrix(bool ortho = false);
   void updateDirection(float deltaTime, glm::vec2 currMousePos);
-  void updatePosition(float deltaTime, GLFWwindow *window);
+  void updatePosition(float deltaTime);
   bool &rightButtonPressState() { return rightButtonClick; }
 
  public:

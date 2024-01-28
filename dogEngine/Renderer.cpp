@@ -292,12 +292,12 @@ void Renderer::destroyMaterial(Material *material) {
   }
   m_materials.release(material);
 }
+
 double oldTimeStamp = 0.0f;
 void Renderer::newFrame() {
   double newTimeStamp = glfwGetTime();
   deltaTime = newTimeStamp - oldTimeStamp;
   oldTimeStamp = newTimeStamp;
-  m_camera->updatePosition(deltaTime, m_context->m_window);
   GUI::getInstance().eventListen();
   m_context->newFrame();
   GUI::getInstance().newGUIFrame();

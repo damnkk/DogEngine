@@ -17,13 +17,14 @@ void GameViewer::OnGUI() {
   Texture *text = m_renderer->getContext()->accessTexture(m_renderer->getContext()
                                                               ->m_gameViewFrameTextures[0]);
   bool windowHovered = ImGui::IsWindowHovered();
-  if (windowHovered) {
+  if (ImGui::IsWindowFocused()) {
     if (ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
       camera->rightButtonPressState() = true;
     }
     if (!ImGui::IsMouseDown(ImGuiMouseButton_Right)) camera->rightButtonPressState() = false;
     ImVec2 cursorPos = ImGui::GetMousePos();
     camera->updateDirection(m_renderer->deltaTime, glm::vec2(cursorPos.x, cursorPos.y));
+    camera->updatePosition(m_renderer->deltaTime);
   }
 
   const ImVec2 currWindowSize = ImGui::GetWindowSize();
