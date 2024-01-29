@@ -30,10 +30,14 @@ void GameViewer::OnGUI() {
   const ImVec2 currWindowSize = ImGui::GetWindowSize();
   if (currWindowSize != OldWindowSize) {
     OldWindowSize = currWindowSize;
+    m_renderer->getContext()->gameViewResize = true;
+    m_renderer->getContext()->m_gameViewWidth = (u32) currWindowSize.x;
+    m_renderer->getContext()->m_gameViewHeight = (u32) currWindowSize.y;
+    //m_renderer->getContext()->resizeGameViewPass({(u32) currWindowSize.x, (u32) currWindowSize.y});
     camera->getAspect() = (float) currWindowSize.x / (float) currWindowSize.y;
   }
 
-  ImGui::Image((ImTextureID) desc->m_vkdescriptorSet, currWindowSize - ImVec2{20.0, 34.0});
+  ImGui::Image((ImTextureID) desc->m_vkdescriptorSet, currWindowSize);
   ImGui::End();
 }
 }// namespace dg

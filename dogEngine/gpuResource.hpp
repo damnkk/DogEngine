@@ -164,6 +164,7 @@ struct DescriptorSetLayout {
 
 struct DescriptorSet {
   VkDescriptorSet m_vkdescriptorSet;
+  VkDescriptorPool m_parentPool;
   std::vector<ResourceHandle> m_resources;
   std::vector<SamplerHandle> m_samples;
   std::vector<u32> m_bindings;

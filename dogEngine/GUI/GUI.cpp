@@ -1,5 +1,5 @@
 #include "GUI.h"
-#include "Component/GameViewer.cpp"
+#include "Component/GameViewer.h"
 #include "Renderer.h"
 
 namespace dg {
@@ -139,6 +139,8 @@ void GUI::OnGUI() {
     auto currComponent = m_compontents[i];
     currComponent->OnGUI();
   }
+  //你可以理解这个函数可以初始化ImDrawData
+  ImGui::Render();
 }
 
 void GUI::eventListen() {
@@ -146,8 +148,6 @@ void GUI::eventListen() {
 }
 
 void GUI::endGUIFrame() {
-  //你可以理解这个函数可以初始化ImDrawData
-  ImGui::Render();
   if (m_io->ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
     if (m_window) {
       ImGui::UpdatePlatformWindows();

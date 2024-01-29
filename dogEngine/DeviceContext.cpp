@@ -367,6 +367,7 @@ void DeviceContext::destroyDescriptorSetLayoutInstant(ResourceHandle handle) {
 void DeviceContext::destroyDescriptorInstant(ResourceHandle handle) {
   DescriptorSet *setInstance = accessDescriptorSet({handle});
   if (setInstance && handle != k_invalid_index) {
+    vkFreeDescriptorSets(m_logicDevice, setInstance->m_parentPool, 1, &setInstance->m_vkdescriptorSet);
     m_descriptorSets.releaseResource(handle);
   }
 }
@@ -977,6 +978,44 @@ void DeviceContext::addImageBarrier(VkCommandBuffer cmdBuffer, Texture *texture,
   texture->m_imageInfo.imageLayout = imageBarrier.newLayout;
 }
 
+void DeviceContext::resizeGameViewPass(VkExtent2D extent) {
+  //if (m_gameViewWidth == extent.width && m_gameViewHeight == extent.height) return;
+  vkDeviceWaitIdle(m_logicDevice);
+  m_gameViewWidth = extent.width;
+  m_gameViewHeight = extent.height;
+  RenderPass *pass = accessRenderPass(m_gameViewPass);
+  pass->m_width = extent.width;
+  pass->m_height = extent.height;
+  std::vector<FrameBufferHandle> oldFbos = pass->m_frameBuffers;
+  pass->m_frameBuffers.clear();
+  for (int i = 0; i < oldFbos.size(); ++i) {
+    //frame buffer and it's texture attachment is destroied;
+    FrameBuffer *fbo = accessFrameBuffer(oldFbos[i]);
+    if (i != 0) fbo->m_depthStencilAttachment = {k_invalid_index};
+    destroyFrameBufferInstant(oldFbos[i].index);
+    destroyDescriptorInstant(m_gameViewTextureDescs[i].index);
+    TextureCreateInfo gameViewFrameTextureInfo{};
+    gameViewFrameTextureInfo.setName("gameViewFrameTextureRecreate").setExtent({m_gameViewWidth, m_gameViewHeight, 1}).setFormat(VK_FORMAT_R8G8B8A8_UNORM).setFlag(TextureFlags::Mask::Default_mask | TextureFlags::Mask::RenderTarget_mask).setMipmapLevel(1).setTextureType(TextureType::Texture2D);
+    m_gameViewFrameTextures[i] = createTexture(gameViewFrameTextureInfo);
+    DescriptorSetCreateInfo descInfo{};
+    descInfo.reset().setName("gameViewFrameDesc").setLayout(m_gameViewDescLayout).texture(m_gameViewFrameTextures[i], 0);
+    m_gameViewTextureDescs[i] = createDescriptorSet(descInfo);
+  }
+  TextureCreateInfo tc{nullptr, {m_gameViewWidth, m_gameViewHeight, 1}, 1, VK_FORMAT_D32_SFLOAT, TextureType::Enum::Texture2D, "GameView_Depth_Texture", TextureFlags::Mask::Default_mask};
+  m_gameViewDepthTexture = createTexture(tc);
+  for (int i = 0; i < m_gameViewImageCount; ++i) {
+    FrameBufferCreateInfo gameViewFboInfo{};
+    gameViewFboInfo.reset().setName("gameViewFrameBuffer").setExtent({m_gameViewWidth, m_gameViewHeight}).setDepthStencilTexture(m_gameViewDepthTexture).addRenderTarget(m_gameViewFrameTextures[i]).setRenderPass(m_gameViewPass);
+    m_gameViewFrameBuffers[i] = createFrameBuffer(gameViewFboInfo);
+  }
+  pass->m_depthTexture = m_gameViewDepthTexture;
+  pass->m_outputTextures.clear();
+  pass->m_outputTextures.push_back(m_gameViewFrameTextures[0]);
+  pass->m_width = m_gameViewWidth;
+  pass->m_height = m_gameViewHeight;
+  vkDeviceWaitIdle(m_logicDevice);
+}
+
 static void transitionImageLayoutOverQueue(VkCommandBuffer cmdBuffer, VkImage image, VkFormat format,
                                            VkImageLayout oldLayout, VkImageLayout newLayout, bool isDepth, u32 srcQueueIdx, u32 dstQueueIdx) {
   VkImageMemoryBarrier imageBarrier{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
@@ -1548,9 +1587,11 @@ DescriptorSetHandle DeviceContext::createDescriptorSet(DescriptorSetCreateInfo &
     count_info.pDescriptorCounts = &max_binding;
     setAllocInfo.descriptorPool = m_bindlessDescriptorPool;
     setAllocInfo.pNext = &count_info;
+    set->m_parentPool = m_bindlessDescriptorPool;
     VkResult res = vkAllocateDescriptorSets(m_logicDevice, &setAllocInfo, &set->m_vkdescriptorSet);
     DGASSERT(res == VK_SUCCESS);
   } else {
+    set->m_parentPool = m_descriptorPool;
     VkResult res = vkAllocateDescriptorSets(m_logicDevice, &setAllocInfo, &set->m_vkdescriptorSet);
     DGASSERT(res == VK_SUCCESS)
   }
@@ -1978,7 +2019,7 @@ void DeviceContext::init(const ContextCreateInfo &DeviceInfo) {
   std::vector<VkDescriptorPoolSize> bindLessSizes = {
       {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, k_max_bindless_resource},
       {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, k_max_bindless_resource}};
-  poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT;
+  poolInfo.flags |= VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT;
   poolInfo.maxSets = k_global_pool_size * bindLessSizes.size();
   poolInfo.poolSizeCount = bindLessSizes.size();
   poolInfo.pPoolSizes = bindLessSizes.data();
@@ -2209,6 +2250,10 @@ void DeviceContext::present() {
   if (res == VK_ERROR_OUT_OF_DATE_KHR || res == VK_SUBOPTIMAL_KHR || m_resized) {
     reCreateSwapChain();
     m_resized = false;
+  }
+  if (gameViewResize) {
+    resizeGameViewPass({m_gameViewWidth, m_gameViewHeight});
+    gameViewResize = false;
   }
   m_currentFrame = (m_currentFrame + 1) % m_swapchainImageCount;
 
