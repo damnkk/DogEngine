@@ -1,6 +1,6 @@
 #include "MaterialViewer.h"
 #include "Renderer.h"
-#include "dgResource.h"
+#include "dgMaterial.h"
 namespace dg {
 MaterialViewer::MaterialViewer() {
 }
@@ -12,7 +12,7 @@ MaterialViewer::MaterialViewer(std::string viewerName) {
 }
 
 void MaterialViewer::init() {
-  m_material = m_renderer->getGltfLoader()->getRenderObject()[0].m_material;
+  m_material = m_renderer->getResourceLoader()->getRenderObjects()[0].materialPtr;
 }
 
 void MaterialViewer::OnGUI() {
@@ -23,7 +23,7 @@ void MaterialViewer::OnGUI() {
     ImGui::End();
     return;
   } else {
-    const char *Textures[] = {
+    const char* Textures[] = {
         "none"};
     ImGui::SeparatorText("Material Property");
 
@@ -135,14 +135,14 @@ void MaterialViewer::OnGUI() {
     ImGui::Checkbox("##Depth Write", &depthWrite);
     ImGui::Text("Depth Func");
     ImGui::SameLine(dgUI::itemTab);
-    const char *DepthFunc[] = {
+    const char* DepthFunc[] = {
         "always", "smaller", "bigger", "equal"};
     int depthModeIdx = m_material->depthModeIdx;
     ImGui::Combo("##Depth Func", &depthModeIdx, DepthFunc, IM_ARRAYSIZE(DepthFunc), IM_ARRAYSIZE(DepthFunc));
 
     ImGui::Text("Face Cull");
     ImGui::SameLine(dgUI::itemTab);
-    const char *FaceCullFunc[] = {
+    const char* FaceCullFunc[] = {
         "BackFace", "FrontFace", "BackAndFront"};
     int cullModeIdx = m_material->cullModeIdx;
     ImGui::Combo("##Face Cull", &cullModeIdx, FaceCullFunc, IM_ARRAYSIZE(FaceCullFunc), IM_ARRAYSIZE(FaceCullFunc));

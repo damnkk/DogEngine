@@ -7,7 +7,7 @@
 using namespace dg;
 
 bool isMinimized = false;
-void windowIconifyCallback(GLFWwindow *window, int iconified) {
+void windowIconifyCallback(GLFWwindow* window, int iconified) {
   if (iconified) {
     isMinimized = true;
   } else {
@@ -19,7 +19,7 @@ int main() {
   auto window = createGLFWWindow(1380, 720);
   glfwSetWindowIconifyCallback(window, windowIconifyCallback);
   ContextCreateInfo contextInfo;
-  int width, height;
+  int               width, height;
   glfwGetWindowSize(window, &width, &height);
   contextInfo.set_window(width, height, window);
   contextInfo.m_applicatonName = "God Engine";
@@ -29,13 +29,13 @@ int main() {
   Renderer renderer;
   renderer.init(context);
 
-  //renderer.loadFromPath("./models/BoomBoxWithAxes/BoomBoxWithAxes.gltf");
-  //renderer.loadFromPath("./models/Sponza/Sponza.gltf");
-  //renderer.loadFromPath("./models/scene/scene.gltf");
-  renderer.loadFromPath("./models/Camera_01_2k/Camera_01_2k.gltf");
-  //renderer.loadFromPath("./models/DamagedHelmet/DamagedHelmet.gltf");
-  //renderer.loadFromPath("./models/MetalRoughSpheres/MetalRoughSpheres.gltf");
-  //renderer.loadFromPath("./models/ship_pinnace_1k/ship_pinnace_4k.gltf");
+  //renderer.loadModel("./models/BoomBoxWithAxes/BoomBoxWithAxes.gltf");
+  //renderer.loadModel("./models/Sponza/Sponza.gltf");
+  renderer.loadModel("./models/orrery/scene.gltf");
+  //renderer.loadModel("./models/Camera_01_2k/Camera_01_2k.gltf");
+  //renderer.loadModel("./models/DamagedHelmet/DamagedHelmet.gltf");
+  //renderer.loadModel("./models/MetalRoughSpheres/MetalRoughSpheres.gltf");
+  //renderer.loadModel("./models/orrery/scene.gltf");
 
   //renderer.addSkyBox("./models/skybox/small_empty_room_4_2k.hdr");
   //renderer.addSkyBox("./models/skybox/small_empty_room_1_2k.hdr");
@@ -56,4 +56,12 @@ int main() {
   glfwDestroyWindow(window);
   glfwTerminate();
   return 0;
+
+  //------------------test-------------------
+  // ResourceLoader loader;
+  // loader.m_renderer = &renderer;
+  // loader.loadModel("./models/orrery/scene.gltf");
+  // loader.loadModel("./models/DamagedHelmet/DamagedHelmet.gltf");
+  // loader.loadModel("./models/BoomBoxWithAxes/BoomBoxWithAxes.gltf");
+  // std::cout << "test" << std::endl;
 }

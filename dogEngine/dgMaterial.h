@@ -63,10 +63,10 @@ struct TextureBind {
 };
 
 struct MaterialCreateInfo {
-  MaterialCreateInfo &setRenderOrder(u32 renderOrder);
+  MaterialCreateInfo &setRenderOrder(int renderOrder);
   MaterialCreateInfo &setName(std::string name);
   std::string name;
-  u32 renderOrder = -1;
+  int renderOrder = -1;
   Renderer *renderer;
 };
 

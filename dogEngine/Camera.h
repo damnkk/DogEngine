@@ -29,7 +29,7 @@ class Camera {
   float &getZFar() { return zFar; }
 
  protected:
-  glm::vec3 pos = glm::vec3(0.0f, 0.0f, 5.0f), up = glm::vec3(0.0f, 1.0f, 0.0f), direction = glm::vec3(-1.0f, 0.0f, 0.0f);
+  glm::vec3 pos = glm::vec3(0.0f, 0.0f, 0.0f), up = glm::vec3(0.0f, 1.0f, 0.0f), direction = glm::vec3(-1.0f, 0.0f, 0.0f);
   //glm::vec3 pos = glm::vec3(6.68f, 0.0f, -56.0f), up = glm::vec3(0.0f, 1.0f, 0.0f), direction = glm::vec3(-1.0f, 0.0f, 0.0f);
   float fov = 70.0f, aspect = 1.0f, zNear = 0.1f, zFar = 1000000.0f;
   float pitch = 0.0f, yaw = 0.0f, row = 0.0f;

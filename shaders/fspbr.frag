@@ -183,7 +183,7 @@ vec3 Uncharted2Tonemap(vec3 x) {
 vec3 PBR(vec3 N, vec3 V, vec3 L, vec3 albedo, vec3 radiance, float roughness, float metallic) {
   roughness = max(roughness, .05);// 保证光滑物体也有高光
 
-  vec3 H = normalize(L + V);
+  vec3  H = normalize(L + V);
   float NdotL = clamp(dot(N, L), 0.001, 1.0);
   float NdotV = clamp(dot(N, V), 0.001, 1.0);
   float NdotH = max(dot(N, H), 0);
@@ -191,10 +191,10 @@ vec3 PBR(vec3 N, vec3 V, vec3 L, vec3 albedo, vec3 radiance, float roughness, fl
   float alpha = roughness * roughness;
   // float k=alpha/2.;
   float k = ((alpha + 1) * (alpha + 1)) / 8.0;
-  vec3 F0 = mix(vec3(.04, .04, .04), albedo, metallic);
+  vec3  F0 = mix(vec3(.04, .04, .04), albedo, metallic);
 
   float D = Trowbridge_Reitz_GGX(NdotH, alpha);
-  vec3 F = SchlickFresnel(HdotV, F0);
+  vec3  F = SchlickFresnel(HdotV, F0);
   float G = SchlickGGX(NdotV, k) * SchlickGGX(NdotL, k);
 
   vec3 k_s = F;
@@ -212,15 +212,15 @@ vec3 PBR(vec3 N, vec3 V, vec3 L, vec3 albedo, vec3 radiance, float roughness, fl
 //texture(globalTextures[nonuniformEXT(umat.textureIndices[2])],fragTexCoord).r
 vec3 IBL(vec3 N, vec3 V, vec3 albedo, float roughness, float metallic) {
   roughness = min(roughness, 0.999);
-  vec3 H = normalize(N);
+  vec3  H = normalize(N);
   float NdotV = max(dot(N, V), 0);
   float HdotV = max(dot(H, V), 0);
-  vec3 R = normalize(reflect(-V, N));
-  vec3 F0 = mix(vec3(.04, .04, .04), albedo, metallic);
-  vec3 F = FresnelSchlickRoughness(HdotV, F0, roughness);
-  vec3 k_s = F;
-  vec3 k_d = (1.0 - k_s) * (1.0 - metallic);
-  vec3 IBLd = texture(globalTextures[nonuniformEXT(umat.textureIndices[6])], SampleSphericalMap(N)).rgb;
+  vec3  R = normalize(reflect(-V, N));
+  vec3  F0 = mix(vec3(.04, .04, .04), albedo, metallic);
+  vec3  F = FresnelSchlickRoughness(HdotV, F0, roughness);
+  vec3  k_s = F;
+  vec3  k_d = (1.0 - k_s) * (1.0 - metallic);
+  vec3  IBLd = texture(globalTextures[nonuniformEXT(umat.textureIndices[6])], SampleSphericalMap(N)).rgb;
   IBLd = Uncharted2Tonemap(IBLd * umat.envFactor.y);
   IBLd = IBLd * (1.0f / Uncharted2Tonemap(vec3(11.2f)));
   IBLd = pow(IBLd, vec3(1.0f / umat.envFactor.z));
@@ -228,7 +228,7 @@ vec3 IBL(vec3 N, vec3 V, vec3 albedo, float roughness, float metallic) {
 
   float rgh = roughness * (1.7 - 0.7 * roughness);
   float lod = 10.0 * rgh;
-  vec3 IBLs = textureLod(globalTextures[nonuniformEXT(umat.textureIndices[7])], SampleSphericalMap(R), lod).rgb;
+  vec3  IBLs = textureLod(globalTextures[nonuniformEXT(umat.textureIndices[7])], SampleSphericalMap(R), lod).rgb;
   IBLs = Uncharted2Tonemap(IBLs * umat.envFactor.y);
   IBLs = IBLs * (1.0f / Uncharted2Tonemap(vec3(11.2f)));
   IBLs = pow(IBLs, vec3(1.0f / umat.envFactor.z));
@@ -251,7 +251,7 @@ void main() {
     vec3 tempN = addNormTex(N, fragTexCoord);
     N = mix(N, tempN, umat.intensity.x);
   }
-  vec3 H = normalize(L + V);
+  vec3  H = normalize(L + V);
   float roughness = umat.mrFactor.y;
   if (umat.textureIndices[1] != k_invalid_index && umat.textureUseSetting[2] > 0) {
     roughness *= texture(globalTextures[nonuniformEXT(umat.textureIndices[1])], fragTexCoord).y;
@@ -266,7 +266,7 @@ void main() {
   }
 
   vec4 baseColor = umat.baseColorFactor;
-  if (umat.textureUseSetting[0] > 0) {
+  if (umat.textureIndices[0] > 0) {
     baseColor *= vec4(decode_srgb(texture(globalTextures[nonuniformEXT(umat.textureIndices[0])], fragTexCoord).xyz), texture(globalTextures[nonuniformEXT(umat.textureIndices[0])], fragTexCoord).a);
   }
 
@@ -278,5 +278,5 @@ void main() {
   vec3 ambient = IBL(N, V, baseColor.xyz, roughness, metallic);
   color += ambient * (mix(1.0, ao, umat.mrFactor.z));
   outColor = vec4(saturation(encode_srgb(color), 1.2), baseColor.w);
-  //outColor=vec4(N*0.5+0.5,1.0f);
+  //outColor = vec4(vec3(1.0f), 1.0f);
 }
