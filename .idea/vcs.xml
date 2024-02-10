@@ -4,6 +4,7 @@
     <mapping directory="" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/external/TinyObjLoader" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/external/VMA" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/external/assimp" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/external/glfw" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/external/glm" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/external/glslang" vcs="Git" />

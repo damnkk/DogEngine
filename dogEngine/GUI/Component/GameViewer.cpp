@@ -9,14 +9,14 @@ GameViewer::GameViewer(std::string name) {
 }
 
 ImVec2 OldWindowSize;
-void GameViewer::OnGUI() {
+void   GameViewer::OnGUI() {
   std::shared_ptr<Camera> camera = m_renderer->getCamera();
   ImGui::Begin("GameView");
-  auto desc = m_renderer->getContext()->accessDescriptorSet(m_renderer->getContext()
-                                                                ->m_gameViewTextureDescs[0]);
-  Texture *text = m_renderer->getContext()->accessTexture(m_renderer->getContext()
-                                                              ->m_gameViewFrameTextures[0]);
-  bool windowHovered = ImGui::IsWindowHovered();
+  auto     desc = m_renderer->getContext()->accessDescriptorSet(m_renderer->getContext()
+                                                                      ->m_gameViewTextureDescs[0]);
+  Texture* text = m_renderer->getContext()->accessTexture(m_renderer->getContext()
+                                                                ->m_gameViewFrameTextures[0]);
+  bool     windowHovered = ImGui::IsWindowHovered();
   if (ImGui::IsWindowFocused()) {
     if (ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
       camera->rightButtonPressState() = true;
@@ -29,15 +29,15 @@ void GameViewer::OnGUI() {
 
   const ImVec2 currWindowSize = ImGui::GetWindowSize();
   if (currWindowSize != OldWindowSize) {
-    OldWindowSize = currWindowSize;
+    OldWindowSize = ImVec2(currWindowSize.x - 15, currWindowSize.y - 35);
     m_renderer->getContext()->gameViewResize = true;
-    m_renderer->getContext()->m_gameViewWidth = (u32) currWindowSize.x;
-    m_renderer->getContext()->m_gameViewHeight = (u32) currWindowSize.y;
+    m_renderer->getContext()->m_gameViewWidth = (u32) (currWindowSize.x - 15);
+    m_renderer->getContext()->m_gameViewHeight = (u32) (currWindowSize.y - 35);
     //m_renderer->getContext()->resizeGameViewPass({(u32) currWindowSize.x, (u32) currWindowSize.y});
-    camera->getAspect() = (float) currWindowSize.x / (float) currWindowSize.y;
+    camera->getAspect() = (float) (currWindowSize.x - 15) / (float) (currWindowSize.y - 35);
   }
 
-  ImGui::Image((ImTextureID) desc->m_vkdescriptorSet, currWindowSize);
+  ImGui::Image((ImTextureID) desc->m_vkdescriptorSet, ImVec2(currWindowSize.x - 15, currWindowSize.y - 35));
   ImGui::End();
 }
 }// namespace dg

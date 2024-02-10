@@ -83,10 +83,10 @@
       "name": "Camera_01_lens",
       "pbrMetallicRoughness": {
         "baseColorFactor": [
+          0.200000011920929,
           0.800000011920929,
-          0.800000011920929,
-          0.800000011920929,
-          1
+          0.300000011920929,
+          0.4
         ],
         "metallicFactor": 0,
         "roughnessFactor": 0

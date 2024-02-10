@@ -1,5 +1,7 @@
 #include "GUI.h"
 #include "Component/GameViewer.h"
+#include "Component/MaterialViewer.h"
+#include "Component/SceneHierachyViewer.h"
 #include "Renderer.h"
 
 namespace dg {
@@ -41,7 +43,7 @@ void GUI::keycallback() {
   }
 }
 
-void guiVulkanInit(GUI &ui) {
+void guiVulkanInit(GUI& ui) {
   VkCommandPoolCreateInfo poolInfo{VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
   poolInfo.queueFamilyIndex = ui.getRenderer()->getContext()->m_graphicQueueIndex;
   poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
@@ -64,7 +66,7 @@ void guiVulkanInit(GUI &ui) {
   vkCreateSemaphore(ui.getRenderer()->getContext()->m_logicDevice, &smInfo, nullptr, &ui.getSemaphore());
 }
 
-void GUI::init(Renderer *render) {
+void GUI::init(Renderer* render) {
   m_renderer = render;
   guiVulkanInit(GUI::getInstance());
   std::shared_ptr<DeviceContext> context = render->getContext();
@@ -75,8 +77,8 @@ void GUI::init(Renderer *render) {
   setConfigFlag(ImGuiConfigFlags_DockingEnable);
   setConfigFlag(ImGuiConfigFlags_ViewportsEnable);
   setBackEndFlag(ImGuiBackendFlags_PlatformHasViewports);
-  ImGui::StyleColorsDark();//dark theme
-                           //ImGui::StyleColorsLight();
+  ImGui::StyleColorsClassic();//dark theme
+                              //ImGui::StyleColorsLight();
   ImGui_ImplGlfw_InitForVulkan(m_window, true);
   // Prepare the init struct for ImGui_ImplVulkan_Init in LoadFontsToGPU
   init_info.Instance = context->m_instance;
@@ -100,6 +102,7 @@ void GUI::init(Renderer *render) {
 
   addViewer(std::make_shared<MaterialViewer>("Material"));
   addViewer(std::make_shared<GameViewer>("GameViewer"));
+  addViewer(std::make_shared<SceneHierachyViewer>("Scene Hierachy"));
 }
 
 // void GUI::LoadFontsToGPU(){
@@ -157,11 +160,11 @@ void GUI::endGUIFrame() {
   }
 }
 
-ImDrawData *GUI::GetDrawData() {
+ImDrawData* GUI::GetDrawData() {
   return ImGui::GetDrawData();
 }
 
-void GUI::KeysControl(bool *keys) {
+void GUI::KeysControl(bool* keys) {
   if (keys[GLFW_KEY_1]) {
     m_SettingsData->render_target = 0;
   }

@@ -2,6 +2,10 @@
 #include "Renderer.h"
 #include "dgMaterial.h"
 namespace dg {
+Material* MaterialViewer::m_material = nullptr;
+void      MaterialViewer::setMaterialPtr(Material* ptr) {
+  m_material = ptr;
+}
 MaterialViewer::MaterialViewer() {
 }
 
@@ -16,7 +20,7 @@ void MaterialViewer::init() {
 }
 
 void MaterialViewer::OnGUI() {
-  init();
+  //init();
   ImGui::Begin("Material");
   if (!m_material) {
     ImGui::Text("No material been selected");

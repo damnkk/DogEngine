@@ -49,11 +49,9 @@ struct Renderer {
   void destroySampler(SamplerResource* samplerRes);
   void destroyMaterial(Material* material);
 
-  std::shared_ptr<DeviceContext> getContext() { return m_context; }
-  void                           setDefaultMaterial(Material* material);
-  Material*                      getDefaultMaterial();
-  // std::shared_ptr<objLoader> getObjLoader() { return m_objLoader; }
-  // std::shared_ptr<gltfLoader> getGltfLoader() { return m_gltfLoader; }
+  std::shared_ptr<DeviceContext>  getContext() { return m_context; }
+  void                            setDefaultMaterial(Material* material);
+  Material*                       getDefaultMaterial();
   std::shared_ptr<ResourceLoader> getResourceLoader() { return m_resourceLoader; }
 
   ResourceCache&                       getResourceCache() { return this->m_resourceCache; }

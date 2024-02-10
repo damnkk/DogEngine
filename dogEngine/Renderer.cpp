@@ -142,8 +142,6 @@ void Renderer::destroy() {
   GUI::getInstance().Destroy();
   ShaderCompiler::destroy();
   m_resourceCache.destroy(this);
-  // m_gltfLoader->destroy();
-  // m_objLoader->destroy();
   m_textures.destroy();
   m_buffers.destroy();
   m_materials.destroy();
@@ -302,6 +300,7 @@ void   Renderer::newFrame() {
   GUI::getInstance().eventListen();
   m_context->newFrame();
   GUI::getInstance().newGUIFrame();
+  m_resourceLoader->getSceneGraph()->recalculateAllTransforms();
 }
 
 void Renderer::present() {
@@ -313,13 +312,6 @@ void Renderer::loadModel(const std::string& path) {
     DG_WARN("Invalid resource path");
     return;
   }
-  // auto        found = path.find_last_of(".");
-  // std::string fileExtension = path.substr(found + 1);
-  // if (fileExtension == "obj") {
-  //   m_objLoader->loadFromPath(path);
-  // } else if (fileExtension == "gltf") {
-  //   m_gltfLoader->loadFromPath(path);
-  // }
   m_resourceLoader->loadModel(path);
 }
 
@@ -464,8 +456,6 @@ void Renderer::executeSkyBox() {
   skybox.renderpass = m_context->m_gameViewPass;
   skybox.vertexBuffer = upLoadBufferToGPU(cubeVertexData, "skyMesh");
   skybox.indexBuffer = upLoadBufferToGPU(cubeIndexData, "skyMesh");
-  // skybox.m_vertexCount = cubeVertexData.size();
-  // skybox.m_indexCount = cubeIndexData.size();
   skybox.globalUniform = m_context->m_viewProjectUniformBuffer;
   BufferCreateInfo bcinfo{};
   bcinfo.reset().setName("skyBoxMaterialUniformBuffer").setDeviceOnly(false).setUsageSize(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(Material::UniformMaterial));

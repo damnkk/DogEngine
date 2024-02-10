@@ -9,6 +9,7 @@ int SceneGraph::addNode(int parent, int level) {
   {
     m_globalTransforms.push_back(glm::mat4(1.0f));
     m_localTransforms.push_back(glm::mat4(1.0f));
+    m_rotateRecord.push_back(glm::vec3(0.0f));
   }
   Hierarchy& hi = m_nodeHierarchy.back();
   if (parent > -1) {
@@ -45,6 +46,7 @@ int SceneGraph::addNode(int parent, int level, std::string nodeName) {
   {
     m_globalTransforms.push_back(glm::mat4(1.0f));
     m_localTransforms.push_back(glm::mat4(1.0f));
+    m_rotateRecord.push_back(glm::vec3(0.0f));
   }
   Hierarchy& hi = m_nodeHierarchy.back();
   if (parent > -1) {
@@ -132,6 +134,7 @@ void SceneGraph::deleteSceneNodes(const std::vector<u32>& nodesToDelete) {
   eraseSelected(m_nodeHierarchy, indicesToDelete);
   eraseSelected(m_localTransforms, indicesToDelete);
   eraseSelected(m_globalTransforms, indicesToDelete);
+  eraseSelected(m_rotateRecord, indicesToDelete);
 
   shiftMapIndices(m_meshMap, newIndices);
   shiftMapIndices(m_materialMap, newIndices);
@@ -165,5 +168,10 @@ void recalculateGlobalTransforms(SceneGraph& scene) {
 void SceneGraph::recalculateAllTransforms() {
   markAsChanged(*this, 0);
   recalculateGlobalTransforms(*this);
+}
+
+std::string SceneGraph::getNodeName(int node) const {
+  int strID = m_nameForNodeMap.contains(node) ? m_nameForNodeMap.at(node) : -1;
+  return (strID > -1) ? m_nodeNames[strID] : std::string();
 }
 }// namespace dg

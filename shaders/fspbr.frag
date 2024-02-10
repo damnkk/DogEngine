@@ -266,7 +266,7 @@ void main() {
   }
 
   vec4 baseColor = umat.baseColorFactor;
-  if (umat.textureIndices[0] > 0) {
+  if (umat.textureIndices[0] != k_invalid_index && umat.textureUseSetting[0] > 0) {
     baseColor *= vec4(decode_srgb(texture(globalTextures[nonuniformEXT(umat.textureIndices[0])], fragTexCoord).xyz), texture(globalTextures[nonuniformEXT(umat.textureIndices[0])], fragTexCoord).a);
   }
 
