@@ -339,7 +339,7 @@ void Renderer::drawScene() {
     cmd->setViewport(&viewPort);
     cmd->bindVertexBuffer(currRenderObject.vertexBuffer, 0, 0);
     cmd->bindIndexBuffer(currRenderObject.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-    vkCmdSetDepthTestEnable(cmd->m_commandBuffer, VK_TRUE);
+    vkCmdSetDepthTestEnable(cmd->m_commandBuffer, currRenderObject.materialPtr->depthTest);
     Buffer* globalUniformBuffer = m_context->accessBuffer(currRenderObject.globalUniform);
     if (!globalUniformBuffer) {
       DG_WARN("Invalid camera view Buffer");

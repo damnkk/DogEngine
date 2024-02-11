@@ -128,11 +128,11 @@ void MaterialViewer::OnGUI() {
     ImGui::SliderFloat("##env gamma", &m_material->uniformMaterial.envFactor.z, 0.0f, 5.0f, "%0.3f", ImGuiSliderFlags_AlwaysClamp);
     if (!m_material->useEnvTexture) ImGui::EndDisabled();
     ImGui::SeparatorText("Render State");
-    HelpMarker("Render state is about to render pipeline reconstruction, switching rendering states frequently will affect rendering efficiency.");
+    HelpMarker("Render state is about render pipeline reconstruction, switching rendering states frequently will affect rendering efficiency.");
     ImGui::Text("Depth Test");
     ImGui::SameLine(dgUI::itemTab);
-    bool depthTest = m_material->depthTest;
-    ImGui::Checkbox("##Depth Test", &depthTest);
+    //bool depthTest = m_material->depthTest;
+    ImGui::Checkbox("##Depth Test", &m_material->depthTest);
     ImGui::Text("Depth Write");
     ImGui::SameLine(dgUI::itemTab);
     bool depthWrite = m_material->depthWrite;
@@ -151,8 +151,6 @@ void MaterialViewer::OnGUI() {
     int cullModeIdx = m_material->cullModeIdx;
     ImGui::Combo("##Face Cull", &cullModeIdx, FaceCullFunc, IM_ARRAYSIZE(FaceCullFunc), IM_ARRAYSIZE(FaceCullFunc));
     if (ImGui::Button("Save")) {
-      std::cout << "Save" << std::endl;
-      m_material->depthTest = depthTest;
       m_material->depthWrite = depthWrite;
       m_material->depthModeIdx = depthModeIdx;
       m_material->cullModeIdx = cullModeIdx;

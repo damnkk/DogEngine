@@ -149,7 +149,7 @@ Material* ResourceLoader::convertAIMaterialToDescription(const aiMaterial* aiMat
   unsigned int     TextureFlags = 0;
 
   TextureCreateInfo texInfo{};
-  texInfo.setFlag(TextureFlags::Mask::Default_mask).setFormat(VK_FORMAT_R8G8B8A8_SRGB).setBindLess(true).setMipmapLevel(1);
+  texInfo.setFlag(TextureFlags::Mask::Default_mask).setFormat(VK_FORMAT_R8G8B8A8_SRGB).setBindLess(true).setMipmapLevel(10);
 
   if (aiMat->GetTexture(aiTextureType_DIFFUSE, 0, &texPath) == AI_SUCCESS) {
     std::string diffusePath = basePath + '/' + std::string(texPath.C_Str());
