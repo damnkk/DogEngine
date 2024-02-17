@@ -22,6 +22,7 @@ execute_process(
 if(NOT SPIRV_TOOLS_CLONE EQUAL "0")
     message(FATAL_ERROR "Can not clone spirv-tools, glslang will not be compile successfully")
 endif()
+#set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_executable(vulkan_learning Vulkan.cpp)
 target_include_directories(vulkan_learning PUBLIC
                             #${VULKAN_SDK_PATH}/Include

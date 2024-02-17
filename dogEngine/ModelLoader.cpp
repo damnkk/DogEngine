@@ -21,8 +21,8 @@ std::vector<char> readFile(const std::string& filename) {
   return buffer;
 }
 
-modiMesh ResourceLoader::convertAIMesh(aiMesh* mesh) {
-  modiMesh           dgMesh;
+Mesh ResourceLoader::convertAIMesh(aiMesh* mesh) {
+  Mesh               dgMesh;
   bool               hasTexCoords = mesh->HasTextureCoords(0);
   bool               hasTagent = mesh->HasTangentsAndBitangents();
   std::vector<float> srcVertices;
@@ -49,8 +49,8 @@ modiMesh ResourceLoader::convertAIMesh(aiMesh* mesh) {
     }
   }
   dgMesh.indexCount = mesh->mNumFaces * 3;
-  dgMesh.vertexBufferHandle = m_renderer->upLoadBufferToGPU(vertices, mesh->mName.C_Str());
-  dgMesh.indexBufferHandle = m_renderer->upLoadBufferToGPU(srcIndices, mesh->mName.C_Str());
+  dgMesh.vertexBufferHandle = m_renderer->upLoadVertexDataToGPU(vertices, mesh->mName.C_Str());
+  dgMesh.indexBufferHandle = m_renderer->upLoadVertexDataToGPU(srcIndices, mesh->mName.C_Str());
   BufferCreateInfo bufferInfo{};
   std::string      uniformName = std::string(mesh->mName.C_Str()) + std::string("uniform");
   bufferInfo.reset().setName(uniformName.c_str()).setDeviceOnly(false).setUsageSize(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(Material::UniformMaterial));
@@ -205,7 +205,7 @@ SceneGraph ResourceLoader::loadModel(std::string modelPath) {
   }
 
   for (u32 i = 0; i < scene->mNumMeshes; ++i) {
-    modiMesh mesh = convertAIMesh(scene->mMeshes[i]);
+    Mesh mesh = convertAIMesh(scene->mMeshes[i]);
     m_meshes.push_back(mesh);
     auto& AABB = scene->mMeshes[i]->mAABB;
     m_boundingBoxes.emplace_back(glm::vec3(AABB.mMax.x, AABB.mMax.y, AABB.mMax.z), glm::vec3(AABB.mMin.x, AABB.mMin.y, AABB.mMin.z));
@@ -244,7 +244,7 @@ void ResourceLoader::executeScene(std::shared_ptr<SceneGraph> scene) {
     DescriptorSetCreateInfo setInfo{};
     setInfo.reset().setName(scene->m_nodeNames[scene->m_nameForNodeMap[c.first]].c_str()).setLayout(mat->program->passes[0].descriptorSetLayout[0]).buffer(m_renderer->getContext()->m_viewProjectUniformBuffer, 0).buffer(m_meshes[c.second].matUniformBufferHandle, 1);
     DescriptorSetHandle desc = m_renderer->getContext()->createDescriptorSet(setInfo);
-    m_renderObjects.push_back(modiRenderObject{
+    m_renderObjects.push_back(RenderObject{
         c.second,
         c.first,
         m_meshes[c.second].indexCount,

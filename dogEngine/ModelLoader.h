@@ -74,7 +74,7 @@ struct BoundingBox {
   }
 };
 
-struct modiMesh {
+struct Mesh {
   //the first index of vertex index data of curr mesh
   u32 indexoffset = 0;
   //the first index of vertex data of curr mesh
@@ -88,7 +88,7 @@ struct modiMesh {
   BufferHandle matUniformBufferHandle;
 };
 
-struct modiRenderObject {
+struct RenderObject {
   u32                              meshIndex;
   u32                              transformIndex;
   u32                              vertexIndicesCount = 0;
@@ -108,14 +108,14 @@ class ResourceLoader {
   SceneGraph loadModel(std::string modelPath);
   void       loadSceneGraph(std::string sceneGraphPath);
   Material*  convertAIMaterialToDescription(const aiMaterial* aiMat, std::string basePath);
-  modiMesh   convertAIMesh(aiMesh* mesh);
+  Mesh       convertAIMesh(aiMesh* mesh);
   void       executeScene(std::shared_ptr<SceneGraph> scene);
 
  public:
-  const std::vector<modiRenderObject>& getRenderObjects() { return m_renderObjects; }
-  std::shared_ptr<SceneGraph>          getSceneGraph() { return m_sceneGraph; }
-  Material*                            getMaterialWidthIdx(int idx) { return m_materials[idx]; }
-  Renderer*                            m_renderer;
+  const std::vector<RenderObject>& getRenderObjects() { return m_renderObjects; }
+  std::shared_ptr<SceneGraph>      getSceneGraph() { return m_sceneGraph; }
+  Material*                        getMaterialWidthIdx(int idx) { return m_materials[idx]; }
+  Renderer*                        m_renderer;
 
  protected:
   void traverse(const aiScene* sourceScene, SceneGraph& sceneGraph, aiNode* node, int parent, int level);
@@ -123,7 +123,7 @@ class ResourceLoader {
  private:
   Assimp::Importer            m_modelImporter;
   std::shared_ptr<SceneGraph> m_sceneGraph;
-  std::vector<modiMesh>       m_meshes;
+  std::vector<Mesh>           m_meshes;
   int                         m_meshOffset = 0;
   std::vector<Material*>      m_materials;
   int                         m_materialOffset = 0;
@@ -131,7 +131,7 @@ class ResourceLoader {
   int                         m_boundingBoxOffset = 0;
 
  private:
-  std::vector<modiRenderObject> m_renderObjects;
+  std::vector<RenderObject> m_renderObjects;
 };
 
 }// namespace dg

@@ -42,7 +42,7 @@ struct Renderer {
   TextureHandle upLoadTextureToGPU(std::string& texPath, TextureCreateInfo& texInfo);
   void          addImageBarrier(VkCommandBuffer cmdBuffer, Texture* texture, ResourceState oldState, ResourceState newState, u32 baseMipLevel, u32 mipCount, bool isDepth);
   template<typename T>
-  BufferHandle upLoadBufferToGPU(std::vector<T>& bufferData, const char* meshName);
+  BufferHandle upLoadVertexDataToGPU(std::vector<T>& bufferData, const char* meshName, VkBufferUsageFlags flags = 0);
 
   void destroyTexture(TextureResource* textureRes);
   void destroyBuffer(BufferResource* bufferRes);
@@ -80,7 +80,7 @@ struct Renderer {
   RenderResourcePool<BufferResource>  m_buffers;
   RenderResourcePool<Material>        m_materials;
   RenderResourcePool<SamplerResource> m_samplers;
-  std::vector<modiRenderObject>       m_renderObjects;
+  std::vector<RenderObject>           m_renderObjects;
   std::shared_ptr<DeviceContext>      m_context;
   // std::shared_ptr<objLoader>          m_objLoader;
   // std::shared_ptr<gltfLoader>         m_gltfLoader;
@@ -94,7 +94,7 @@ struct Renderer {
 };
 
 template<typename T>
-BufferHandle Renderer::upLoadBufferToGPU(std::vector<T>& bufferData, const char* meshName) {
+BufferHandle Renderer::upLoadVertexDataToGPU(std::vector<T>& bufferData, const char* meshName, VkBufferUsageFlags flags) {
   if (bufferData.empty()) return {k_invalid_index};
   VkDeviceSize     BufSize = bufferData.size() * sizeof(T);
   BufferCreateInfo bufferInfo;
@@ -104,12 +104,12 @@ BufferHandle Renderer::upLoadBufferToGPU(std::vector<T>& bufferData, const char*
   if (std::is_same<T, Vertex>::value) {
     std::string vertexBufferName = "vt";
     vertexBufferName += meshName;
-    bufferInfo.setUsageSize(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, BufSize);
+    bufferInfo.setUsageSize(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | flags, BufSize);
     bufferInfo.setName(vertexBufferName.c_str());
   } else if (std::is_same<T, u32>::value) {
     std::string IndexBufferName = "id";
     IndexBufferName += meshName;
-    bufferInfo.setUsageSize(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, BufSize);
+    bufferInfo.setUsageSize(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | flags, BufSize);
     bufferInfo.setName(IndexBufferName.c_str());
   }
   BufferHandle GPUHandle = createBuffer(bufferInfo)->handle;

@@ -103,7 +103,7 @@ void Renderer::makeDefaultMaterial() {
   DescriptorSetLayoutHandle descLayout = m_context->createDescriptorSetLayout(descInfo);
   PipelineCreateInfo        pipelineInfo{};
 
-  pipelineInfo.m_BlendState.add_blend_state().setColor(VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, VK_BLEND_OP_ADD);
+  //pipelineInfo.m_BlendState.add_blend_state().setColor(VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, VK_BLEND_OP_ADD);
   pipelineInfo.m_renderPassHandle = m_context->m_gameViewPass;
   pipelineInfo.m_depthStencil.setDepth(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
   pipelineInfo.m_vertexInput.Attrib = Vertex::getAttributeDescriptions();
@@ -126,10 +126,10 @@ void Renderer::init(std::shared_ptr<DeviceContext> context) {
   m_camera = std::make_shared<Camera>();
   m_camera->getAspect() = (float) m_context->m_swapChainWidth / (float) m_context->m_swapChainHeight;
   ShaderCompiler::init();
-  m_buffers.init(4096);
-  m_textures.init(512);
-  m_samplers.init(512);
-  m_materials.init(512);
+  m_buffers.init(40960);
+  m_textures.init(4096);
+  m_samplers.init(4096);
+  m_materials.init(4096);
   // m_objLoader = std::make_shared<objLoader>(this);
   // m_gltfLoader = std::make_shared<gltfLoader>(this);
   m_resourceLoader = std::make_shared<ResourceLoader>(this);
@@ -454,8 +454,8 @@ void Renderer::executeSkyBox() {
   auto& skybox = m_renderObjects.back();
   //render data prepare
   skybox.renderpass = m_context->m_gameViewPass;
-  skybox.vertexBuffer = upLoadBufferToGPU(cubeVertexData, "skyMesh");
-  skybox.indexBuffer = upLoadBufferToGPU(cubeIndexData, "skyMesh");
+  skybox.vertexBuffer = upLoadVertexDataToGPU(cubeVertexData, "skyMesh");
+  skybox.indexBuffer = upLoadVertexDataToGPU(cubeIndexData, "skyMesh");
   skybox.globalUniform = m_context->m_viewProjectUniformBuffer;
   BufferCreateInfo bcinfo{};
   bcinfo.reset().setName("skyBoxMaterialUniformBuffer").setDeviceOnly(false).setUsageSize(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(Material::UniformMaterial));
