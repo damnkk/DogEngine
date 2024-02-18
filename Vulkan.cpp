@@ -21,9 +21,16 @@ int main() {
   ContextCreateInfo contextInfo;
   int               width, height;
   glfwGetWindowSize(window, &width, &height);
-  contextInfo.set_window(width, height, window);
+  contextInfo.setWindow(width, height, window);
   contextInfo.m_applicatonName = "God Engine";
   contextInfo.m_debug = true;
+  VkPhysicalDeviceAccelerationStructureFeaturesKHR accelFeatures{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR};
+  VkPhysicalDeviceRayTracingPipelineFeaturesKHR    rtPipelineFeatures{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR};
+  contextInfo.addInstanceLayer("VK_LAYER_KHRONOS_validation")
+      .addDeviceExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME)
+      .addDeviceExtension(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME)
+      .addDeviceExtension(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, false, &accelFeatures)
+      .addDeviceExtension(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, false, &rtPipelineFeatures);
   std::shared_ptr<DeviceContext> context = std::make_shared<DeviceContext>();
   context->init(contextInfo);
   Renderer renderer;

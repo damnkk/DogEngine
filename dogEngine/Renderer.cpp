@@ -6,7 +6,7 @@
 #include "dgShaderCompiler.h"
 #include "ktx.h"
 #include "ktxvulkan.h"
-#include "unordered_set"
+
 namespace dg {
 
 #define RDOC_CATCH_START renderer->getContext()->m_renderDoc_api->StartFrameCapture(NULL, NULL);

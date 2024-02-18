@@ -1,6 +1,7 @@
 #include "DeviceContext.h"
 #include "CommandBuffer.h"
 #include "GUI.h"
+#include "dgShaderCompiler.h"
 #include "ktx.h"
 #include "ktxvulkan.h"
 #include "stb_image.h"
@@ -38,7 +39,7 @@ glm::mat4 getTranslation(const glm::vec3& translate, const glm::vec3& rotate,
   return transMat * rotateMat * scaleMat;
 }
 
-ContextCreateInfo& ContextCreateInfo::set_window(u32 width, u32 height, void* windowHandle) {
+ContextCreateInfo& ContextCreateInfo::setWindow(u32 width, u32 height, void* windowHandle) {
   if (!windowHandle) {
     DG_ERROR("Invalid window pointer")
     exit(-1);
@@ -46,6 +47,39 @@ ContextCreateInfo& ContextCreateInfo::set_window(u32 width, u32 height, void* wi
   m_window = (GLFWwindow*) windowHandle;
   m_windowWidth = width;
   m_windowHeight = height;
+  return *this;
+}
+
+ContextCreateInfo& ContextCreateInfo::addInstanceLayer(const char* name, bool optional) {
+  m_instancelayers.emplace_back(name, optional);
+  return *this;
+}
+
+ContextCreateInfo& ContextCreateInfo::addInstanceExtension(const char* name, bool optional) {
+  m_instanceExtensions.emplace_back(name, optional);
+  return *this;
+}
+
+ContextCreateInfo& ContextCreateInfo::addDeviceExtension(const char* name, bool optional, void* pFeatureStruct, uint32_t version) {
+  m_deviceExtensions.emplace_back(name, optional);
+  return *this;
+}
+
+ContextCreateInfo& ContextCreateInfo::removeDeviceExtension(const char* name) {
+  for (size_t i = 0; i < m_deviceExtensions.size(); ++i) {
+    if (strcmp(m_deviceExtensions[i].name.c_str(), name) == 0) {
+      m_deviceExtensions.erase(m_deviceExtensions.begin() + i);
+    }
+  }
+  return *this;
+}
+
+ContextCreateInfo& ContextCreateInfo::removeInstanceExtension(const char* name) {
+  for (size_t i = 0; i < m_instanceExtensions.size(); ++i) {
+    if (strcmp(m_instanceExtensions[i].name.c_str(), name) == 0) {
+      m_instanceExtensions.erase(m_instanceExtensions.begin() + i);
+    }
+  }
   return *this;
 }
 
@@ -83,14 +117,6 @@ struct CommandBufferRing {
   std::vector<CommandBuffer> m_commandBuffers;
   std::vector<u32>           m_nextFreePerThreadFrame;
 };
-const std::vector<const char*> validationLayers = {
-    "VK_LAYER_KHRONOS_validation",
-    //"VK_LAYER_LUNARG_core_validation",
-    //"VK_LAYER_LUNARG_image",
-    //"VK_LAYER_LUNARG_parameter_validation",
-    //"VK_LAYER_LUNARG_object_tracker"
-};
-std::vector<const char*> instanceExtensions;
 
 const std::vector<const char*> deviceExtensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME};
@@ -414,7 +440,9 @@ void getRequiredExtensions(std::vector<const char*>& extensions) {
   u32          extCount = 0;
   const char** extensionName;
   extensionName = glfwGetRequiredInstanceExtensions(&extCount);
-  extensions = std::vector<const char*>(extensionName, extensionName + extCount);
+  for (u32 i = 0; i < extCount; ++i) {
+    extensions.push_back(extensionName[i]);
+  }
 #if defined(VULKAN_DEBUG)
   extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 #endif
@@ -1621,6 +1649,9 @@ DescriptorSetHandle DeviceContext::createDescriptorSet(DescriptorSetCreateInfo& 
 ShaderStateHandle DeviceContext::createShaderState(ShaderStateCreation& shaderInfo) {
   ShaderStateHandle handle = {m_shaderStates.obtainResource()};
   if (handle.index == k_invalid_index) return handle;
+  if (shaderInfo.m_stageCount == 0 || &shaderInfo.m_stages[0] == nullptr) {
+    DG_ERROR("Shader {} does not contain shader stages.", shaderInfo.name);
+  }
   ShaderState* state = accessShaderState(handle);
   state->m_isInGraphicsPipelie = true;
   state->m_activeShaders = 0;
@@ -1829,11 +1860,23 @@ PipelineHandle DeviceContext::createPipeline(PipelineCreateInfo& pipelineInfo) {
   return handle;
 }
 
-void DeviceContext::init(const ContextCreateInfo& DeviceInfo) {
+void DeviceContext::init(const ContextCreateInfo& contextInfo) {
   DG_INFO("Vulkan Context is initing");
   VkResult          result;
-  VkApplicationInfo appInfo = {VK_STRUCTURE_TYPE_APPLICATION_INFO, nullptr, DeviceInfo.m_applicatonName, VK_MAKE_VERSION(1, 0, 0), "DogEngine", VK_MAKE_VERSION(1, 0, 0), VK_API_VERSION_1_3};
+  VkApplicationInfo appInfo = {VK_STRUCTURE_TYPE_APPLICATION_INFO, nullptr, contextInfo.m_applicatonName, VK_MAKE_VERSION(1, 0, 0), "DogEngine", VK_MAKE_VERSION(1, 0, 0), VK_API_VERSION_1_3};
+  u32               instanceExtensionCount;
+  vkEnumerateInstanceExtensionProperties(nullptr, &instanceExtensionCount, nullptr);
+  std::vector<VkExtensionProperties> extensions(instanceExtensionCount);
+  vkEnumerateInstanceExtensionProperties(nullptr, &instanceExtensionCount, extensions.data());
+  std::vector<void*>       features;
+  std::vector<const char*> instanceExtensions = fillFilterdNameArray(extensions, contextInfo.m_instanceExtensions, features);
   getRequiredExtensions(instanceExtensions);
+
+  u32 instanceLayerCount;
+  vkEnumerateInstanceLayerProperties(&instanceLayerCount, nullptr);
+  std::vector<VkLayerProperties> instanceLayers(instanceLayerCount);
+  vkEnumerateInstanceLayerProperties(&instanceLayerCount, instanceLayers.data());
+  std::vector<const char*> validationLayers = fillFilteredNameArray(instanceLayers, contextInfo.m_instancelayers);
 
   VkInstanceCreateInfo instanceInfo = { VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
                                         nullptr,
@@ -1862,21 +1905,19 @@ void DeviceContext::init(const ContextCreateInfo& DeviceInfo) {
     assert(ret == 1);
   }
 #endif//VULKAN_DEBUG
-  m_swapChainWidth = DeviceInfo.m_windowWidth;
-  m_swapChainHeight = DeviceInfo.m_windowHeight;
+  m_swapChainWidth = contextInfo.m_windowWidth;
+  m_swapChainHeight = contextInfo.m_windowHeight;
 
   u32 physicalDeviceNums;
   vkEnumeratePhysicalDevices(m_instance, &physicalDeviceNums, nullptr);
   std::vector<VkPhysicalDevice> phyDevices(physicalDeviceNums);
   vkEnumeratePhysicalDevices(m_instance, &physicalDeviceNums, phyDevices.data());
 
-  GLFWwindow* window = (GLFWwindow*) DeviceInfo.m_window;
+  GLFWwindow* window = (GLFWwindow*) contextInfo.m_window;
   result = glfwCreateWindowSurface(m_instance, window, nullptr, &m_surface);
   DGASSERT(result == VK_SUCCESS);
 
   m_window = window;
-  //m_camera = std::make_shared<Camera>();
-  //m_camera->aspect = float((float) DeviceInfo.m_windowWidth / (float) DeviceInfo.m_windowHeight);
   glfwSetWindowUserPointer(m_window, this);
   glfwSetFramebufferSizeCallback(m_window, framebufferResizeCallback);
 
@@ -1894,11 +1935,38 @@ void DeviceContext::init(const ContextCreateInfo& DeviceInfo) {
       break;
     }
   }
+
   if (discrete_gpu != VK_NULL_HANDLE) {
+    std::vector<std::string> missingExtensions;
+    u32                      devicePropCount;
+    vkEnumerateDeviceExtensionProperties(discrete_gpu, nullptr, &devicePropCount, nullptr);
+    std::vector<VkExtensionProperties> props(devicePropCount);
+    vkEnumerateDeviceExtensionProperties(discrete_gpu, nullptr, &devicePropCount, props.data());
+
+    for (const auto& reqDeviceExtension : contextInfo.m_deviceExtensions) {
+      bool found = false;
+      if (reqDeviceExtension.optional) continue;
+      for (auto prop : props) {
+        if (strcmp(prop.extensionName, reqDeviceExtension.name.c_str()) == 0) {
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        missingExtensions.push_back(reqDeviceExtension.name);
+      }
+    }
+
+    if (!missingExtensions.empty()) {
+      DG_ERROR("Critical device feature names :", missingExtensions[0], " is not supported!");
+      exit(-1);
+    }
     m_physicalDevice = discrete_gpu;
+    m_supportRayTracing = true;
     DG_INFO("Discrete GPU is setted as physical device")
   } else if (integrate_gpu != VK_NULL_HANDLE) {
     m_physicalDevice = integrate_gpu;
+    DG_WARN("Discrete GPU is not find in your device, you will get limited performence and less gpu features.")
     DG_INFO("Integrate GPU is setted as physical device")
   } else {
     DG_ERROR("Seems there is not an avaliable GPU Device");
@@ -1928,9 +1996,11 @@ void DeviceContext::init(const ContextCreateInfo& DeviceInfo) {
     queueInfos[2].queueCount = 1;
     queueInfos[2].queueFamilyIndex = m_transferQueueIndex;
   }
-  VkPhysicalDeviceFeatures2 phy2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
-  vkGetPhysicalDeviceFeatures2(m_physicalDevice, &phy2);
+  ray_tracing_pipeline_features = VkPhysicalDeviceRayTracingPipelineFeaturesKHR{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR};
+  acceleration_structure_features = VkPhysicalDeviceAccelerationStructureFeaturesKHR{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR, &ray_tracing_pipeline_features};
+
   VkPhysicalDeviceDescriptorIndexingFeaturesEXT indexingFeatures{};
+  VkPhysicalDeviceFeatures2                     phy2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, &indexingFeatures};
   indexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
   indexingFeatures.pNext = nullptr;
   indexingFeatures.runtimeDescriptorArray = VK_TRUE;
@@ -1939,6 +2009,9 @@ void DeviceContext::init(const ContextCreateInfo& DeviceInfo) {
   indexingFeatures.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
   indexingFeatures.descriptorBindingStorageImageUpdateAfterBind = VK_TRUE;
   indexingFeatures.descriptorBindingPartiallyBound = VK_TRUE;
+  indexingFeatures.pNext = &acceleration_structure_features;
+
+  vkGetPhysicalDeviceFeatures2(m_physicalDevice, &phy2);
 
   VkDeviceCreateInfo deviceInfo = {VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO};
   deviceInfo.queueCreateInfoCount = queueCount;
@@ -1989,6 +2062,39 @@ void DeviceContext::init(const ContextCreateInfo& DeviceInfo) {
   VmaVulkanFunctions vulkanFunctions = {};
   vulkanFunctions.vkGetInstanceProcAddr = &vkGetInstanceProcAddr;
   vulkanFunctions.vkGetDeviceProcAddr = &vkGetDeviceProcAddr;
+
+  if (m_supportRayTracing) {
+    vkCreateRayTracingPipelinesKHR = (PFN_vkCreateRayTracingPipelinesKHR) vkGetDeviceProcAddr(m_logicDevice, "vkCreateRayTracingPipelinesKHR");
+    vkCmdTraceRaysKHR = (PFN_vkCmdTraceRaysKHR) vkGetDeviceProcAddr(m_logicDevice, "vkCmdTraceRaysKHR");
+    vkCmdTraceRaysIndirectKHR = (PFN_vkCmdTraceRaysIndirectKHR) vkGetDeviceProcAddr(m_logicDevice, "vkCmdTraceRaysIndirectKHR");
+
+    vkGetRayTracingShaderGroupHandlesKHR = (PFN_vkGetRayTracingShaderGroupHandlesKHR) vkGetDeviceProcAddr(m_logicDevice, "vkGetRayTracingShaderGroupHandlesKHR");
+    vkGetBufferDeviceAddressKHR = (PFN_vkGetBufferDeviceAddressKHR) vkGetDeviceProcAddr(m_logicDevice, "vkGetBufferDeviceAddressKHR");
+    vkGetAccelerationStructureDeviceAddressKHR = (PFN_vkGetAccelerationStructureDeviceAddressKHR) vkGetDeviceProcAddr(m_logicDevice, "vkGetAccelerationStructureDeviceAddressKHR");
+    vkGetAccelerationStructureBuildSizesKHR = (PFN_vkGetAccelerationStructureBuildSizesKHR) vkGetDeviceProcAddr(m_logicDevice, "vkGetAccelerationStructureBuildSizesKHR");
+
+    vkCreateAccelerationStructureKHR = (PFN_vkCreateAccelerationStructureKHR) vkGetDeviceProcAddr(m_logicDevice, "vkCreateAccelerationStructureKHR");
+    vkDestroyAccelerationStructureKHR = (PFN_vkDestroyAccelerationStructureKHR) vkGetDeviceProcAddr(m_logicDevice, "vkDestroyAccelerationStructureKHR");
+
+    vkCmdBuildAccelerationStructuresKHR = (PFN_vkCmdBuildAccelerationStructuresKHR) vkGetDeviceProcAddr(m_logicDevice, "vkCmdBuildAccelerationStructuresKHR");
+    vkCmdBuildAccelerationStructuresIndirectKHR = (PFN_vkCmdBuildAccelerationStructuresIndirectKHR) vkGetDeviceProcAddr(m_logicDevice, "vkCmdBuildAccelerationStructuresIndirectKHR");
+    vkCmdWriteAccelerationStructuresPropertiesKHR = (PFN_vkCmdWriteAccelerationStructuresPropertiesKHR) vkGetDeviceProcAddr(m_logicDevice, "vkCmdWriteAccelerationStructuresPropertiesKHR");
+    vkCmdCopyAccelerationStructureKHR = (PFN_vkCmdCopyAccelerationStructureKHR) vkGetDeviceProcAddr(m_logicDevice, "vkCmdCopyAccelerationStructureKHR");
+    vkCmdCopyMemoryToAccelerationStructureKHR = (PFN_vkCmdCopyMemoryToAccelerationStructureKHR) vkGetDeviceProcAddr(m_logicDevice, "vkCmdCopyMemoryToAccelerationStructureKHR");
+
+    vkBuildAccelerationStructuresKHR = (PFN_vkBuildAccelerationStructuresKHR) vkGetDeviceProcAddr(m_logicDevice, "vkBuildAccelerationStructuresKHR");
+    vkWriteAccelerationStructuresPropertiesKHR = (PFN_vkWriteAccelerationStructuresPropertiesKHR) vkGetDeviceProcAddr(m_logicDevice, "vkWriteAccelerationStructuresPropertiesKHR");
+    vkCopyAccelerationStructureKHR = (PFN_vkCopyAccelerationStructureKHR) vkGetDeviceProcAddr(m_logicDevice, "vkCopyAccelerationStructureKHR");
+    vkCopyMemoryToAccelerationStructureKHR = (PFN_vkCopyMemoryToAccelerationStructureKHR) vkGetDeviceProcAddr(m_logicDevice, "vkCopyMemoryToAccelerationStructureKHR");
+    ray_tracing_pipeline_properties = VkPhysicalDeviceRayTracingPipelinePropertiesKHR{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
+    VkPhysicalDeviceProperties2 prop2{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
+    prop2.pNext = &ray_tracing_pipeline_properties;
+    vkGetPhysicalDeviceProperties2(m_physicalDevice, &prop2);
+    if (ray_tracing_pipeline_properties.maxRayRecursionDepth <= 1) {
+      DG_ERROR("Device fails to support ray recursion.");
+      exit(-1);
+    }
+  }
 
   VmaAllocatorCreateInfo vmaInfo = {};
   vmaInfo.vulkanApiVersion = VK_API_VERSION_1_3;
@@ -2397,5 +2503,50 @@ void DeviceContext::Destroy() {
   DebugMessanger::GetInstance()->Clear();
   vkDestroyInstance(m_instance, nullptr);
   DG_INFO("Context destroied successfully");
+}
+
+std::vector<const char*> DeviceContext::fillFilterdNameArray(const std::vector<VkExtensionProperties>& properties,
+                                                             const ContextCreateInfo::ExtArray&        requested,
+                                                             std::vector<void*>&                       featureStrucutres) {
+  std::vector<const char*> used;
+  for (const auto& itr : requested) {
+    bool found = false;
+    for (const auto& property : properties) {
+      if (strcmp(itr.name.c_str(), property.extensionName) == 0 && (itr.version == 0 || itr.version == property.specVersion)) {
+        found = true;
+        break;
+      }
+    }
+    if (found) {
+      used.push_back(itr.name.c_str());
+      if (itr.pFeatureStruct) {
+        featureStrucutres.push_back(itr.pFeatureStruct);
+      }
+    } else if (itr.optional == false) {
+      DG_ERROR("A critical Extension with name: ", itr.name, " is not supported!");
+      exit(-1);
+    }
+  }
+  return used;
+}
+std::vector<const char*> DeviceContext::fillFilteredNameArray(const std::vector<VkLayerProperties>& properties,
+                                                              const ContextCreateInfo::ExtArray&    requested) {
+  std::vector<const char*> used;
+  for (auto& itr : requested) {
+    bool found = false;
+    for (const auto& property : properties) {
+      if (strcmp(property.layerName, itr.name.c_str()) == 0) {
+        found = true;
+        break;
+      }
+    }
+    if (found) {
+      used.push_back(itr.name.c_str());
+    } else if (itr.optional == false) {
+      DG_ERROR("Critical instance layer with name: ", itr.name, " is nor supported!");
+      exit(-1);
+    }
+  }
+  return used;
 }
 }// namespace dg

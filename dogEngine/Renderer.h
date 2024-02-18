@@ -14,6 +14,11 @@ struct Renderer;
 struct objLoader;
 struct gltfLoader;
 
+enum RenderMode {
+  eRasterize,
+  eRayTracing
+};
+
 struct ResourceCache {
   void destroy(Renderer* renderer);
 
@@ -82,11 +87,10 @@ struct Renderer {
   RenderResourcePool<SamplerResource> m_samplers;
   std::vector<RenderObject>           m_renderObjects;
   std::shared_ptr<DeviceContext>      m_context;
-  // std::shared_ptr<objLoader>          m_objLoader;
-  // std::shared_ptr<gltfLoader>         m_gltfLoader;
-  std::shared_ptr<ResourceLoader> m_resourceLoader;
-  std::shared_ptr<Camera>         m_camera;
-  Material*                       m_defaultMaterial;
+  RenderMode                          m_renderMode = eRasterize;
+  std::shared_ptr<ResourceLoader>     m_resourceLoader;
+  std::shared_ptr<Camera>             m_camera;
+  Material*                           m_defaultMaterial;
 
  private:
   TextureHandle m_skyTexture;

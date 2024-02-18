@@ -29,40 +29,61 @@ struct UniformData {
   alignas(16) glm::mat4 projectMatrix;
 };
 
+struct Entry {
+  Entry(const char* entryName, bool isOptional = false, void* pointerFeatureStruct = nullptr, uint32_t checkVersion = 0)
+      : name(entryName), optional(isOptional), pFeatureStruct(pointerFeatureStruct), version(checkVersion) {
+  }
+
+  std::string name;
+  bool        optional{false};
+  void*       pFeatureStruct{nullptr};
+  uint32_t    version{0};
+};
+
 struct ContextCreateInfo {
-  GLFWwindow *m_window;
-  u16 m_windowWidth = 1280;
-  u16 m_windowHeight = 720;
-  u16 m_gpu_time_queries_per_frame = 32;
-  bool m_enable_GPU_time_queries = false;
-  bool m_debug = false;
-  const char *m_applicatonName;
-  ContextCreateInfo &set_window(u32 width, u32 height, void *windowHandle);
+  GLFWwindow* m_window;
+  u16         m_windowWidth = 1280;
+  u16         m_windowHeight = 720;
+  u16         m_gpu_time_queries_per_frame = 32;
+  bool        m_enable_GPU_time_queries = false;
+  bool        m_debug = false;
+  const char* m_applicatonName;
+
+  using ExtArray = std::vector<Entry>;
+  ExtArray           m_instanceExtensions;
+  ExtArray           m_deviceExtensions;
+  ExtArray           m_instancelayers;
+  ContextCreateInfo& setWindow(u32 width, u32 height, void* windowHandle);
+  ContextCreateInfo& addInstanceLayer(const char* name, bool optional = false);
+  ContextCreateInfo& addInstanceExtension(const char* name, bool optional = false);
+  ContextCreateInfo& addDeviceExtension(const char* name, bool optional = false, void* pFeatureStruct = nullptr, uint32_t version = 0);
+  ContextCreateInfo& removeInstanceExtension(const char* name);
+  ContextCreateInfo& removeDeviceExtension(const char* name);
 };
 
 struct DeviceContext {
-  void init(const ContextCreateInfo &createinfo);
+  void init(const ContextCreateInfo& createinfo);
   void Destroy();
 
-  TextureHandle createTexture(TextureCreateInfo &tcf);
-  BufferHandle createBuffer(BufferCreateInfo &bcf);
-  PipelineHandle createPipeline(PipelineCreateInfo &pcf);
-  DescriptorSetLayoutHandle createDescriptorSetLayout(DescriptorSetLayoutCreateInfo &dcf);
-  DescriptorSetHandle createDescriptorSet(DescriptorSetCreateInfo &dcf);
-  RenderPassHandle createRenderPass(RenderPassCreateInfo &rcf);
-  ShaderStateHandle createShaderState(ShaderStateCreation &scf);
-  SamplerHandle createSampler(SamplerCreateInfo &scf);
-  FrameBufferHandle createFrameBuffer(FrameBufferCreateInfo &fcf);
+  TextureHandle             createTexture(TextureCreateInfo& tcf);
+  BufferHandle              createBuffer(BufferCreateInfo& bcf);
+  PipelineHandle            createPipeline(PipelineCreateInfo& pcf);
+  DescriptorSetLayoutHandle createDescriptorSetLayout(DescriptorSetLayoutCreateInfo& dcf);
+  DescriptorSetHandle       createDescriptorSet(DescriptorSetCreateInfo& dcf);
+  RenderPassHandle          createRenderPass(RenderPassCreateInfo& rcf);
+  ShaderStateHandle         createShaderState(ShaderStateCreation& scf);
+  SamplerHandle             createSampler(SamplerCreateInfo& scf);
+  FrameBufferHandle         createFrameBuffer(FrameBufferCreateInfo& fcf);
 
-  void DestroyTexture(TextureHandle &texIndex);
-  void DestroyBuffer(BufferHandle &bufferIndex);
-  void DestroyPipeline(PipelineHandle &pipelineIndex);
-  void DestroyDescriptorSetLayout(DescriptorSetLayoutHandle &dslIndex);
-  void DestroyDescriptorSet(DescriptorSetHandle &dsIndex);
-  void DestroyRenderPass(RenderPassHandle &rdIndex);
-  void DestroyShaderState(ShaderStateHandle &texIndex);
-  void DestroySampler(SamplerHandle &sampIndex);
-  void DestroyFrameBuffer(FrameBufferHandle &fboIndex, bool destroyTexture = true);
+  void DestroyTexture(TextureHandle& texIndex);
+  void DestroyBuffer(BufferHandle& bufferIndex);
+  void DestroyPipeline(PipelineHandle& pipelineIndex);
+  void DestroyDescriptorSetLayout(DescriptorSetLayoutHandle& dslIndex);
+  void DestroyDescriptorSet(DescriptorSetHandle& dsIndex);
+  void DestroyRenderPass(RenderPassHandle& rdIndex);
+  void DestroyShaderState(ShaderStateHandle& texIndex);
+  void DestroySampler(SamplerHandle& sampIndex);
+  void DestroyFrameBuffer(FrameBufferHandle& fboIndex, bool destroyTexture = true);
 
   //query description
 
@@ -73,7 +94,7 @@ struct DeviceContext {
 
   void resizeOutputTextures(FrameBufferHandle frameBuffer, u32 width, u32 height);
   void updateDescriptorSet(DescriptorSetHandle set);
-  void addImageBarrier(VkCommandBuffer cmdBuffer, Texture *texture, ResourceState oldState, ResourceState newState, u32 baseMipLevel, u32 mipCount, bool isDepth);
+  void addImageBarrier(VkCommandBuffer cmdBuffer, Texture* texture, ResourceState oldState, ResourceState newState, u32 baseMipLevel, u32 mipCount, bool isDepth);
 
   void resizeGameViewPass(VkExtent2D extent);
 
@@ -86,13 +107,13 @@ struct DeviceContext {
 
   //names and markers
   //中间的这个handle说白了就是你要命名的那个Vulkan对象, Vulkan对象可以直接隐式地转为uint64,
-  void setResourceName(VkObjectType objectType, uint64_t handle, const char *name);
-  void pushMarker(VkCommandBuffer command_buffer, const char *name);
+  void setResourceName(VkObjectType objectType, uint64_t handle, const char* name);
+  void pushMarker(VkCommandBuffer command_buffer, const char* name);
   void popMarker(VkCommandBuffer command_buffer);
 
-  CommandBuffer *getCommandBuffer(QueueType::Enum type, bool begin);
-  CommandBuffer *getInstantCommandBuffer();
-  void queueCommandBuffer(CommandBuffer *cmdbuffer);
+  CommandBuffer* getCommandBuffer(QueueType::Enum type, bool begin);
+  CommandBuffer* getInstantCommandBuffer();
+  void           queueCommandBuffer(CommandBuffer* cmdbuffer);
 
   //instance methods(真真正正的通过Vulkan去完成的东西)
   void destroyBufferInstant(ResourceHandle buffer);
@@ -105,118 +126,150 @@ struct DeviceContext {
   void destroyShaderStateInstant(ResourceHandle shader);
   void destroyFrameBufferInstant(ResourceHandle fbo);
 
-  void updateDescriptorSetInstant(const DescriptorSetUpdate &update);
-  bool getFamilyIndex(VkPhysicalDevice &device);
+  void updateDescriptorSetInstant(const DescriptorSetUpdate& update);
+  bool getFamilyIndex(VkPhysicalDevice& device);
 
-  ResourcePool<Buffer> m_buffers;
-  ResourcePool<Texture> m_textures;
-  ResourcePool<Pipeline> m_pipelines;
-  ResourcePool<Sampler> m_samplers;
+  ResourcePool<Buffer>              m_buffers;
+  ResourcePool<Texture>             m_textures;
+  ResourcePool<Pipeline>            m_pipelines;
+  ResourcePool<Sampler>             m_samplers;
   ResourcePool<DescriptorSetLayout> m_descriptorSetLayouts;
-  ResourcePool<DescriptorSet> m_descriptorSets;
-  ResourcePool<RenderPass> m_renderPasses;
-  ResourcePool<ShaderState> m_shaderStates;
-  ResourcePool<FrameBuffer> m_frameBuffers;
+  ResourcePool<DescriptorSet>       m_descriptorSets;
+  ResourcePool<RenderPass>          m_renderPasses;
+  ResourcePool<ShaderState>         m_shaderStates;
+  ResourcePool<FrameBuffer>         m_frameBuffers;
   //RssourcePool<Shader>                        m_shaders;
-  BufferHandle m_FullScrVertexBuffer;
-  RenderPassHandle m_swapChainPass;
-  TextureHandle m_depthTexture;
-  TextureHandle m_DummyTexture;
-  SamplerHandle m_defaultSampler;
-  DescriptorSetLayoutCreateInfo m_defaultSetLayoutCI;
-  std::vector<CommandBuffer *> m_queuedCommandBuffer;
-  std::vector<ResourceUpdate> m_delectionQueue;
+  BufferHandle                     m_FullScrVertexBuffer;
+  RenderPassHandle                 m_swapChainPass;
+  TextureHandle                    m_depthTexture;
+  TextureHandle                    m_DummyTexture;
+  SamplerHandle                    m_defaultSampler;
+  DescriptorSetLayoutCreateInfo    m_defaultSetLayoutCI;
+  std::vector<CommandBuffer*>      m_queuedCommandBuffer;
+  std::vector<ResourceUpdate>      m_delectionQueue;
   std::vector<DescriptorSetUpdate> m_descriptorSetUpdateQueue;
 
-  VkSemaphore m_render_complete_semaphore[k_max_swapchain_images];
-  VkSemaphore m_image_acquired_semaphore;
-  VkFence m_render_queue_complete_fence[k_max_swapchain_images];
+  VkSemaphore  m_render_complete_semaphore[k_max_swapchain_images];
+  VkSemaphore  m_image_acquired_semaphore;
+  VkFence      m_render_queue_complete_fence[k_max_swapchain_images];
   BufferHandle m_viewProjectUniformBuffer;
 
-  u32 m_swapChainWidth;
-  u32 m_swapChainHeight;
-  u32 m_swapchainImageCount = 3;
-  u32 m_currentSwapchainImageIndex;
-  std::vector<VkImage> m_swapchainImages;
-  std::vector<VkImageView> m_swapchainImageViews;
+  u32                        m_swapChainWidth;
+  u32                        m_swapChainHeight;
+  u32                        m_swapchainImageCount = 3;
+  u32                        m_currentSwapchainImageIndex;
+  std::vector<VkImage>       m_swapchainImages;
+  std::vector<VkImageView>   m_swapchainImageViews;
   std::vector<VkFramebuffer> m_swapchainFbos;
-  bool m_resized = false;
+  bool                       m_resized = false;
 
   //load From "imgui.ini" file
-  u32 m_gameViewWidth;
-  u32 m_gameViewHeight;
-  u32 m_gameViewImageCount = 1;
-  std::vector<TextureHandle> m_gameViewFrameTextures;
-  std::vector<FrameBufferHandle> m_gameViewFrameBuffers;
+  u32                              m_gameViewWidth;
+  u32                              m_gameViewHeight;
+  u32                              m_gameViewImageCount = 1;
+  std::vector<TextureHandle>       m_gameViewFrameTextures;
+  std::vector<FrameBufferHandle>   m_gameViewFrameBuffers;
   std::vector<DescriptorSetHandle> m_gameViewTextureDescs;
-  DescriptorSetLayoutHandle m_gameViewDescLayout;
-  RenderPassHandle m_gameViewPass;
-  TextureHandle m_gameViewDepthTexture;
-  bool gameViewResize = false;
+  DescriptorSetLayoutHandle        m_gameViewDescLayout;
+  RenderPassHandle                 m_gameViewPass;
+  TextureHandle                    m_gameViewDepthTexture;
+  bool                             gameViewResize = false;
 
-  u32 m_graphicQueueIndex = -1;
-  u32 m_computeQueueIndex = -1;
-  u32 m_transferQueueIndex = -1;
-  u32 m_currentFrame;
-  u32 m_previousFrame;
+  //---------------- ray tracing ------------------
+  PFN_vkCreateRayTracingPipelinesKHR                vkCreateRayTracingPipelinesKHR;
+  PFN_vkCmdTraceRaysKHR                             vkCmdTraceRaysKHR;
+  PFN_vkCmdTraceRaysIndirectKHR                     vkCmdTraceRaysIndirectKHR;
+  PFN_vkGetRayTracingShaderGroupHandlesKHR          vkGetRayTracingShaderGroupHandlesKHR;
+  PFN_vkGetBufferDeviceAddressKHR                   vkGetBufferDeviceAddressKHR;
+  PFN_vkCreateAccelerationStructureKHR              vkCreateAccelerationStructureKHR;
+  PFN_vkDestroyAccelerationStructureKHR             vkDestroyAccelerationStructureKHR;
+  PFN_vkGetAccelerationStructureDeviceAddressKHR    vkGetAccelerationStructureDeviceAddressKHR;
+  PFN_vkGetAccelerationStructureBuildSizesKHR       vkGetAccelerationStructureBuildSizesKHR;
+  PFN_vkCmdBuildAccelerationStructuresKHR           vkCmdBuildAccelerationStructuresKHR;
+  PFN_vkCmdBuildAccelerationStructuresIndirectKHR   vkCmdBuildAccelerationStructuresIndirectKHR;
+  PFN_vkCmdWriteAccelerationStructuresPropertiesKHR vkCmdWriteAccelerationStructuresPropertiesKHR;
+  PFN_vkCmdCopyAccelerationStructureKHR             vkCmdCopyAccelerationStructureKHR;
+  PFN_vkCmdCopyMemoryToAccelerationStructureKHR     vkCmdCopyMemoryToAccelerationStructureKHR;
+  PFN_vkBuildAccelerationStructuresKHR              vkBuildAccelerationStructuresKHR;
+  PFN_vkWriteAccelerationStructuresPropertiesKHR    vkWriteAccelerationStructuresPropertiesKHR;
+  PFN_vkCopyAccelerationStructureKHR                vkCopyAccelerationStructureKHR;
+  PFN_vkCopyMemoryToAccelerationStructureKHR        vkCopyMemoryToAccelerationStructureKHR;
+  VkPhysicalDeviceRayTracingPipelineFeaturesKHR     ray_tracing_pipeline_features;
+  VkPhysicalDeviceRayTracingPipelinePropertiesKHR   ray_tracing_pipeline_properties;
+  VkPhysicalDeviceAccelerationStructureFeaturesKHR  acceleration_structure_features;
+  bool                                              m_supportRayTracing = false;
+
+  u32  m_graphicQueueIndex = -1;
+  u32  m_computeQueueIndex = -1;
+  u32  m_transferQueueIndex = -1;
+  u32  m_currentFrame;
+  u32  m_previousFrame;
   bool m_debugUtilsExtentUsed = true;
 
-  VkPhysicalDevice m_physicalDevice;
-  VkDevice m_logicDevice;
-  VkInstance m_instance;
-  VkSurfaceKHR m_surface;
-  VkSurfaceFormatKHR m_surfaceFormat;
-  VkPresentModeKHR m_presentMode;
-  VkSwapchainKHR m_swapchain;
-  VkPhysicalDeviceProperties m_phyDeviceProperty;
-  static GLFWwindow *m_window;
-  VkDescriptorPool m_descriptorPool;
-  VkDescriptorPool m_bindlessDescriptorPool;
-  VkDescriptorSet m_VulkanBindlessDescriptorSet;
-  DescriptorSetLayoutHandle m_bindlessDescriptorSetLayout;
-  DescriptorSetHandle m_bindlessDescriptorSet;
+  VkPhysicalDevice            m_physicalDevice;
+  VkDevice                    m_logicDevice;
+  VkInstance                  m_instance;
+  VkSurfaceKHR                m_surface;
+  VkSurfaceFormatKHR          m_surfaceFormat;
+  VkPresentModeKHR            m_presentMode;
+  VkSwapchainKHR              m_swapchain;
+  VkPhysicalDeviceProperties  m_phyDeviceProperty;
+  static GLFWwindow*          m_window;
+  VkDescriptorPool            m_descriptorPool;
+  VkDescriptorPool            m_bindlessDescriptorPool;
+  VkDescriptorSet             m_VulkanBindlessDescriptorSet;
+  DescriptorSetLayoutHandle   m_bindlessDescriptorSetLayout;
+  DescriptorSetHandle         m_bindlessDescriptorSet;
   std::vector<ResourceUpdate> m_texture_to_update_bindless;
-  VkQueue m_computeQueue;
-  VkQueue m_graphicsQueue;
-  VkQueue m_transferQueue;
+  VkQueue                     m_computeQueue;
+  VkQueue                     m_graphicsQueue;
+  VkQueue                     m_transferQueue;
   //static std::shared_ptr<Camera> m_camera;
 
-  VmaAllocator m_vma;
-  RENDERDOC_API_1_3_0 *m_renderDoc_api = NULL;
+  VmaAllocator         m_vma;
+  RENDERDOC_API_1_3_0* m_renderDoc_api = NULL;
 
-  Sampler *accessSampler(SamplerHandle samplerhandle);
-  const Sampler *accessSampler(SamplerHandle samplerhandle) const;
+  Sampler*       accessSampler(SamplerHandle samplerhandle);
+  const Sampler* accessSampler(SamplerHandle samplerhandle) const;
 
-  Texture *accessTexture(TextureHandle texturehandle);
-  const Texture *accessTexture(TextureHandle texturehandle) const;
+  Texture*       accessTexture(TextureHandle texturehandle);
+  const Texture* accessTexture(TextureHandle texturehandle) const;
 
-  RenderPass *accessRenderPass(RenderPassHandle renderpasshandle);
-  const RenderPass *accessRenderPass(RenderPassHandle renderpasshandle) const;
+  RenderPass*       accessRenderPass(RenderPassHandle renderpasshandle);
+  const RenderPass* accessRenderPass(RenderPassHandle renderpasshandle) const;
 
-  DescriptorSetLayout *accessDescriptorSetLayout(DescriptorSetLayoutHandle layout);
-  const DescriptorSetLayout *accessDescriptorSetLayout(DescriptorSetLayoutHandle layout) const;
+  DescriptorSetLayout*       accessDescriptorSetLayout(DescriptorSetLayoutHandle layout);
+  const DescriptorSetLayout* accessDescriptorSetLayout(DescriptorSetLayoutHandle layout) const;
 
-  DescriptorSet *accessDescriptorSet(DescriptorSetHandle set);
-  const DescriptorSet *accessDescriptorSet(DescriptorSetHandle set) const;
+  DescriptorSet*       accessDescriptorSet(DescriptorSetHandle set);
+  const DescriptorSet* accessDescriptorSet(DescriptorSetHandle set) const;
 
-  Buffer *accessBuffer(BufferHandle bufferhandle);
-  const Buffer *accessBuffer(BufferHandle bufferhandle) const;
+  Buffer*       accessBuffer(BufferHandle bufferhandle);
+  const Buffer* accessBuffer(BufferHandle bufferhandle) const;
 
-  ShaderState *accessShaderState(ShaderStateHandle handle);
-  const ShaderState *accessShaderState(ShaderStateHandle handle) const;
-  Pipeline *accessPipeline(PipelineHandle pipeline);
+  ShaderState*       accessShaderState(ShaderStateHandle handle);
+  const ShaderState* accessShaderState(ShaderStateHandle handle) const;
+  Pipeline*          accessPipeline(PipelineHandle pipeline);
 
-  FrameBuffer *accessFrameBuffer(FrameBufferHandle handle);
-  const FrameBuffer *accessFrameBuffer(FrameBufferHandle handle) const;
+  FrameBuffer*       accessFrameBuffer(FrameBufferHandle handle);
+  const FrameBuffer* accessFrameBuffer(FrameBufferHandle handle) const;
+
+ protected:
+  //properties array is filled by using vkEnumerate* api before invocate the follow
+  std::vector<const char*> fillFilterdNameArray(const std::vector<VkExtensionProperties>& properties,
+                                                const ContextCreateInfo::ExtArray&        requested,
+                                                std::vector<void*>&                       featureStrucutres);
+  std::vector<const char*> fillFilteredNameArray(const std::vector<VkLayerProperties>& properties,
+                                                 const ContextCreateInfo::ExtArray&    requested);
 };
 
-static GLFWwindow *createGLFWWindow(u32 width, u32 height) {
+static GLFWwindow* createGLFWWindow(u32 width, u32 height) {
   DG_INFO("Window Initiation")
   if (!glfwInit()) {
     exit(-1);
   }
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-  GLFWwindow *window = glfwCreateWindow(width, height, "DogEngine", nullptr, nullptr);
+  GLFWwindow* window = glfwCreateWindow(width, height, "DogEngine", nullptr, nullptr);
   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR);
   return window;
 }

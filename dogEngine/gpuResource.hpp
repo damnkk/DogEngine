@@ -19,11 +19,11 @@ static const u32 k_max_mipmap_level = 100000000;
 static const u32 k_max_discriptor_nums_per_set = 32;
 static const u32 k_max_bindless_resource = 1024;
 static const u32 k_bindless_sampled_texture_bind_index = 0;
-static const u8 k_max_image_outputs = 8;
-static const u8 k_max_vertex_streams = 16;
-static const u8 k_max_vertex_attributes = 16;
-static const u8 k_max_shader_stages = 5;
-static const u8 k_max_descriptor_set_layouts = 8;
+static const u8  k_max_image_outputs = 8;
+static const u8  k_max_vertex_streams = 16;
+static const u8  k_max_vertex_attributes = 16;
+static const u8  k_max_shader_stages = 5;
+static const u8  k_max_descriptor_set_layouts = 8;
 
 using ResourceHandle = u32;
 
@@ -94,58 +94,58 @@ typedef enum ResourceState {
 };
 
 struct Texture {
-  VkImage m_image;
+  VkImage               m_image;
   VkDescriptorImageInfo m_imageInfo;
-  VkFormat m_format;
-  VmaAllocation m_vma;
-  TextureHandle m_handle;
-  bool bindless = false;
-  TextureType::Enum m_type;
-  std::string m_name;
-  VkExtent3D m_extent = {1, 1, 1};
-  u16 m_mipLevel;
-  VkImageUsageFlags m_usage;
-  ResourceState m_resourceState = RESOURCE_STATE_UNDEFINED;
-  u8 m_flags = 0;
+  VkFormat              m_format;
+  VmaAllocation         m_vma;
+  TextureHandle         m_handle;
+  bool                  bindless = false;
+  TextureType::Enum     m_type;
+  std::string           m_name;
+  VkExtent3D            m_extent = {1, 1, 1};
+  u16                   m_mipLevel;
+  VkImageUsageFlags     m_usage;
+  ResourceState         m_resourceState = RESOURCE_STATE_UNDEFINED;
+  u8                    m_flags = 0;
 
   void setSampler(std::shared_ptr<DeviceContext> context, SamplerHandle handle);
 };
 
 struct Buffer {
-  VkBuffer m_buffer;
-  VmaAllocation m_allocation = VK_NULL_HANDLE;
-  VkDeviceMemory m_deviceMemory;
-  VkDeviceSize m_bufferSize;
+  VkBuffer           m_buffer;
+  VmaAllocation      m_allocation = VK_NULL_HANDLE;
+  VkDeviceMemory     m_deviceMemory;
+  VkDeviceSize       m_bufferSize;
   VkBufferUsageFlags m_bufferUsage;
-  u32 m_size = 0;
-  u32 m_globalOffset = 0;
-  std::string name;
-  BufferHandle m_handle;
-  BufferHandle m_parentHandle;
-  void *m_mappedMemory;
-  void destroy(VkDevice &devcie, VmaAllocator &allocator);
+  u32                m_size = 0;
+  u32                m_globalOffset = 0;
+  std::string        name;
+  BufferHandle       m_handle;
+  BufferHandle       m_parentHandle;
+  void*              m_mappedMemory;
+  void               destroy(VkDevice& devcie, VmaAllocator& allocator);
 };
 
 struct Sampler {
-  VkSampler m_sampler;
-  VkFilter m_minFilter = VK_FILTER_LINEAR;
-  VkFilter m_maxFilter = VK_FILTER_LINEAR;
-  VkSamplerMipmapMode m_mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+  VkSampler            m_sampler;
+  VkFilter             m_minFilter = VK_FILTER_LINEAR;
+  VkFilter             m_maxFilter = VK_FILTER_LINEAR;
+  VkSamplerMipmapMode  m_mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
   VkSamplerAddressMode m_addressU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
   VkSamplerAddressMode m_addressV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
   VkSamplerAddressMode m_addressW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-  float m_minLod = 0.0f;
-  float m_maxLod = 0.0f;
-  float m_LodBias = 0.0f;
-  std::string name;
+  float                m_minLod = 0.0f;
+  float                m_maxLod = 0.0f;
+  float                m_LodBias = 0.0f;
+  std::string          name;
 };
 
 struct DescriptorBinding {
 
-  VkDescriptorType type;
-  u16 start = 0;
-  u16 count = 0;
-  u16 set = 0;
+  VkDescriptorType      type;
+  u16                   start = 0;
+  u16                   count = 0;
+  u16                   set = 0;
   VkShaderStageFlagBits stageFlags;
 
   std::string name;
@@ -155,222 +155,224 @@ struct DescriptorSetLayout {
   VkDescriptorSetLayout m_descriptorSetLayout;
 
   std::vector<VkDescriptorSetLayoutBinding> m_vkBindings;
-  std::vector<DescriptorBinding> m_bindings;
-  u32 m_numBindings = 0;
-  u32 m_setIndex = 0;
-  bool bindless = false;
-  DescriptorSetLayoutHandle m_handle = {k_invalid_index};
+  std::vector<DescriptorBinding>            m_bindings;
+  u32                                       m_numBindings = 0;
+  u32                                       m_setIndex = 0;
+  bool                                      bindless = false;
+  DescriptorSetLayoutHandle                 m_handle = {k_invalid_index};
 };
 
 struct DescriptorSet {
-  VkDescriptorSet m_vkdescriptorSet;
-  VkDescriptorPool m_parentPool;
+  VkDescriptorSet             m_vkdescriptorSet;
+  VkDescriptorPool            m_parentPool;
   std::vector<ResourceHandle> m_resources;
-  std::vector<SamplerHandle> m_samples;
-  std::vector<u32> m_bindings;
+  std::vector<SamplerHandle>  m_samples;
+  std::vector<u32>            m_bindings;
 
-  const DescriptorSetLayout *m_layout;
-  u32 m_resourceNums;
+  const DescriptorSetLayout* m_layout;
+  u32                        m_resourceNums;
 };
 
 struct RenderPass {
-  VkRenderPass m_renderPass;
+  VkRenderPass                   m_renderPass;
   std::vector<FrameBufferHandle> m_frameBuffers;
 
   std::vector<TextureHandle> m_outputTextures;
-  TextureHandle m_depthTexture;
-  bool operator==(RenderPass &pass);
-  bool operator!=(RenderPass &pass);
+  TextureHandle              m_depthTexture;
+  bool                       operator==(RenderPass& pass);
+  bool                       operator!=(RenderPass& pass);
 
   RenderPassType::Enum m_type;
-  float m_scalex = 1.0f;
-  float m_scaley = 1.0f;
-  u32 m_width;
-  u32 m_height;
-  u32 m_dispatchx = 0;
-  u32 m_dispatchy = 0;
-  u32 m_dispatchz = 0;
+  float                m_scalex = 1.0f;
+  float                m_scaley = 1.0f;
+  u32                  m_width;
+  u32                  m_height;
+  u32                  m_dispatchx = 0;
+  u32                  m_dispatchy = 0;
+  u32                  m_dispatchz = 0;
 
-  u32 m_resize = 0;
-  u32 m_numRenderTarget = 0;
+  u32         m_resize = 0;
+  u32         m_numRenderTarget = 0;
   std::string name;
 };
 
 struct FrameBuffer {
-  VkFramebuffer m_frameBuffer;
+  VkFramebuffer    m_frameBuffer;
   RenderPassHandle m_renderPassHandle;
-  u32 m_width;
-  u32 m_height;
-  float m_scalex = 1.0f;
-  float m_scaley = 1.0f;
-  TextureHandle m_colorAttachments[k_max_image_outputs];
-  u32 m_numRenderTargets = 0;
-  TextureHandle m_depthStencilAttachment = {k_invalid_index};
-  bool m_resize = 0;
-  std::string name;
+  u32              m_width;
+  u32              m_height;
+  float            m_scalex = 1.0f;
+  float            m_scaley = 1.0f;
+  TextureHandle    m_colorAttachments[k_max_image_outputs];
+  u32              m_numRenderTargets = 0;
+  TextureHandle    m_depthStencilAttachment = {k_invalid_index};
+  bool             m_resize = 0;
+  std::string      name;
 };
 
 struct ShaderState {
-  VkPipelineShaderStageCreateInfo m_shaderStateInfo[k_max_shader_stages];
-  std::string m_name;
-  u32 m_activeShaders = 0;
-  bool m_isInGraphicsPipelie = true;
+  VkPipelineShaderStageCreateInfo      m_shaderStateInfo[k_max_shader_stages];
+  VkRayTracingShaderGroupCreateInfoKHR shader_group_info[k_max_shader_stages];
+  std::string                          m_name;
+  u32                                  m_activeShaders = 0;
+  bool                                 m_isInGraphicsPipelie = false;
+  bool                                 m_rayTracingPipeline = false;
 };
 
 struct TextureCreateInfo {
-  void *m_sourceData = nullptr;
-  VkExtent3D m_textureExtent;
-  u32 m_mipmapLevel = 1;
-  VkFormat m_imageFormat;
+  void*             m_sourceData = nullptr;
+  VkExtent3D        m_textureExtent;
+  u32               m_mipmapLevel = 1;
+  VkFormat          m_imageFormat;
   TextureType::Enum m_imageType = TextureType::Enum::Texture2D;
-  std::string name;
-  u8 m_flags = 0;
-  bool bindless = false;
+  std::string       name;
+  u8                m_flags = 0;
+  bool              bindless = false;
 
-  TextureCreateInfo &setName(const char *neme);
-  TextureCreateInfo &setFormat(VkFormat format);
-  TextureCreateInfo &setExtent(VkExtent3D extent);
-  TextureCreateInfo &setData(void *data);
-  TextureCreateInfo &setMipmapLevel(u32 miplevel);
-  TextureCreateInfo &setFlag(u8 flag);
-  TextureCreateInfo &setTextureType(TextureType::Enum type);
-  TextureCreateInfo &setBindLess(bool isBindLess);
+  TextureCreateInfo& setName(const char* neme);
+  TextureCreateInfo& setFormat(VkFormat format);
+  TextureCreateInfo& setExtent(VkExtent3D extent);
+  TextureCreateInfo& setData(void* data);
+  TextureCreateInfo& setMipmapLevel(u32 miplevel);
+  TextureCreateInfo& setFlag(u8 flag);
+  TextureCreateInfo& setTextureType(TextureType::Enum type);
+  TextureCreateInfo& setBindLess(bool isBindLess);
 };
 
 struct BufferCreateInfo {
-  VkDeviceSize m_bufferSize;
+  VkDeviceSize       m_bufferSize;
   VkBufferUsageFlags m_bufferUsage;
-  void *m_sourceData = nullptr;
-  std::string name;
-  bool m_deviceOnly = true;
-  bool m_presistent = false;
+  void*              m_sourceData = nullptr;
+  std::string        name;
+  bool               m_deviceOnly = true;
+  bool               m_presistent = false;
 
-  BufferCreateInfo &reset();
-  BufferCreateInfo &setUsageSize(VkBufferUsageFlags usage, VkDeviceSize size);
-  BufferCreateInfo &setData(void *data);
-  BufferCreateInfo &setName(const char *name);
-  BufferCreateInfo &setDeviceOnly(bool deviceOnly);
+  BufferCreateInfo& reset();
+  BufferCreateInfo& setUsageSize(VkBufferUsageFlags usage, VkDeviceSize size);
+  BufferCreateInfo& setData(void* data);
+  BufferCreateInfo& setName(const char* name);
+  BufferCreateInfo& setDeviceOnly(bool deviceOnly);
 };
 
 struct SamplerCreateInfo {
-  VkFilter m_minFilter = VK_FILTER_LINEAR;
-  VkFilter m_maxFilter = VK_FILTER_LINEAR;
-  VkSamplerMipmapMode m_mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+  VkFilter             m_minFilter = VK_FILTER_LINEAR;
+  VkFilter             m_maxFilter = VK_FILTER_LINEAR;
+  VkSamplerMipmapMode  m_mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
   VkSamplerAddressMode m_addressU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
   VkSamplerAddressMode m_addressV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
   VkSamplerAddressMode m_addressW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-  float m_maxLod = 0.0f;
-  float m_minLod = 0.0f;
-  float m_LodBias = 0.0f;
+  float                m_maxLod = 0.0f;
+  float                m_minLod = 0.0f;
+  float                m_LodBias = 0.0f;
 
   std::string name;
 
-  SamplerCreateInfo &set_min_mag_mip(VkFilter min, VkFilter max, VkSamplerMipmapMode mipMode);
-  SamplerCreateInfo &set_address_u(VkSamplerAddressMode u);
-  SamplerCreateInfo &set_address_uv(VkSamplerAddressMode u, VkSamplerAddressMode v);
-  SamplerCreateInfo &set_address_uvw(VkSamplerAddressMode u, VkSamplerAddressMode v, VkSamplerAddressMode w);
-  SamplerCreateInfo &set_name(const char *name);
-  SamplerCreateInfo &set_LodMinMaxBias(float min, float max, float bias);
+  SamplerCreateInfo& set_min_mag_mip(VkFilter min, VkFilter max, VkSamplerMipmapMode mipMode);
+  SamplerCreateInfo& set_address_u(VkSamplerAddressMode u);
+  SamplerCreateInfo& set_address_uv(VkSamplerAddressMode u, VkSamplerAddressMode v);
+  SamplerCreateInfo& set_address_uvw(VkSamplerAddressMode u, VkSamplerAddressMode v, VkSamplerAddressMode w);
+  SamplerCreateInfo& set_name(const char* name);
+  SamplerCreateInfo& set_LodMinMaxBias(float min, float max, float bias);
 };
 
 struct RasterizationCreation {
   VkCullModeFlags m_cullMode = VK_CULL_MODE_BACK_BIT;
-  VkFrontFace m_front = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-  FillMode::Enum m_fillMode = FillMode::Enum::Solid;
+  VkFrontFace     m_front = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+  FillMode::Enum  m_fillMode = FillMode::Enum::Solid;
 };
 struct StencilOperationState {
   VkStencilOp m_fail = VK_STENCIL_OP_KEEP;
   VkStencilOp m_pass = VK_STENCIL_OP_KEEP;
   VkStencilOp m_depthFail = VK_STENCIL_OP_KEEP;
   VkCompareOp m_compare = VK_COMPARE_OP_ALWAYS;
-  u32 m_compareMask = 0xff;
-  u32 m_writeMask = 0xff;
-  u32 m_reference = 0xff;
+  u32         m_compareMask = 0xff;
+  u32         m_writeMask = 0xff;
+  u32         m_reference = 0xff;
 };
 
 struct DepthStencilCreation {
   StencilOperationState m_front;
   StencilOperationState m_back;
-  VkCompareOp m_depthCompare = VK_COMPARE_OP_ALWAYS;
+  VkCompareOp           m_depthCompare = VK_COMPARE_OP_ALWAYS;
 
   bool m_depthEnable = true;
   bool m_depthWriteEnable = true;
   bool m_stencilEnable = true;
-  u32 m_pad = 5;
+  u32  m_pad = 5;
   DepthStencilCreation() : m_depthEnable(true), m_depthWriteEnable(true), m_stencilEnable(false) {
   }
-  DepthStencilCreation &setDepth(bool enable, bool write, VkCompareOp compareTest);
+  DepthStencilCreation& setDepth(bool enable, bool write, VkCompareOp compareTest);
 };
 
 struct BlendState {
   VkBlendFactor m_sourceColor = VK_BLEND_FACTOR_ONE;
   VkBlendFactor m_destinationColor = VK_BLEND_FACTOR_ONE;
-  VkBlendOp m_colorBlendOp = VK_BLEND_OP_ADD;
+  VkBlendOp     m_colorBlendOp = VK_BLEND_OP_ADD;
 
   VkBlendFactor m_sourceAlpha = VK_BLEND_FACTOR_ONE;
   VkBlendFactor m_destinationAlpha = VK_BLEND_FACTOR_ONE;
-  VkBlendOp m_alphaOperation = VK_BLEND_OP_ADD;
+  VkBlendOp     m_alphaOperation = VK_BLEND_OP_ADD;
 
   ColorWriteEnabled::Mask m_colorWriteMask = ColorWriteEnabled::All_mask;
 
   bool m_blendEnabled = true;
   bool m_separateBlend = true;
-  u32 m_pad = 6;
+  u32  m_pad = 6;
 
   BlendState() : m_blendEnabled(false), m_separateBlend(false) {
   }
-  BlendState &setColor(VkBlendFactor sourceColor, VkBlendFactor destinColor, VkBlendOp blendop);
-  BlendState &setAlpha(VkBlendFactor sourceColor, VkBlendFactor destinColor, VkBlendOp blendop);
-  BlendState &setColorWriteMask(ColorWriteEnabled::Mask value);
+  BlendState& setColor(VkBlendFactor sourceColor, VkBlendFactor destinColor, VkBlendOp blendop);
+  BlendState& setAlpha(VkBlendFactor sourceColor, VkBlendFactor destinColor, VkBlendOp blendop);
+  BlendState& setColorWriteMask(ColorWriteEnabled::Mask value);
 };
 
 struct BlendStateCreation {
-  BlendState m_blendStates[k_max_image_outputs];
-  u32 m_activeStates = 0;
-  BlendStateCreation &reset();
-  BlendState &add_blend_state();
+  BlendState          m_blendStates[k_max_image_outputs];
+  u32                 m_activeStates = 0;
+  BlendStateCreation& reset();
+  BlendState&         add_blend_state();
 };
 
 struct VertexStream {
-  u16 m_binding = 0;
-  u16 m_stride = 0;
+  u16                   m_binding = 0;
+  u16                   m_stride = 0;
   VertexInputRate::Enum m_inputRate = VertexInputRate::Enum::Count;
 };
 
 struct VertexAttribute {
-  u16 m_location = 0;
-  u16 m_binding = 0;
-  u16 m_offset = 0;
+  u16                          m_location = 0;
+  u16                          m_binding = 0;
+  u16                          m_offset = 0;
   VertexComponentFormat ::Enum m_format = VertexComponentFormat::Enum::Count;
 };
 struct VertexInputCreation {
   std::vector<VkVertexInputAttributeDescription> Attrib;
-  VkVertexInputBindingDescription Binding;
+  VkVertexInputBindingDescription                Binding;
 };
 
 struct ShaderStage {
-  void *m_code;
-  u32 m_codeSize;
+  void*                 m_code;
+  u32                   m_codeSize;
   VkShaderStageFlagBits m_type = VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM;
 };
 
 struct ShaderStateCreation {
   ShaderStage m_stages[k_max_shader_stages];
   std::string name;
-  u32 m_stageCount;
-  u32 m_spvInput;
+  u32         m_stageCount = 0;
+  u32         m_spvInput = 0;
 
-  ShaderStateCreation &reset();
-  ShaderStateCreation &setName(const char *name);
-  ShaderStateCreation &addStage(void *code, u32 codeSize, VkShaderStageFlagBits type);
-  ShaderStateCreation &setSpvInput(bool value);
+  ShaderStateCreation& reset();
+  ShaderStateCreation& setName(const char* name);
+  ShaderStateCreation& addStage(void* code, u32 codeSize, VkShaderStageFlagBits type);
+  ShaderStateCreation& setSpvInput(bool value);
 };
 
 struct Rect2DInt {
   int16_t x = 0;
   int16_t y = 0;
-  u16 width = 0;
-  u16 height = 0;
+  u16     width = 0;
+  u16     height = 0;
 };
 
 struct Rect2DFloat {
@@ -382,192 +384,192 @@ struct Rect2DFloat {
 
 struct ViewPort {
   Rect2DFloat rect;
-  float min_depth = 0.0f;
-  float max_depth = 0.0f;
+  float       min_depth = 0.0f;
+  float       max_depth = 0.0f;
 };
 
 struct ViewPortState {
-  u32 m_numViewports = 0;
-  u32 m_numScissors = 0;
-  ViewPort *m_viewport = nullptr;
-  Rect2DInt *m_scissors = nullptr;
+  u32        m_numViewports = 0;
+  u32        m_numScissors = 0;
+  ViewPort*  m_viewport = nullptr;
+  Rect2DInt* m_scissors = nullptr;
 };
 
 struct RenderPassOutput {
   VkFormat m_colorFormats[k_max_image_outputs];
   VkFormat m_depthStencilFormat;
-  u32 m_numColorFormats;
+  u32      m_numColorFormats;
 
   RenderPassOperation::Enum m_colorOperation = RenderPassOperation::Enum::DontCare;
   RenderPassOperation::Enum m_depthOperation = RenderPassOperation::Enum::DontCare;
   RenderPassOperation::Enum m_stencilOperation = RenderPassOperation::Enum::DontCare;
 
-  RenderPassOutput &reset();
-  RenderPassOutput &color(VkFormat format);
-  RenderPassOutput &depth(VkFormat format);
-  RenderPassOutput &setOperations(RenderPassOperation::Enum color,
+  RenderPassOutput& reset();
+  RenderPassOutput& color(VkFormat format);
+  RenderPassOutput& depth(VkFormat format);
+  RenderPassOutput& setOperations(RenderPassOperation::Enum color,
                                   RenderPassOperation::Enum depth,
                                   RenderPassOperation::Enum stencil);
 };
 
 struct DescriptorSetCreateInfo {
   std::vector<ResourceHandle> m_resources;
-  std::vector<SamplerHandle> m_samplers;
-  std::vector<u32> m_bindings;
+  std::vector<SamplerHandle>  m_samplers;
+  std::vector<u32>            m_bindings;
 
   DescriptorSetLayoutHandle m_layout;
-  u32 m_resourceNums = 0;
-  std::string name;
+  u32                       m_resourceNums = 0;
+  std::string               name;
 
-  DescriptorSetCreateInfo &reset();
-  DescriptorSetCreateInfo &setName(const char *name);
-  DescriptorSetCreateInfo &texture(TextureHandle handle, u32 binding);
-  DescriptorSetCreateInfo &buffer(BufferHandle handle, u32 binding);
-  DescriptorSetCreateInfo &textureSampler(TextureHandle tex, SamplerHandle sampler, u32 binding);
-  DescriptorSetCreateInfo &setLayout(DescriptorSetLayoutHandle handle);
+  DescriptorSetCreateInfo& reset();
+  DescriptorSetCreateInfo& setName(const char* name);
+  DescriptorSetCreateInfo& texture(TextureHandle handle, u32 binding);
+  DescriptorSetCreateInfo& buffer(BufferHandle handle, u32 binding);
+  DescriptorSetCreateInfo& textureSampler(TextureHandle tex, SamplerHandle sampler, u32 binding);
+  DescriptorSetCreateInfo& setLayout(DescriptorSetLayoutHandle handle);
 };
 struct DescriptorSetLayoutCreateInfo {
   struct Binding {
-    VkDescriptorType m_type = VK_DESCRIPTOR_TYPE_MAX_ENUM;
-    int m_start = -1;
-    u32 m_count;
-    std::string name;
+    VkDescriptorType      m_type = VK_DESCRIPTOR_TYPE_MAX_ENUM;
+    int                   m_start = -1;
+    u32                   m_count;
+    std::string           name;
     VkShaderStageFlagBits stageFlags = VK_SHADER_STAGE_ALL;
   };
-  Binding m_bindings[k_max_discriptor_nums_per_set];
-  u32 m_bindingNum = 0;
-  u32 m_setIndex = 0;
-  bool bindless = false;
+  Binding     m_bindings[k_max_discriptor_nums_per_set];
+  u32         m_bindingNum = 0;
+  u32         m_setIndex = 0;
+  bool        bindless = false;
   std::string name;
 
-  DescriptorSetLayoutCreateInfo &reset();
-  DescriptorSetLayoutCreateInfo &setName(const char *name);
-  DescriptorSetLayoutCreateInfo &addBinding(const Binding &binding);
-  DescriptorSetLayoutCreateInfo &setBindingAtIndex(const Binding &binding, u32 index);
-  DescriptorSetLayoutCreateInfo &setSetIndex(u32 index);
+  DescriptorSetLayoutCreateInfo& reset();
+  DescriptorSetLayoutCreateInfo& setName(const char* name);
+  DescriptorSetLayoutCreateInfo& addBinding(const Binding& binding);
+  DescriptorSetLayoutCreateInfo& setBindingAtIndex(const Binding& binding, u32 index);
+  DescriptorSetLayoutCreateInfo& setSetIndex(u32 index);
 };
 
 struct PipelineCreateInfo {
 
   RasterizationCreation m_rasterization;
-  DepthStencilCreation m_depthStencil;
-  BlendStateCreation m_BlendState;
-  VertexInputCreation m_vertexInput;
-  ShaderStateCreation m_shaderState;
+  DepthStencilCreation  m_depthStencil;
+  BlendStateCreation    m_BlendState;
+  VertexInputCreation   m_vertexInput;
+  ShaderStateCreation   m_shaderState;
 
-  RenderPassOutput m_renderPassOutput;
-  RenderPassHandle m_renderPassHandle;
-  DescriptorSetLayoutHandle m_descLayout[k_max_descriptor_set_layouts];
+  RenderPassOutput                 m_renderPassOutput;
+  RenderPassHandle                 m_renderPassHandle;
+  DescriptorSetLayoutHandle        m_descLayout[k_max_descriptor_set_layouts];
   std::vector<VkPushConstantRange> m_pushConstants;
-  const ViewPortState *m_viewport = nullptr;
+  const ViewPortState*             m_viewport = nullptr;
 
-  u32 m_numActivateLayouts = 0;
-  std::string name;
-  PipelineCreateInfo &addDescriptorSetlayout(const DescriptorSetLayoutHandle &handle);
-  PipelineCreateInfo &addPushConstants(VkPushConstantRange push);
-  RenderPassOutput &renderPassOutput();
+  u32                 m_numActivateLayouts = 0;
+  std::string         name;
+  PipelineCreateInfo& addDescriptorSetlayout(const DescriptorSetLayoutHandle& handle);
+  PipelineCreateInfo& addPushConstants(VkPushConstantRange push);
+  RenderPassOutput&   renderPassOutput();
 };
 
 struct RenderPassCreateInfo {
-  u32 m_rtNums;
+  u32                  m_rtNums;
   RenderPassType::Enum m_renderPassType = RenderPassType::Geometry;
 
   std::vector<TextureHandle> m_outputTextures;
-  TextureHandle m_depthTexture = {k_invalid_index};
-  VkImageLayout m_finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-  float m_scalex = 1.0f;
-  float m_scaley = 1.0f;
-  u32 resize = 1;
+  TextureHandle              m_depthTexture = {k_invalid_index};
+  VkImageLayout              m_finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+  float                      m_scalex = 1.0f;
+  float                      m_scaley = 1.0f;
+  u32                        resize = 1;
 
   RenderPassOperation::Enum m_color = RenderPassOperation::Enum::DontCare;
   RenderPassOperation::Enum m_depth = RenderPassOperation::Enum::DontCare;
   RenderPassOperation::Enum m_stencil = RenderPassOperation::Enum::DontCare;
 
-  std::string name;
-  RenderPassCreateInfo &setName(const char *name);
-  RenderPassCreateInfo &setFinalLayout(VkImageLayout finalLayout);
-  RenderPassCreateInfo &addRenderTexture(TextureHandle handle);
-  RenderPassCreateInfo &setScale(float x, float y, u32 resize);
-  RenderPassCreateInfo &setDepthStencilTexture(TextureHandle handle);
-  RenderPassCreateInfo &setType(RenderPassType::Enum type);
-  RenderPassCreateInfo &setOperations(RenderPassOperation::Enum color, RenderPassOperation::Enum depth, RenderPassOperation::Enum stencil);
+  std::string           name;
+  RenderPassCreateInfo& setName(const char* name);
+  RenderPassCreateInfo& setFinalLayout(VkImageLayout finalLayout);
+  RenderPassCreateInfo& addRenderTexture(TextureHandle handle);
+  RenderPassCreateInfo& setScale(float x, float y, u32 resize);
+  RenderPassCreateInfo& setDepthStencilTexture(TextureHandle handle);
+  RenderPassCreateInfo& setType(RenderPassType::Enum type);
+  RenderPassCreateInfo& setOperations(RenderPassOperation::Enum color, RenderPassOperation::Enum depth, RenderPassOperation::Enum stencil);
 };
 
 struct FrameBufferCreateInfo {
   RenderPassHandle m_renderPassHandle = {k_invalid_index};
-  u32 m_numRenderTargets = 0;
-  TextureHandle m_outputTextures[k_max_image_outputs];
-  TextureHandle m_depthStencilTexture;
+  u32              m_numRenderTargets = 0;
+  TextureHandle    m_outputTextures[k_max_image_outputs];
+  TextureHandle    m_depthStencilTexture;
 
-  u32 m_width;
-  u32 m_height;
-  float m_scaleX = 1.0f;
-  float m_scaleY = 1.0f;
-  u8 resize = 1;
+  u32         m_width;
+  u32         m_height;
+  float       m_scaleX = 1.0f;
+  float       m_scaleY = 1.0f;
+  u8          resize = 1;
   std::string name;
 
-  FrameBufferCreateInfo &reset();
-  FrameBufferCreateInfo &addRenderTarget(TextureHandle texture);
-  FrameBufferCreateInfo &setDepthStencilTexture(TextureHandle depthTexture);
-  FrameBufferCreateInfo &setName(const char *name);
-  FrameBufferCreateInfo &setScaling(float scalex, float scaley, u8 resize);
-  FrameBufferCreateInfo &setRenderPass(RenderPassHandle rp);
-  FrameBufferCreateInfo &setExtent(VkExtent2D extent);
+  FrameBufferCreateInfo& reset();
+  FrameBufferCreateInfo& addRenderTarget(TextureHandle texture);
+  FrameBufferCreateInfo& setDepthStencilTexture(TextureHandle depthTexture);
+  FrameBufferCreateInfo& setName(const char* name);
+  FrameBufferCreateInfo& setScaling(float scalex, float scaley, u8 resize);
+  FrameBufferCreateInfo& setRenderPass(RenderPassHandle rp);
+  FrameBufferCreateInfo& setExtent(VkExtent2D extent);
 };
 
 struct Pipeline {
-  VkPipeline m_pipeline;
-  VkPipelineLayout m_pipelineLayout;
-  VkPipelineBindPoint m_bindPoint;
-  ShaderStateHandle m_shaderState;
-  DescriptorSetLayout *m_DescriptorSetLayout[k_max_descriptor_set_layouts];
+  VkPipeline                m_pipeline;
+  VkPipelineLayout          m_pipelineLayout;
+  VkPipelineBindPoint       m_bindPoint;
+  ShaderStateHandle         m_shaderState;
+  DescriptorSetLayout*      m_DescriptorSetLayout[k_max_descriptor_set_layouts];
   DescriptorSetLayoutHandle m_DescriptorSetLayoutHandle[k_max_descriptor_set_layouts];
-  u32 m_activeLayouts = 0;
+  u32                       m_activeLayouts = 0;
 
   RasterizationCreation m_rasterizationCrt;
-  DepthStencilCreation m_depthStencilCrt;
-  BlendStateCreation m_blendStateCrt;
-  VertexInputCreation m_vertexInputCrt;
-  ShaderStateCreation m_shaderStateCrt;
-  PipelineHandle m_pipelineHandle;
-  bool m_isGraphicsPipeline;
+  DepthStencilCreation  m_depthStencilCrt;
+  BlendStateCreation    m_blendStateCrt;
+  VertexInputCreation   m_vertexInputCrt;
+  ShaderStateCreation   m_shaderStateCrt;
+  PipelineHandle        m_pipelineHandle;
+  bool                  m_isGraphicsPipeline;
 };
 
 struct ExecutionBarrier {
-  static const u32 maxBarrierNum = 8;
+  static const u32    maxBarrierNum = 8;
   PipelineStage::Enum srcStage;
   PipelineStage::Enum dstStage;
-  VkImageLayout newLayout;
-  u32 oldQueueIndex = VK_QUEUE_FAMILY_IGNORED;
-  u32 newQueueIndex = VK_QUEUE_FAMILY_IGNORED;
-  VkAccessFlagBits srcImageAccessFlag = VK_ACCESS_FLAG_BITS_MAX_ENUM;
-  VkAccessFlagBits dstImageAccessFlag = VK_ACCESS_FLAG_BITS_MAX_ENUM;
-  VkAccessFlagBits srcBufferAccessFlag = VK_ACCESS_FLAG_BITS_MAX_ENUM;
-  VkAccessFlagBits dstBufferAccessFlag = VK_ACCESS_FLAG_BITS_MAX_ENUM;
+  VkImageLayout       newLayout;
+  u32                 oldQueueIndex = VK_QUEUE_FAMILY_IGNORED;
+  u32                 newQueueIndex = VK_QUEUE_FAMILY_IGNORED;
+  VkAccessFlagBits    srcImageAccessFlag = VK_ACCESS_FLAG_BITS_MAX_ENUM;
+  VkAccessFlagBits    dstImageAccessFlag = VK_ACCESS_FLAG_BITS_MAX_ENUM;
+  VkAccessFlagBits    srcBufferAccessFlag = VK_ACCESS_FLAG_BITS_MAX_ENUM;
+  VkAccessFlagBits    dstBufferAccessFlag = VK_ACCESS_FLAG_BITS_MAX_ENUM;
 
   u32 numImageBarriers;
   u32 numBufferBarriers;
   u32 newBarrierExperimental = UINT32_MAX;
 
   ImageBarrier imageBarriers[maxBarrierNum];
-  MemBarrier memoryBarriers[maxBarrierNum];
+  MemBarrier   memoryBarriers[maxBarrierNum];
 
-  ExecutionBarrier &reset();
-  ExecutionBarrier &set(PipelineStage::Enum srcStage, PipelineStage::Enum dstStage);
-  ExecutionBarrier &addImageBarrier(const ImageBarrier &imageBarrier);
-  ExecutionBarrier &addmemoryBarrier(const MemBarrier &bufferBarrier);
+  ExecutionBarrier& reset();
+  ExecutionBarrier& set(PipelineStage::Enum srcStage, PipelineStage::Enum dstStage);
+  ExecutionBarrier& addImageBarrier(const ImageBarrier& imageBarrier);
+  ExecutionBarrier& addmemoryBarrier(const MemBarrier& bufferBarrier);
 };
 
 struct ResourceUpdate {
   ResourceUpdateType::Enum type;
-  ResourceHandle handle;
-  u32 currentFrame;
-  bool deleting = true;
+  ResourceHandle           handle;
+  u32                      currentFrame;
+  bool                     deleting = true;
 };
 
 struct DescriptorSetUpdate {
   DescriptorSetHandle handle;
-  u32 currFrame = 0;
+  u32                 currFrame = 0;
 };
 
 struct ConstentData {
