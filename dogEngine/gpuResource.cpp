@@ -331,11 +331,76 @@ ShaderStateCreation& ShaderStateCreation::addStage(void* code, u32 codeSize, VkS
     DG_ERROR("Max number of shader stages is ", std::to_string(k_max_shader_stages), " can't add more shader stage!")
     exit(-1);
   }
-  m_stages[m_stageCount].m_code = code;
-  m_stages[m_stageCount].m_codeSize = codeSize;
-  m_stages[m_stageCount].m_type = type;
-  ++m_stageCount;
+  m_stages.push_back({});
+
+  m_stages.back().m_code = code;
+  m_stages.back().m_codeSize = codeSize;
+  m_stages.back().m_type = type;
   setSpvInput(true);
+  if ((type & (VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR | VK_SHADER_STAGE_CALLABLE_BIT_KHR))) {
+    switch (type) {
+      case VK_SHADER_STAGE_RAYGEN_BIT_KHR: {
+        m_stages[m_stageCount].m_rayTracingShaderType = ShaderStage::eRayGen;
+        break;
+      }
+      case VK_SHADER_STAGE_MISS_BIT_KHR: {
+        m_stages[m_stageCount].m_rayTracingShaderType = ShaderStage::eRayMiss;
+        break;
+      }
+      case VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR: {
+        m_stages[m_stageCount].m_rayTracingShaderType = ShaderStage::eRayCHit;
+        break;
+      }
+      case VK_SHADER_STAGE_ANY_HIT_BIT_KHR: {
+        m_stages[m_stageCount].m_rayTracingShaderType = ShaderStage::eRayAHit;
+        break;
+      }
+      case VK_SHADER_STAGE_CALLABLE_BIT_KHR: {
+        m_stages[m_stageCount].m_rayTracingShaderType = ShaderStage::eRayCallable;
+        break;
+      }
+    }
+  }
+  ++m_stageCount;
+  return *this;
+}
+
+ShaderStateCreation& ShaderStateCreation::addStage(std::string path, VkShaderStageFlagBits type) {
+  if (m_stageCount >= k_max_shader_stages) {
+    DG_ERROR("Max number of shader stages is ", std::to_string(k_max_shader_stages), " can't add more shader stage!")
+    exit(-1);
+  }
+  // m_stages[m_stageCount].m_shaderPath = path;
+  // m_stages[m_stageCount].m_type = type;
+  m_stages.push_back({});
+
+  m_stages.back().m_shaderPath = path;
+  m_stages.back().m_type = type;
+  if ((type & (VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR | VK_SHADER_STAGE_CALLABLE_BIT_KHR))) {
+    switch (type) {
+      case VK_SHADER_STAGE_RAYGEN_BIT_KHR: {
+        m_stages[m_stageCount].m_rayTracingShaderType = ShaderStage::eRayGen;
+        break;
+      }
+      case VK_SHADER_STAGE_MISS_BIT_KHR: {
+        m_stages[m_stageCount].m_rayTracingShaderType = ShaderStage::eRayMiss;
+        break;
+      }
+      case VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR: {
+        m_stages[m_stageCount].m_rayTracingShaderType = ShaderStage::eRayCHit;
+        break;
+      }
+      case VK_SHADER_STAGE_ANY_HIT_BIT_KHR: {
+        m_stages[m_stageCount].m_rayTracingShaderType = ShaderStage::eRayAHit;
+        break;
+      }
+      case VK_SHADER_STAGE_CALLABLE_BIT_KHR: {
+        m_stages[m_stageCount].m_rayTracingShaderType = ShaderStage::eRayCallable;
+        break;
+      }
+    }
+  }
+  ++m_stageCount;
   return *this;
 }
 

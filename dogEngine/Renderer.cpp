@@ -109,10 +109,8 @@ void Renderer::makeDefaultMaterial() {
   pipelineInfo.m_vertexInput.Attrib = Vertex::getAttributeDescriptions();
   pipelineInfo.m_vertexInput.Binding = Vertex::getBindingDescription();
   pipelineInfo.m_shaderState.reset();
-  auto vsShader = ShaderCompiler::compileShader("./shaders/vspbr.vert");
-  auto fsShader = ShaderCompiler::compileShader("./shaders/fspbr.frag");
-  pipelineInfo.m_shaderState.addStage(vsShader.spvData.data(), vsShader.spvData.size() * sizeof(unsigned int), VK_SHADER_STAGE_VERTEX_BIT);
-  pipelineInfo.m_shaderState.addStage(fsShader.spvData.data(), fsShader.spvData.size() * sizeof(unsigned int), VK_SHADER_STAGE_FRAGMENT_BIT);
+  pipelineInfo.m_shaderState.addStage("./shaders/vspbr.vert", VK_SHADER_STAGE_VERTEX_BIT);
+  pipelineInfo.m_shaderState.addStage("./shaders/fspbr.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
   pipelineInfo.m_shaderState.setName("defaultPipeline");
   pipelineInfo.name = pipelineInfo.m_shaderState.name;
   pipelineInfo.addDescriptorSetlayout(descLayout);
@@ -323,20 +321,20 @@ void Renderer::executeScene() {
 
 void Renderer::drawScene() {
   CommandBuffer* cmd = m_context->getCommandBuffer(QueueType::Enum::Graphics, true);
+  Rect2DInt      scissor;
+  scissor = {0, 0, (u16) m_context->m_gameViewWidth, (u16) m_context->m_gameViewHeight};
+  cmd->setScissor(&scissor);
+  ViewPort viewPort;
+  viewPort.max_depth = 1.0f;
+  viewPort.min_depth = 0.0f;
+  viewPort.rect.width = scissor.width;
+  viewPort.rect.height = scissor.height;
+
+  cmd->setViewport(&viewPort);
   for (int i = 0; i < m_renderObjects.size(); ++i) {
     auto& currRenderObject = m_renderObjects[i];
     cmd->bindPass(currRenderObject.renderpass);
     cmd->bindPipeline(currRenderObject.materialPtr->program->passes[0].pipeline);
-    Rect2DInt scissor;
-    scissor = {0, 0, (u16) m_context->m_gameViewWidth, (u16) m_context->m_gameViewHeight};
-    cmd->setScissor(&scissor);
-    ViewPort viewPort;
-    viewPort.max_depth = 1.0f;
-    viewPort.min_depth = 0.0f;
-    viewPort.rect.width = scissor.width;
-    viewPort.rect.height = scissor.height;
-
-    cmd->setViewport(&viewPort);
     cmd->bindVertexBuffer(currRenderObject.vertexBuffer, 0, 0);
     cmd->bindIndexBuffer(currRenderObject.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
     vkCmdSetDepthTestEnable(cmd->m_commandBuffer, currRenderObject.materialPtr->depthTest);
@@ -473,10 +471,8 @@ void Renderer::executeSkyBox() {
   RasterizationCreation resCI{};
   resCI.m_cullMode = VK_CULL_MODE_FRONT_BIT;
   pipelineInfo.m_rasterization = resCI;
-  auto vsShader = ShaderCompiler::compileShader("./shaders/vsskybox.vert");
-  auto fsShader = ShaderCompiler::compileShader("./shaders/fsskybox.frag");
-  pipelineInfo.m_shaderState.addStage(vsShader.spvData.data(), vsShader.spvData.size() * sizeof(unsigned int), VK_SHADER_STAGE_VERTEX_BIT);
-  pipelineInfo.m_shaderState.addStage(fsShader.spvData.data(), fsShader.spvData.size() * sizeof(unsigned int), VK_SHADER_STAGE_FRAGMENT_BIT);
+  pipelineInfo.m_shaderState.addStage("./shaders/vsskybox.vert", VK_SHADER_STAGE_VERTEX_BIT);
+  pipelineInfo.m_shaderState.addStage("./shaders/fsskybox.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
   pipelineInfo.m_shaderState.setName("skyPipeline");
   pipelineInfo.addDescriptorSetlayout(m_context->createDescriptorSetLayout(skyLayoutInfo));
   pipelineInfo.addDescriptorSetlayout(m_context->m_bindlessDescriptorSetLayout);

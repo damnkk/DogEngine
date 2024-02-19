@@ -194,16 +194,16 @@ struct DeviceContext {
   PFN_vkWriteAccelerationStructuresPropertiesKHR    vkWriteAccelerationStructuresPropertiesKHR;
   PFN_vkCopyAccelerationStructureKHR                vkCopyAccelerationStructureKHR;
   PFN_vkCopyMemoryToAccelerationStructureKHR        vkCopyMemoryToAccelerationStructureKHR;
-  VkPhysicalDeviceRayTracingPipelineFeaturesKHR     ray_tracing_pipeline_features;
-  VkPhysicalDeviceRayTracingPipelinePropertiesKHR   ray_tracing_pipeline_properties;
-  VkPhysicalDeviceAccelerationStructureFeaturesKHR  acceleration_structure_features;
+  VkPhysicalDeviceRayTracingPipelineFeaturesKHR     m_rayTracingPipelineFeatures;
+  VkPhysicalDeviceRayTracingPipelinePropertiesKHR   m_rayTracingPipelineProperties;
+  VkPhysicalDeviceAccelerationStructureFeaturesKHR  m_accelerationStructureFeatures;
   bool                                              m_supportRayTracing = false;
 
   u32  m_graphicQueueIndex = -1;
   u32  m_computeQueueIndex = -1;
   u32  m_transferQueueIndex = -1;
   u32  m_currentFrame;
-  u32  m_previousFrame;
+  u32  m_FrameCount;
   bool m_debugUtilsExtentUsed = true;
 
   VkPhysicalDevice            m_physicalDevice;

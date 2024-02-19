@@ -2,6 +2,7 @@
 #include "CommandBuffer.h"
 #include "GUI.h"
 #include "dgShaderCompiler.h"
+#include "dgUtil.hpp"
 #include "ktx.h"
 #include "ktxvulkan.h"
 #include "stb_image.h"
@@ -410,7 +411,7 @@ void DeviceContext::destroyShaderStateInstant(ResourceHandle handle) {
   ShaderState* stateInstance = accessShaderState({handle});
   if (stateInstance) {
     for (int i = 0; i < stateInstance->m_activeShaders; ++i) {
-      vkDestroyShaderModule(m_logicDevice, stateInstance->m_shaderStateInfo[i].module, nullptr);
+      vkDestroyShaderModule(m_logicDevice, stateInstance->m_shaderStageInfo[i].module, nullptr);
     }
   }
   m_shaderStates.releaseResource(handle);
@@ -1653,33 +1654,84 @@ ShaderStateHandle DeviceContext::createShaderState(ShaderStateCreation& shaderIn
     DG_ERROR("Shader {} does not contain shader stages.", shaderInfo.name);
   }
   ShaderState* state = accessShaderState(handle);
-  state->m_isInGraphicsPipelie = true;
+  state->m_pipelineType = ShaderState::eGraphics;
   state->m_activeShaders = 0;
 
   bool is_Fail = false;
+  sort(shaderInfo.m_stages.begin(), shaderInfo.m_stages.end(), [](ShaderStage& a, ShaderStage& b) { return a.m_rayTracingShaderType < b.m_rayTracingShaderType; });
+
+  std::vector<u32> rayTracingShaderCounter(ShaderStage::eCount);
   for (int i = 0; i < shaderInfo.m_stageCount; ++i) {
     const ShaderStage& stage = shaderInfo.m_stages[i];
-    if (stage.m_type == VK_SHADER_STAGE_COMPUTE_BIT) {
-      state->m_isInGraphicsPipelie = false;
+    if (stage.m_rayTracingShaderType != ShaderStage::eCount) {
+      rayTracingShaderCounter[stage.m_rayTracingShaderType]++;
     }
-    VkShaderModuleCreateInfo moduleInfo{VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO};
+    if (stage.m_type == VK_SHADER_STAGE_COMPUTE_BIT) {
+      state->m_pipelineType = ShaderState::eCompute;
+    }
+    VkShaderModuleCreateInfo  moduleInfo{VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO};
+    ShaderCompiler::SpvObject spvObject;
     if (shaderInfo.m_spvInput) {
       moduleInfo.codeSize = stage.m_codeSize;
       moduleInfo.pCode = (uint32_t*) stage.m_code;
     } else {
-      DG_ERROR("Compile the shader from source code is not supported currently");
-      exit(-1);
+      spvObject = ShaderCompiler::compileShader(shaderInfo.m_stages[i].m_shaderPath);
+      moduleInfo.codeSize = spvObject.binarySize;
+      moduleInfo.pCode = (uint32_t*) spvObject.spvData.data();
     }
-    VkPipelineShaderStageCreateInfo& shaderStageInfo = state->m_shaderStateInfo[i];
+    VkPipelineShaderStageCreateInfo& shaderStageInfo = state->m_shaderStageInfo[i];
     shaderStageInfo = {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
     shaderStageInfo.stage = stage.m_type;
     shaderStageInfo.pName = "main";
-    if (vkCreateShaderModule(m_logicDevice, &moduleInfo, nullptr, &state->m_shaderStateInfo[i].module) != VK_SUCCESS) {
+    if (vkCreateShaderModule(m_logicDevice, &moduleInfo, nullptr, &state->m_shaderStageInfo[i].module) != VK_SUCCESS) {
       is_Fail = true;
       break;
     }
-    setResourceName(VK_OBJECT_TYPE_SHADER_MODULE, (uint64_t) state->m_shaderStateInfo[i].module, shaderInfo.name.c_str());
+    setResourceName(VK_OBJECT_TYPE_SHADER_MODULE, (uint64_t) state->m_shaderStageInfo[i].module, shaderInfo.name.c_str());
+
+    VkRayTracingShaderGroupCreateInfoKHR group{VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR};
+    group.anyHitShader = VK_SHADER_UNUSED_KHR;
+    group.closestHitShader = VK_SHADER_UNUSED_KHR;
+    group.generalShader = VK_SHADER_UNUSED_KHR;
+    group.intersectionShader = VK_SHADER_UNUSED_KHR;
+    switch (stage.m_type) {
+      case VK_SHADER_STAGE_RAYGEN_BIT_KHR: {
+        group.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR;
+        group.generalShader = i;
+        state->m_shaderGroupInfo.push_back(group);
+        state->m_pipelineType = ShaderState::eRayTracing;
+        break;
+      }
+      case VK_SHADER_STAGE_ANY_HIT_BIT_KHR: {
+        group.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR;
+        group.anyHitShader = i;
+        state->m_shaderGroupInfo.push_back(group);
+        state->m_pipelineType = ShaderState::eRayTracing;
+        break;
+      }
+      case VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR: {
+        group.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR;
+        group.closestHitShader = i;
+        state->m_shaderGroupInfo.push_back(group);
+        state->m_pipelineType = ShaderState::eRayTracing;
+        break;
+      }
+      case VK_SHADER_STAGE_MISS_BIT_KHR: {
+        group.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR;
+        group.generalShader = i;
+        state->m_shaderGroupInfo.push_back(group);
+        state->m_pipelineType = ShaderState::eRayTracing;
+        break;
+      }
+    }
   }
+
+  state->m_rayAnyHitShaderNum = rayTracingShaderCounter[ShaderStage::eRayAHit];
+  state->m_rayGenShaderNum = rayTracingShaderCounter[ShaderStage::eRayGen];
+  state->m_rayMissShaderNum = rayTracingShaderCounter[ShaderStage::eRayMiss];
+  state->m_rayClosestHitShaderNum = rayTracingShaderCounter[ShaderStage::eRayCHit];
+  state->m_rayCallableShaderNum = rayTracingShaderCounter[ShaderStage::eRayCallable];
+
   if (is_Fail) {
     DestroyShaderState(handle);
     handle.index = k_invalid_index;
@@ -1697,15 +1749,15 @@ ShaderStateHandle DeviceContext::createShaderState(ShaderStateCreation& shaderIn
 PipelineHandle DeviceContext::createPipeline(PipelineCreateInfo& pipelineInfo) {
   PipelineHandle handle = {m_pipelines.obtainResource()};
   if (handle.index == k_invalid_index) return handle;
-  ShaderStateHandle shaderState = createShaderState(pipelineInfo.m_shaderState);
-  if (shaderState.index == k_invalid_index) {
+  ShaderStateHandle shaderStateHandle = createShaderState(pipelineInfo.m_shaderState);
+  if (shaderStateHandle.index == k_invalid_index) {
     m_pipelines.releaseResource(handle.index);
     handle.index = k_invalid_index;
     return handle;
   }
   Pipeline*    pipeline = accessPipeline(handle);
-  ShaderState* state = accessShaderState(shaderState);
-  pipeline->m_shaderState = shaderState;
+  ShaderState* shaderState = accessShaderState(shaderStateHandle);
+  pipeline->m_shaderState = shaderStateHandle;
   VkDescriptorSetLayout dSetLayouts[k_max_descriptor_set_layouts];
   for (int i = 0; i < pipelineInfo.m_numActivateLayouts; ++i) {
     pipeline->m_DescriptorSetLayout[i] = accessDescriptorSetLayout(pipelineInfo.m_descLayout[i]);
@@ -1724,10 +1776,10 @@ PipelineHandle DeviceContext::createPipeline(PipelineCreateInfo& pipelineInfo) {
   pipeline->m_pipelineLayout = pipelineLayout;
   pipeline->m_activeLayouts = pipelineInfo.m_numActivateLayouts;
 
-  if (state->m_isInGraphicsPipelie) {
+  if (shaderState->m_pipelineType == ShaderState::PipelineType::eGraphics) {
     VkGraphicsPipelineCreateInfo pipelineCreateInfo{VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO};
-    pipelineCreateInfo.stageCount = state->m_activeShaders;
-    pipelineCreateInfo.pStages = state->m_shaderStateInfo;
+    pipelineCreateInfo.stageCount = shaderState->m_activeShaders;
+    pipelineCreateInfo.pStages = shaderState->m_shaderStageInfo;
     pipelineCreateInfo.layout = pipelineLayout;
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
     vertexInputInfo.vertexAttributeDescriptionCount = pipelineInfo.m_vertexInput.Attrib.size();
@@ -1838,7 +1890,7 @@ PipelineHandle DeviceContext::createPipeline(PipelineCreateInfo& pipelineInfo) {
     pipelineCreateInfo.pDynamicState = &dynamicInfo;
 
     DGASSERT(vkCreateGraphicsPipelines(m_logicDevice, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &pipeline->m_pipeline) == VK_SUCCESS);
-    pipeline->m_isGraphicsPipeline = true;
+    pipeline->m_pipelineType = shaderState->m_pipelineType;
     pipeline->m_pipelineHandle = handle;
     pipeline->m_bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     pipeline->m_blendStateCrt = pipelineInfo.m_BlendState;
@@ -1847,12 +1899,100 @@ PipelineHandle DeviceContext::createPipeline(PipelineCreateInfo& pipelineInfo) {
     pipeline->m_shaderStateCrt = pipelineInfo.m_shaderState;
     pipeline->m_blendStateCrt = pipelineInfo.m_BlendState;
     pipeline->m_vertexInputCrt = pipelineInfo.m_vertexInput;
+  } else if (shaderState->m_pipelineType == ShaderState::eRayTracing) {
+    pipeline->m_pipelineType = shaderState->m_pipelineType;
+    VkRayTracingPipelineCreateInfoKHR rtPipelineInfo{VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR};
+    rtPipelineInfo.stageCount = shaderState->m_activeShaders;
+    rtPipelineInfo.pStages = shaderState->m_shaderStageInfo;
+    rtPipelineInfo.groupCount = shaderState->m_shaderGroupInfo.size();
+    rtPipelineInfo.pGroups = shaderState->m_shaderGroupInfo.data();
+    rtPipelineInfo.maxPipelineRayRecursionDepth = pipelineInfo.m_rayBoundNum;
+    rtPipelineInfo.pLibraryInfo = nullptr;
+    rtPipelineInfo.pLibraryInterface = nullptr;
+    rtPipelineInfo.pDynamicState = nullptr;
+    rtPipelineInfo.layout = pipelineLayout;
+    VkResult res = vkCreateRayTracingPipelinesKHR(m_logicDevice, {}, {}, 1, &rtPipelineInfo, nullptr, &pipeline->m_pipeline);
+    DGASSERT(res == VK_SUCCESS);
+    pipeline->m_bindPoint = VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR;
+
+    //code follow is refered from https://github.com/damnkk/vk_raytracing_tutorial_KHR/blob/master/ray_tracing__simple/main.cpp
+    //add the full shader groupcount
+    auto groupHandleCount = shaderState->m_rayAnyHitShaderNum + shaderState->m_rayCallableShaderNum + shaderState->m_rayClosestHitShaderNum + shaderState->m_rayGenShaderNum + shaderState->m_rayMissShaderNum;
+    //perHandleSize is used to calculate the handle data size without align, in this func ,it's "dataSize" arg.
+    uint32_t perHandleSize = m_rayTracingPipelineProperties.shaderGroupHandleSize;
+    uint32_t perHandleSizeAligned = align_up(perHandleSize, m_rayTracingPipelineProperties.shaderGroupHandleAlignment);
+    //calcu every binding table's stride and size, the "ray Gen" one is special,only have one for most situation,so it's stride = size, and aligned with Group Base Alignment
+    pipeline->m_rayGenTable.stride = align_up(perHandleSizeAligned, m_rayTracingPipelineProperties.shaderGroupBaseAlignment);
+    pipeline->m_rayGenTable.size = pipeline->m_rayGenTable.stride;
+
+    pipeline->m_rayMissTable.stride = perHandleSizeAligned;
+    pipeline->m_rayMissTable.size = align_up(shaderState->m_rayMissShaderNum * perHandleSizeAligned, m_rayTracingPipelineProperties.shaderGroupBaseAlignment);
+
+    pipeline->m_rayHitTable.stride = perHandleSizeAligned;
+    pipeline->m_rayHitTable.size = align_up((shaderState->m_rayAnyHitShaderNum + shaderState->m_rayClosestHitShaderNum) * perHandleSizeAligned, m_rayTracingPipelineProperties.shaderGroupBaseAlignment);
+
+    pipeline->m_rayCallableTable.stride = perHandleSizeAligned;
+    pipeline->m_rayCallableTable.size = align_up(shaderState->m_rayCallableShaderNum * perHandleSizeAligned, m_rayTracingPipelineProperties.shaderGroupBaseAlignment);
+
+    uint32_t             dataSize = groupHandleCount * perHandleSize;
+    std::vector<uint8_t> handles(dataSize);
+    //get the binding table data from raytracing pipeline, the order of these handles is similar to the the order in shader group array input when create raytracing pipeline
+    VkResult result = vkGetRayTracingShaderGroupHandlesKHR(m_logicDevice, pipeline->m_pipeline, 0, shaderState->m_shaderGroupInfo.size(), dataSize, shaderState->m_shaderGroupInfo.data());
+    DGASSERT(result == VK_SUCCESS);
+
+    //shader binding table GPU buffer with aligned size
+    VkDeviceSize     SBTSize = pipeline->m_rayGenTable.size + pipeline->m_rayMissTable.size + pipeline->m_rayHitTable.size + pipeline->m_rayCallableTable.size;
+    BufferCreateInfo sbtBufferInfo;
+    sbtBufferInfo.reset().setDeviceOnly(false).setUsageSize(VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR, SBTSize);
+    pipeline->m_shaderBindingTableBuffer = createBuffer(sbtBufferInfo);
+    Buffer* sbtBuffer = accessBuffer(pipeline->m_shaderBindingTableBuffer);
+    setResourceName(VK_OBJECT_TYPE_BUFFER, (uint64_t) (sbtBuffer->m_buffer), "ShaderBindingTableBuffer");
+    VkBufferDeviceAddressInfo info{VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, nullptr, sbtBuffer->m_buffer};
+    //get sbtbuffer's GPU device
+    VkDeviceAddress sbtAddress = vkGetBufferDeviceAddress(m_logicDevice, &info);
+    pipeline->m_rayGenTable.deviceAddress = sbtAddress;
+    pipeline->m_rayMissTable.deviceAddress = sbtAddress + pipeline->m_rayGenTable.size;
+    pipeline->m_rayHitTable.deviceAddress = sbtAddress + pipeline->m_rayGenTable.size + pipeline->m_rayMissTable.size;
+    pipeline->m_rayCallableTable.deviceAddress = sbtAddress + pipeline->m_rayGenTable.size + pipeline->m_rayMissTable.size + pipeline->m_rayHitTable.size;
+    //get data from handles
+    auto  getHandle = [&](int i) { return handles.data() + i * perHandleSize; };
+    void* mapPointer;
+    vmaMapMemory(m_vma, sbtBuffer->m_allocation, &mapPointer);
+
+    //pSBTBuffer represent the GPU buffer that table data will copy to
+    auto* pSBTBuffer = reinterpret_cast<uint8_t*>(mapPointer);
+    //pData is offset pointer
+    uint8_t* pData = pSBTBuffer;
+    uint32_t handleIdx = 0;
+    //save raygen graup table
+    memcpy(pData, getHandle(handleIdx++), perHandleSize);
+    //jump to head of the miss group array
+    pData = pSBTBuffer + pipeline->m_rayGenTable.size;
+    //save raymiss group table
+    for (uint32_t c = 0; c < shaderState->m_rayMissShaderNum; ++c) {
+      memcpy(pData, getHandle(handleIdx++), perHandleSize);
+      pData += pipeline->m_rayMissTable.stride;
+    }
+    //jump to head of the hit group array
+    pData = pSBTBuffer + pipeline->m_rayGenTable.size + pipeline->m_rayMissTable.size;
+    //save rayhit group table
+    for (uint32_t c = 0; c < (shaderState->m_rayAnyHitShaderNum + shaderState->m_rayClosestHitShaderNum); ++c) {
+      memcpy(pData, getHandle(handleIdx++), perHandleSize);
+      pData += pipeline->m_rayHitTable.stride;
+    }
+    //jump to head of the callable group array
+    pData = pSBTBuffer + pipeline->m_rayGenTable.size + pipeline->m_rayMissTable.size + pipeline->m_rayHitTable.size;
+    for (uint32_t c = 0; c < shaderState->m_rayCallableShaderNum; ++c) {
+      memcpy(pData, getHandle(handleIdx++), perHandleSize);
+      pData += pipeline->m_rayCallableTable.stride;
+    }
+    vmaUnmapMemory(m_vma, sbtBuffer->m_allocation);
   } else {
     VkComputePipelineCreateInfo computeInfo{VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO};
-    computeInfo.stage = state->m_shaderStateInfo[0];
+    computeInfo.stage = shaderState->m_shaderStageInfo[0];
     computeInfo.layout = pipelineLayout;
     DGASSERT(vkCreateComputePipelines(m_logicDevice, VK_NULL_HANDLE, 1, &computeInfo, nullptr, &pipeline->m_pipeline) == VK_SUCCESS);
-    pipeline->m_isGraphicsPipeline = false;
+    pipeline->m_pipelineType = shaderState->m_pipelineType;
     pipeline->m_pipelineHandle = handle;
     pipeline->m_bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
   }
@@ -1996,8 +2136,8 @@ void DeviceContext::init(const ContextCreateInfo& contextInfo) {
     queueInfos[2].queueCount = 1;
     queueInfos[2].queueFamilyIndex = m_transferQueueIndex;
   }
-  ray_tracing_pipeline_features = VkPhysicalDeviceRayTracingPipelineFeaturesKHR{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR};
-  acceleration_structure_features = VkPhysicalDeviceAccelerationStructureFeaturesKHR{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR, &ray_tracing_pipeline_features};
+  m_rayTracingPipelineFeatures = VkPhysicalDeviceRayTracingPipelineFeaturesKHR{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR};
+  m_accelerationStructureFeatures = VkPhysicalDeviceAccelerationStructureFeaturesKHR{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR, &m_rayTracingPipelineFeatures};
 
   VkPhysicalDeviceDescriptorIndexingFeaturesEXT indexingFeatures{};
   VkPhysicalDeviceFeatures2                     phy2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, &indexingFeatures};
@@ -2009,7 +2149,7 @@ void DeviceContext::init(const ContextCreateInfo& contextInfo) {
   indexingFeatures.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
   indexingFeatures.descriptorBindingStorageImageUpdateAfterBind = VK_TRUE;
   indexingFeatures.descriptorBindingPartiallyBound = VK_TRUE;
-  indexingFeatures.pNext = &acceleration_structure_features;
+  indexingFeatures.pNext = &m_accelerationStructureFeatures;
 
   vkGetPhysicalDeviceFeatures2(m_physicalDevice, &phy2);
 
@@ -2055,7 +2195,7 @@ void DeviceContext::init(const ContextCreateInfo& contextInfo) {
     DG_ERROR("Can not find property surface format");
     exit(-1);
   }
-  setPresentMode(VK_PRESENT_MODE_FIFO_RELAXED_KHR);
+  setPresentMode(VK_PRESENT_MODE_IMMEDIATE_KHR);
 
   createSwapChain();
   DG_INFO("Swaphcain created successfully");
@@ -2086,11 +2226,11 @@ void DeviceContext::init(const ContextCreateInfo& contextInfo) {
     vkWriteAccelerationStructuresPropertiesKHR = (PFN_vkWriteAccelerationStructuresPropertiesKHR) vkGetDeviceProcAddr(m_logicDevice, "vkWriteAccelerationStructuresPropertiesKHR");
     vkCopyAccelerationStructureKHR = (PFN_vkCopyAccelerationStructureKHR) vkGetDeviceProcAddr(m_logicDevice, "vkCopyAccelerationStructureKHR");
     vkCopyMemoryToAccelerationStructureKHR = (PFN_vkCopyMemoryToAccelerationStructureKHR) vkGetDeviceProcAddr(m_logicDevice, "vkCopyMemoryToAccelerationStructureKHR");
-    ray_tracing_pipeline_properties = VkPhysicalDeviceRayTracingPipelinePropertiesKHR{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
+    m_rayTracingPipelineProperties = VkPhysicalDeviceRayTracingPipelinePropertiesKHR{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
     VkPhysicalDeviceProperties2 prop2{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
-    prop2.pNext = &ray_tracing_pipeline_properties;
+    prop2.pNext = &m_rayTracingPipelineProperties;
     vkGetPhysicalDeviceProperties2(m_physicalDevice, &prop2);
-    if (ray_tracing_pipeline_properties.maxRayRecursionDepth <= 1) {
+    if (m_rayTracingPipelineProperties.maxRayRecursionDepth <= 1) {
       DG_ERROR("Device fails to support ray recursion.");
       exit(-1);
     }
@@ -2178,7 +2318,7 @@ void DeviceContext::init(const ContextCreateInfo& contextInfo) {
   DG_INFO("commandBufferManager inited successfully");
   m_currentSwapchainImageIndex = 0;
   m_currentFrame = 0;
-  m_previousFrame = 0;
+  m_FrameCount = 0;
 
   //m_delectionQueue.resize(128);
   m_descriptorSetUpdateQueue.resize(32);
@@ -2217,7 +2357,7 @@ void DeviceContext::init(const ContextCreateInfo& contextInfo) {
     m_gameViewDescLayout = createDescriptorSetLayout(gameViewLayoutInfo);
 
     TextureCreateInfo gameViewFrameTextureInfo{};
-    gameViewFrameTextureInfo.setName("gameViewFrameTextureInfo").setExtent({m_gameViewWidth, m_gameViewHeight, 1}).setFormat(VK_FORMAT_R8G8B8A8_UNORM).setFlag(TextureFlags::Mask::Default_mask | TextureFlags::Mask::RenderTarget_mask).setMipmapLevel(1).setTextureType(TextureType::Texture2D);
+    gameViewFrameTextureInfo.setName("gameViewFrameTextureInfo").setExtent({m_gameViewWidth, m_gameViewHeight, 1}).setFormat(VK_FORMAT_R8G8B8A8_UNORM).setFlag(TextureFlags::Mask::Default_mask | TextureFlags::Mask::RenderTarget_mask | TextureFlags::Mask::Compute_mask).setMipmapLevel(1).setTextureType(TextureType::Texture2D);
     //create image\imageView\fbo
     for (int i = 0; i < m_gameViewImageCount; ++i) {
       m_gameViewFrameTextures[i] = createTexture(gameViewFrameTextureInfo);

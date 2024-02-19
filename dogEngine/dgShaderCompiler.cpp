@@ -221,7 +221,7 @@ ShaderCompiler::SpvObject ShaderCompiler::compileShader(std::string path) {
     }
     glslang_program_delete(program);
     glslang_shader_delete(shader);
-    res.binarySize = res.spvData.size();
+    res.binarySize = res.spvData.size() * sizeof(unsigned int);
     DG_INFO("Shader ' {} ' compiled successfully", path);
     return res;
   }

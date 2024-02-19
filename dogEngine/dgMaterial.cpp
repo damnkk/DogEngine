@@ -61,10 +61,8 @@ void generateLUTTexture(Renderer* renderer, TextureHandle LUTTexture) {
   pipelineInfo.m_depthStencil.setDepth(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
   pipelineInfo.m_rasterization.m_cullMode = VK_CULL_MODE_NONE;
   pipelineInfo.m_shaderState.reset();
-  auto vsShader = ShaderCompiler::compileShader("./shaders/lut.vert");
-  auto fsShader = ShaderCompiler::compileShader("./shaders/lut.frag");
-  pipelineInfo.m_shaderState.addStage(vsShader.spvData.data(), vsShader.spvData.size() * sizeof(unsigned int), VK_SHADER_STAGE_VERTEX_BIT);
-  pipelineInfo.m_shaderState.addStage(fsShader.spvData.data(), fsShader.spvData.size() * sizeof(unsigned int), VK_SHADER_STAGE_FRAGMENT_BIT);
+  pipelineInfo.m_shaderState.addStage("./shaders/lut.vert", VK_SHADER_STAGE_VERTEX_BIT);
+  pipelineInfo.m_shaderState.addStage("./shaders/lut.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
   pipelineInfo.m_shaderState.setName("lutPipeline");
   pipelineInfo.addDescriptorSetlayout(renderer->getContext()->m_bindlessDescriptorSetLayout);
   PipelineHandle           lutPipeline = renderer->getContext()->createPipeline(pipelineInfo);
@@ -138,10 +136,8 @@ void generateDiffuseEnvTexture(Renderer* renderer, TextureHandle handle, Texture
   pipelineInfo.m_depthStencil.setDepth(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
   pipelineInfo.m_rasterization.m_cullMode = VK_CULL_MODE_NONE;
   pipelineInfo.m_shaderState.reset();
-  auto vsShader = ShaderCompiler::compileShader("./shaders/lut.vert");
-  auto fsShader = ShaderCompiler::compileShader("./shaders/irra.frag");
-  pipelineInfo.m_shaderState.addStage(vsShader.spvData.data(), vsShader.spvData.size() * sizeof(unsigned int), VK_SHADER_STAGE_VERTEX_BIT);
-  pipelineInfo.m_shaderState.addStage(fsShader.spvData.data(), fsShader.spvData.size() * sizeof(unsigned int), VK_SHADER_STAGE_FRAGMENT_BIT);
+  pipelineInfo.m_shaderState.addStage("./shaders/lut.vert", VK_SHADER_STAGE_VERTEX_BIT);
+  pipelineInfo.m_shaderState.addStage("./shaders/irra.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
   pipelineInfo.m_shaderState.setName("irraPipeline");
   pipelineInfo.addDescriptorSetlayout(descLayoutHandle);
   pipelineInfo.addDescriptorSetlayout(renderer->getContext()->m_bindlessDescriptorSetLayout);
@@ -225,10 +221,8 @@ void generateSpecularEnvTexture(Renderer* renderer, TextureHandle handle, Textur
   pipelineInfo.m_depthStencil.setDepth(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
   pipelineInfo.m_rasterization.m_cullMode = VK_CULL_MODE_NONE;
   pipelineInfo.m_shaderState.reset();
-  auto vsShader = ShaderCompiler::compileShader("./shaders/lut.vert");
-  auto fsShader = ShaderCompiler::compileShader("./shaders/prefilter.frag");
-  pipelineInfo.m_shaderState.addStage(vsShader.spvData.data(), vsShader.spvData.size() * sizeof(unsigned int), VK_SHADER_STAGE_VERTEX_BIT);
-  pipelineInfo.m_shaderState.addStage(fsShader.spvData.data(), fsShader.spvData.size() * sizeof(unsigned int), VK_SHADER_STAGE_FRAGMENT_BIT);
+  pipelineInfo.m_shaderState.addStage("./shaders/lut.vert", VK_SHADER_STAGE_VERTEX_BIT);
+  pipelineInfo.m_shaderState.addStage("./shaders/prefilter.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
   pipelineInfo.m_shaderState.setName("irraPipeline");
   pipelineInfo.addDescriptorSetlayout(renderer->getContext()->m_bindlessDescriptorSetLayout);
   pipelineInfo.addPushConstants(push);

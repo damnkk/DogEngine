@@ -211,12 +211,20 @@ struct FrameBuffer {
 };
 
 struct ShaderState {
-  VkPipelineShaderStageCreateInfo      m_shaderStateInfo[k_max_shader_stages];
-  VkRayTracingShaderGroupCreateInfoKHR shader_group_info[k_max_shader_stages];
-  std::string                          m_name;
-  u32                                  m_activeShaders = 0;
-  bool                                 m_isInGraphicsPipelie = false;
-  bool                                 m_rayTracingPipeline = false;
+  enum PipelineType {
+    eGraphics,
+    eCompute,
+    eRayTracing
+  } m_pipelineType;
+  VkPipelineShaderStageCreateInfo                   m_shaderStageInfo[k_max_shader_stages];
+  std::vector<VkRayTracingShaderGroupCreateInfoKHR> m_shaderGroupInfo;
+  std::string                                       m_name;
+  u32                                               m_activeShaders = 0;
+  u32                                               m_rayGenShaderNum = 0;
+  u32                                               m_rayMissShaderNum = 0;
+  u32                                               m_rayClosestHitShaderNum = 0;
+  u32                                               m_rayAnyHitShaderNum = 0;
+  u32                                               m_rayCallableShaderNum = 0;
 };
 
 struct TextureCreateInfo {
@@ -351,20 +359,30 @@ struct VertexInputCreation {
 };
 
 struct ShaderStage {
+  enum rayTracingShaderType {
+    eRayGen,
+    eRayMiss,
+    eRayCHit,
+    eRayAHit,
+    eRayCallable,
+    eCount
+  } m_rayTracingShaderType = eCount;
   void*                 m_code;
   u32                   m_codeSize;
+  std::string           m_shaderPath;
   VkShaderStageFlagBits m_type = VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM;
 };
 
 struct ShaderStateCreation {
-  ShaderStage m_stages[k_max_shader_stages];
-  std::string name;
-  u32         m_stageCount = 0;
-  u32         m_spvInput = 0;
+  std::vector<ShaderStage> m_stages;
+  std::string              name;
+  u32                      m_stageCount = 0;
+  u32                      m_spvInput = 0;
 
   ShaderStateCreation& reset();
   ShaderStateCreation& setName(const char* name);
   ShaderStateCreation& addStage(void* code, u32 codeSize, VkShaderStageFlagBits type);
+  ShaderStateCreation& addStage(std::string path, VkShaderStageFlagBits type);
   ShaderStateCreation& setSpvInput(bool value);
 };
 
@@ -456,6 +474,7 @@ struct PipelineCreateInfo {
   BlendStateCreation    m_BlendState;
   VertexInputCreation   m_vertexInput;
   ShaderStateCreation   m_shaderState;
+  u32                   m_rayBoundNum = 1;
 
   RenderPassOutput                 m_renderPassOutput;
   RenderPassHandle                 m_renderPassHandle;
@@ -467,7 +486,11 @@ struct PipelineCreateInfo {
   std::string         name;
   PipelineCreateInfo& addDescriptorSetlayout(const DescriptorSetLayoutHandle& handle);
   PipelineCreateInfo& addPushConstants(VkPushConstantRange push);
-  RenderPassOutput&   renderPassOutput();
+  PipelineCreateInfo& setRayBoundNum(u32 num) {
+    m_rayBoundNum = num;
+    return *this;
+  }
+  RenderPassOutput& renderPassOutput();
 };
 
 struct RenderPassCreateInfo {
@@ -526,13 +549,20 @@ struct Pipeline {
   DescriptorSetLayoutHandle m_DescriptorSetLayoutHandle[k_max_descriptor_set_layouts];
   u32                       m_activeLayouts = 0;
 
-  RasterizationCreation m_rasterizationCrt;
-  DepthStencilCreation  m_depthStencilCrt;
-  BlendStateCreation    m_blendStateCrt;
-  VertexInputCreation   m_vertexInputCrt;
-  ShaderStateCreation   m_shaderStateCrt;
-  PipelineHandle        m_pipelineHandle;
-  bool                  m_isGraphicsPipeline;
+  RasterizationCreation     m_rasterizationCrt;
+  DepthStencilCreation      m_depthStencilCrt;
+  BlendStateCreation        m_blendStateCrt;
+  VertexInputCreation       m_vertexInputCrt;
+  ShaderStateCreation       m_shaderStateCrt;
+  PipelineHandle            m_pipelineHandle;
+  ShaderState::PipelineType m_pipelineType;
+
+  //---------ray tracing----------------
+  VkStridedDeviceAddressRegionKHR m_rayGenTable{};
+  VkStridedDeviceAddressRegionKHR m_rayMissTable{};
+  VkStridedDeviceAddressRegionKHR m_rayHitTable{};
+  VkStridedDeviceAddressRegionKHR m_rayCallableTable{};
+  BufferHandle                    m_shaderBindingTableBuffer;
 };
 
 struct ExecutionBarrier {

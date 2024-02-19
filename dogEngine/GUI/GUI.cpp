@@ -142,6 +142,7 @@ void GUI::OnGUI() {
     auto currComponent = m_compontents[i];
     currComponent->OnGUI();
   }
+  std::cout << ImGui::GetIO().Framerate << '\r';
   //你可以理解这个函数可以初始化ImDrawData
   ImGui::Render();
 }

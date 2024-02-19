@@ -2,7 +2,7 @@
 #include "CommandBuffer.h"
 
 namespace dg {
-void CommandBuffer::init(DeviceContext *context) {
+void CommandBuffer::init(DeviceContext* context) {
   m_context = context;
   reset();
 }
@@ -44,8 +44,8 @@ void CommandBuffer::flush(VkQueue queue) {
   submit.commandBufferCount = 1;
   submit.pCommandBuffers = &this->m_commandBuffer;
   VkFenceCreateInfo fencCI{VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
-  VkFence fence;
-  VkResult res;
+  VkFence           fence;
+  VkResult          res;
   res = vkCreateFence(this->m_context->m_logicDevice, &fencCI, nullptr, &fence);
   DGASSERT(res == VK_SUCCESS);
   res = vkQueueSubmit(queue, 1, &submit, fence);
@@ -57,7 +57,7 @@ void CommandBuffer::flush(VkQueue queue) {
 
 void CommandBuffer::bindPass(RenderPassHandle pass) {
   m_isRecording = true;
-  RenderPass *renderpas = m_context->accessRenderPass(pass);
+  RenderPass* renderpas = m_context->accessRenderPass(pass);
   if (m_currRenderPass && (m_currRenderPass->m_type != RenderPassType::Enum::Compute) && renderpas != m_currRenderPass) {
     vkCmdEndRenderPass(m_commandBuffer);
   }
@@ -77,48 +77,52 @@ void CommandBuffer::bindPass(RenderPassHandle pass) {
 
 void CommandBuffer::bindPipeline(PipelineHandle pip) {
   m_isRecording = true;
-  Pipeline *pipline = m_context->accessPipeline(pip);
-  if (!pipline) { DG_ERROR("You are trying to bind an invalid pipeline") }
-  vkCmdBindPipeline(m_commandBuffer, pipline->m_bindPoint, pipline->m_pipeline);
-  m_pipeline = pipline;
+  Pipeline* pipeline = m_context->accessPipeline(pip);
+  if (!pipeline) {
+    DG_ERROR("You are trying to bind an invalid pipeline")
+  } else if (m_pipeline == pipeline) {
+    return;
+  }
+  vkCmdBindPipeline(m_commandBuffer, pipeline->m_bindPoint, pipeline->m_pipeline);
+  m_pipeline = pipeline;
 }
 
 void CommandBuffer::bindVertexBuffer(BufferHandle vb, u32 binding, u32 offset) {
-  Buffer *vbuffer = m_context->accessBuffer(vb);
+  Buffer* vbuffer = m_context->accessBuffer(vb);
   if (!vbuffer) { DG_ERROR("You are trying to bind an invalid vertex buffer") }
-  VkBuffer realBuffer = vbuffer->m_buffer;
+  VkBuffer     realBuffer = vbuffer->m_buffer;
   VkDeviceSize offse = offset;
   if (vbuffer->m_parentHandle.index != k_invalid_index) {
-    Buffer *parentBuffer = m_context->accessBuffer(vbuffer->m_parentHandle);
+    Buffer* parentBuffer = m_context->accessBuffer(vbuffer->m_parentHandle);
     realBuffer = parentBuffer->m_buffer;
     offse = vbuffer->m_globalOffset;
   }
-  vkCmdBindVertexBuffers(m_commandBuffer, binding, 1, &realBuffer, (VkDeviceSize *) &offse);
+  vkCmdBindVertexBuffers(m_commandBuffer, binding, 1, &realBuffer, (VkDeviceSize*) &offse);
 }
 
 void CommandBuffer::bindIndexBuffer(BufferHandle ib, u32 offset, VkIndexType iType) {
-  Buffer *ibuffer = m_context->accessBuffer(ib);
+  Buffer* ibuffer = m_context->accessBuffer(ib);
   if (!ibuffer) { DG_ERROR("You are trying to bind an invalid index Buffer") }
-  VkBuffer realBuffer = ibuffer->m_buffer;
+  VkBuffer     realBuffer = ibuffer->m_buffer;
   VkDeviceSize offse{};
   if (ibuffer->m_parentHandle.index != k_invalid_index) {
-    Buffer *parentBuffer = m_context->accessBuffer(ibuffer->m_parentHandle);
+    Buffer* parentBuffer = m_context->accessBuffer(ibuffer->m_parentHandle);
     realBuffer = parentBuffer->m_buffer;
     offse = ibuffer->m_globalOffset;
   }
   vkCmdBindIndexBuffer(m_commandBuffer, realBuffer, offse, iType);
 }
 
-void CommandBuffer::bindDescriptorSet(std::vector<DescriptorSetHandle> set, u32 firstSet, u32 *offsets, u32 numOffsets) {
+void CommandBuffer::bindDescriptorSet(std::vector<DescriptorSetHandle> set, u32 firstSet, u32* offsets, u32 numOffsets) {
   for (int i = 0; i < set.size(); ++i) {
-    DescriptorSet *dset = m_context->accessDescriptorSet(set[i]);
+    DescriptorSet* dset = m_context->accessDescriptorSet(set[i]);
     if (!dset) { DG_ERROR("You are trying to bind an invalid descriptor set") }
     m_descriptorSets[i] = dset->m_vkdescriptorSet;
   }
   vkCmdBindDescriptorSets(m_commandBuffer, m_pipeline->m_bindPoint, m_pipeline->m_pipelineLayout, firstSet, set.size(), m_descriptorSets, 0, nullptr);
 }
 
-void CommandBuffer::setScissor(const Rect2DInt *rect) {
+void CommandBuffer::setScissor(const Rect2DInt* rect) {
   VkRect2D ret;
   if (rect) {
     ret.offset.x = rect->x;
@@ -136,7 +140,7 @@ void CommandBuffer::setDepthStencilState(VkBool32 enable) {
   vkCmdSetDepthTestEnable(m_commandBuffer, enable);
 }
 
-void CommandBuffer::setViewport(const ViewPort *vp) {
+void CommandBuffer::setViewport(const ViewPort* vp) {
   VkViewport viewPort;
   if (vp) {
     viewPort.x = vp->rect.x;
@@ -177,12 +181,12 @@ void CommandBuffer::disPatch(u32 groupX, u32 groupY, u32 groupZ) {
   vkCmdDispatch(m_commandBuffer, groupX, groupY, groupZ);
 }
 
-void CommandBuffer::barrier(const ExecutionBarrier &barrier) {
+void CommandBuffer::barrier(const ExecutionBarrier& barrier) {
   if (m_currRenderPass && (m_currRenderPass->m_type != RenderPassType::Enum::Compute)) {
     vkCmdEndRenderPass(m_commandBuffer);
     m_currRenderPass = nullptr;
   }
-  std::vector<VkImageMemoryBarrier> imageBarriers;
+  std::vector<VkImageMemoryBarrier>  imageBarriers;
   std::vector<VkBufferMemoryBarrier> bufferBarriers;
 
   VkAccessFlags sourceAccessMask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT;
@@ -191,14 +195,14 @@ void CommandBuffer::barrier(const ExecutionBarrier &barrier) {
   VkAccessFlags dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
   VkAccessFlags dstBufferAccessmask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT;
   VkAccessFlags dstDepthAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-  bool isDepth = false;
+  bool          isDepth = false;
   if (barrier.numImageBarriers) {
     imageBarriers.resize(barrier.numBufferBarriers);
     for (int i = 0; i < imageBarriers.size(); ++i) {
-      Texture *tex = m_context->accessTexture(barrier.imageBarriers[i].texture);
+      Texture* tex = m_context->accessTexture(barrier.imageBarriers[i].texture);
       isDepth = TextureFormat::has_depth_or_stencil(tex->m_format);
       if (!tex) { DG_ERROR("You are trying to add a barrier for an invalid texture") }
-      VkImageMemoryBarrier &imgBarr = imageBarriers[i];
+      VkImageMemoryBarrier& imgBarr = imageBarriers[i];
       imgBarr.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
       imgBarr.image = tex->m_image;
       imgBarr.oldLayout = tex->m_imageInfo.imageLayout;
@@ -218,9 +222,9 @@ void CommandBuffer::barrier(const ExecutionBarrier &barrier) {
   if (barrier.numBufferBarriers) {
     bufferBarriers.resize(barrier.numBufferBarriers);
     for (int i = 0; i < bufferBarriers.size(); ++i) {
-      Buffer *buf = m_context->accessBuffer(barrier.memoryBarriers[i].buffer);
+      Buffer* buf = m_context->accessBuffer(barrier.memoryBarriers[i].buffer);
       if (!buf) { DG_ERROR("You are trying to add a barrier for an invalid buffer") }
-      VkBufferMemoryBarrier &bufBarr = bufferBarriers[i];
+      VkBufferMemoryBarrier& bufBarr = bufferBarriers[i];
       bufBarr.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
       bufBarr.buffer = buf->m_buffer;
       bufBarr.srcAccessMask = barrier.srcBufferAccessFlag != VK_ACCESS_FLAG_BITS_MAX_ENUM ? barrier.srcBufferAccessFlag : sourceAccessMask;
