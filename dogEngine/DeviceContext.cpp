@@ -299,6 +299,9 @@ void DeviceContext::DestroyPipeline(PipelineHandle& pipelineIndex) {
     if (pipeline->m_DescriptorSetLayout[i]->m_handle.index == m_bindlessDescriptorSetLayout.index) continue;
     DestroyDescriptorSetLayout(pipeline->m_DescriptorSetLayout[i]->m_handle);
   }
+  if (pipeline->m_pipelineType == ShaderState::eRayTracing) {
+    DestroyBuffer(pipeline->m_shaderBindingTableBuffer);
+  }
   DestroyShaderState(pipeline->m_shaderState);
   m_delectionQueue.push_back({ResourceUpdateType::Enum::Pipeline, pipelineIndex.index, m_currentFrame, true});
   pipelineIndex = {k_invalid_index};
@@ -2385,9 +2388,9 @@ void DeviceContext::init(const ContextCreateInfo& contextInfo) {
 
 void DeviceContext::newFrame() {
   VkFence* renderCompleteFence = &m_render_queue_complete_fence[m_currentFrame];
-  if (vkGetFenceStatus(m_logicDevice, *renderCompleteFence) != VK_SUCCESS) {
-    vkWaitForFences(m_logicDevice, 1, renderCompleteFence, VK_TRUE, UINT64_MAX);
-  };
+  //if (vkGetFenceStatus(m_logicDevice, *renderCompleteFence) != VK_SUCCESS) {
+  vkWaitForFences(m_logicDevice, 1, renderCompleteFence, VK_TRUE, UINT64_MAX);
+  //};
   vkResetFences(m_logicDevice, 1, renderCompleteFence);
 
   VkResult res = vkAcquireNextImageKHR(m_logicDevice, m_swapchain, UINT64_MAX, m_image_acquired_semaphore, VK_NULL_HANDLE, &m_currentSwapchainImageIndex);
@@ -2472,7 +2475,7 @@ void DeviceContext::present() {
   subInfo.commandBufferCount = m_queuedCommandBuffer.size();
   subInfo.pCommandBuffers = enquedCommandBuffers;
   subInfo.pWaitDstStageMask = &wait_stages;
-  vkQueueSubmit(m_graphicsQueue, 1, &subInfo, nullptr);
+  vkQueueSubmit(m_graphicsQueue, 1, &subInfo, VK_NULL_HANDLE);
 
   //draw UI
   wait_stages = {VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT};
