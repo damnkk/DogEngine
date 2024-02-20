@@ -150,7 +150,7 @@ struct DeviceContext {
   std::vector<DescriptorSetUpdate> m_descriptorSetUpdateQueue;
 
   VkSemaphore  m_render_complete_semaphore[k_max_swapchain_images];
-  VkSemaphore  m_image_acquired_semaphore;
+  VkSemaphore  m_image_acquired_semaphore[k_max_swapchain_images];
   VkFence      m_render_queue_complete_fence[k_max_swapchain_images];
   BufferHandle m_viewProjectUniformBuffer;
 

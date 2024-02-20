@@ -8,14 +8,13 @@ GameViewer::GameViewer(std::string name) {
   m_name = name;
 }
 
-ImVec2 OldWindowSize;
-void   GameViewer::OnGUI() {
+void GameViewer::OnGUI() {
   std::shared_ptr<Camera> camera = m_renderer->getCamera();
   ImGui::Begin("GameView");
   auto     desc = m_renderer->getContext()->accessDescriptorSet(m_renderer->getContext()
-                                                                      ->m_gameViewTextureDescs[0]);
+                                                                    ->m_gameViewTextureDescs[0]);
   Texture* text = m_renderer->getContext()->accessTexture(m_renderer->getContext()
-                                                                ->m_gameViewFrameTextures[0]);
+                                                              ->m_gameViewFrameTextures[0]);
   bool     windowHovered = ImGui::IsWindowHovered();
   if (ImGui::IsWindowFocused()) {
     if (ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
@@ -28,8 +27,9 @@ void   GameViewer::OnGUI() {
   }
 
   const ImVec2 currWindowSize = ImGui::GetWindowSize();
-  if (currWindowSize != OldWindowSize) {
-    OldWindowSize = ImVec2(currWindowSize.x - 15, currWindowSize.y - 35);
+  if (currWindowSize != m_oldWindowSize) {
+    //m_oldWindowSize = ImVec2(currWindowSize.x - 15, currWindowSize.y - 35);
+    m_oldWindowSize = currWindowSize;
     m_renderer->getContext()->gameViewResize = true;
     m_renderer->getContext()->m_gameViewWidth = (u32) (currWindowSize.x - 15);
     m_renderer->getContext()->m_gameViewHeight = (u32) (currWindowSize.y - 35);

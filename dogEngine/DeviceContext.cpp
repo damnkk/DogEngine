@@ -2102,7 +2102,7 @@ void DeviceContext::init(const ContextCreateInfo& contextInfo) {
 
     if (!missingExtensions.empty()) {
       DG_ERROR("Critical device feature names :", missingExtensions[0], " is not supported!");
-      exit(-1);
+      //exit(-1);
     }
     m_physicalDevice = discrete_gpu;
     m_supportRayTracing = true;
@@ -2300,15 +2300,14 @@ void DeviceContext::init(const ContextCreateInfo& contextInfo) {
   }
 
   VkSemaphoreCreateInfo semaphoreInfo{VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
-  vkCreateSemaphore(m_logicDevice, &semaphoreInfo, nullptr, &m_image_acquired_semaphore);
-  setResourceName(VK_OBJECT_TYPE_SEMAPHORE, (uint64_t) m_image_acquired_semaphore,
-                  "m_image_acquired_semaphore");
+
   for (int i = 0; i < k_max_swapchain_images; ++i) {
     vkCreateSemaphore(m_logicDevice, &semaphoreInfo, nullptr, &m_render_complete_semaphore[i]);
     std::string name = "m_render_complete_semaphore" + std::to_string(i);
     setResourceName(VK_OBJECT_TYPE_SEMAPHORE, (uint64_t) m_render_complete_semaphore[i],
                     name.c_str());
-    setResourceName(VK_OBJECT_TYPE_SEMAPHORE, (uint64_t) m_image_acquired_semaphore,
+    vkCreateSemaphore(m_logicDevice, &semaphoreInfo, nullptr, &m_image_acquired_semaphore[i]);
+    setResourceName(VK_OBJECT_TYPE_SEMAPHORE, (uint64_t) m_image_acquired_semaphore[i],
                     "m_image_acquired_semaphore");
     VkFenceCreateInfo fenceInfo{VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
     fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
@@ -2387,17 +2386,17 @@ void DeviceContext::init(const ContextCreateInfo& contextInfo) {
 }
 
 void DeviceContext::newFrame() {
+
   VkFence* renderCompleteFence = &m_render_queue_complete_fence[m_currentFrame];
   //if (vkGetFenceStatus(m_logicDevice, *renderCompleteFence) != VK_SUCCESS) {
   vkWaitForFences(m_logicDevice, 1, renderCompleteFence, VK_TRUE, UINT64_MAX);
   //};
-  vkResetFences(m_logicDevice, 1, renderCompleteFence);
-
-  VkResult res = vkAcquireNextImageKHR(m_logicDevice, m_swapchain, UINT64_MAX, m_image_acquired_semaphore, VK_NULL_HANDLE, &m_currentSwapchainImageIndex);
+  VkResult res = vkAcquireNextImageKHR(m_logicDevice, m_swapchain, UINT64_MAX, m_image_acquired_semaphore[m_currentFrame], VK_NULL_HANDLE, &m_currentSwapchainImageIndex);
   if (res == VK_ERROR_OUT_OF_DATE_KHR) {
     reCreateSwapChain();
   }
-  commandBufferRing.resetPools(m_currentFrame);
+  vkResetFences(m_logicDevice, 1, renderCompleteFence);
+  ////commandBufferRing.resetPools(m_currentFrame);
 }
 
 void DeviceContext::present() {
@@ -2465,7 +2464,7 @@ void DeviceContext::present() {
       vkUpdateDescriptorSets(m_logicDevice, currWriteIdx, bindlessWrite, 0, nullptr);
     }
   }
-  VkSemaphore          waitSmps[] = {m_image_acquired_semaphore};
+  VkSemaphore          waitSmps[] = {m_image_acquired_semaphore[m_currentFrame]};
   VkPipelineStageFlags wait_stages = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
   VkSubmitInfo         subInfo{VK_STRUCTURE_TYPE_SUBMIT_INFO};
   subInfo.waitSemaphoreCount = 1;
@@ -2478,7 +2477,7 @@ void DeviceContext::present() {
   vkQueueSubmit(m_graphicsQueue, 1, &subInfo, VK_NULL_HANDLE);
 
   //draw UI
-  wait_stages = {VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT};
+  wait_stages = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
   subInfo.pWaitSemaphores = renderCompleteSemaphore;
   subInfo.pSignalSemaphores = &GUI::getInstance().getSemaphore();
   subInfo.commandBufferCount = 1;
@@ -2566,6 +2565,7 @@ void DeviceContext::Destroy() {
   for (int i = 0; i < m_swapchainImageCount; ++i) {
     vkDestroySemaphore(m_logicDevice, m_render_complete_semaphore[i], nullptr);
     vkDestroyFence(m_logicDevice, m_render_queue_complete_fence[i], nullptr);
+    vkDestroySemaphore(m_logicDevice, m_image_acquired_semaphore[i], nullptr);
   }
 
   // destroy game view pass
@@ -2580,7 +2580,6 @@ void DeviceContext::Destroy() {
     }
   }
 
-  vkDestroySemaphore(m_logicDevice, m_image_acquired_semaphore, nullptr);
   DestroyTexture(m_DummyTexture);
   DestroyDescriptorSetLayout(m_bindlessDescriptorSetLayout);
   DestroyTexture(m_depthTexture);
@@ -2667,7 +2666,7 @@ std::vector<const char*> DeviceContext::fillFilterdNameArray(const std::vector<V
       }
     } else if (itr.optional == false) {
       DG_ERROR("A critical Extension with name: ", itr.name, " is not supported!");
-      exit(-1);
+      //exit(-1);
     }
   }
   return used;
@@ -2687,7 +2686,7 @@ std::vector<const char*> DeviceContext::fillFilteredNameArray(const std::vector<
       used.push_back(itr.name.c_str());
     } else if (itr.optional == false) {
       DG_ERROR("Critical instance layer with name: ", itr.name, " is nor supported!");
-      exit(-1);
+      // exit(-1);
     }
   }
   return used;
