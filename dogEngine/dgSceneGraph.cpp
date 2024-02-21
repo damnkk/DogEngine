@@ -141,33 +141,31 @@ void SceneGraph::deleteSceneNodes(const std::vector<u32>& nodesToDelete) {
   shiftMapIndices(m_nameForNodeMap, newIndices);
 }
 
-void markAsChanged(SceneGraph& scene, int node) {
-  int level = scene.m_nodeHierarchy[node].level;
-  scene.m_changedAtThisFrame[level].push_back(node);
-  for (int s = scene.m_nodeHierarchy[node].firstChild; s != -1; s = scene.m_nodeHierarchy[s].nextSibling) {
-    markAsChanged(scene, s);
+void SceneGraph::markAsChanged(int node) {
+  int level = m_nodeHierarchy[node].level;
+  m_changedAtThisFrame[level].push_back(node);
+  for (int s = m_nodeHierarchy[node].firstChild; s != -1; s = m_nodeHierarchy[s].nextSibling) {
+    markAsChanged(s);
   }
 }
 
 void recalculateGlobalTransforms(SceneGraph& scene) {
-  if (!scene.m_changedAtThisFrame[0].empty()) {
-    int c = scene.m_changedAtThisFrame[0][0];
-    scene.m_globalTransforms[c] = scene.m_localTransforms[c];
-    scene.m_changedAtThisFrame[0].clear();
-  }
-
-  for (int i = 1; i <= scene.maxLevel; ++i) {
-    for (const int& c : scene.m_changedAtThisFrame[i]) {
-      int p = scene.m_nodeHierarchy[c].parent;
-      scene.m_globalTransforms[c] = scene.m_globalTransforms[p] * scene.m_localTransforms[c];
-    }
-    scene.m_changedAtThisFrame[i].clear();
-  }
 }
 
 void SceneGraph::recalculateAllTransforms() {
-  markAsChanged(*this, 0);
-  recalculateGlobalTransforms(*this);
+  if (!m_changedAtThisFrame[0].empty()) {
+    int c = m_changedAtThisFrame[0][0];
+    m_globalTransforms[c] = m_localTransforms[c];
+    m_changedAtThisFrame[0].clear();
+  }
+
+  for (int i = 1; i <= maxLevel; ++i) {
+    for (const int& c : m_changedAtThisFrame[i]) {
+      int p = m_nodeHierarchy[c].parent;
+      m_globalTransforms[c] = m_globalTransforms[p] * m_localTransforms[c];
+    }
+    m_changedAtThisFrame[i].clear();
+  }
 }
 
 std::string SceneGraph::getNodeName(int node) const {

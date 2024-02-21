@@ -20,6 +20,7 @@ struct SceneGraph {
   void collectNodesToDelete(int node, std::vector<u32>& nodes);
   // resource loader may execute scene again, after delecting the node of scene
   void        deleteSceneNodes(const std::vector<u32>& nodesToDelete);
+  void        markAsChanged(int node);
   void        recalculateAllTransforms();
   std::string getNodeName(int node) const;
 

@@ -31,8 +31,8 @@ void GameViewer::OnGUI() {
     //m_oldWindowSize = ImVec2(currWindowSize.x - 15, currWindowSize.y - 35);
     m_oldWindowSize = currWindowSize;
     m_renderer->getContext()->gameViewResize = true;
-    m_renderer->getContext()->m_gameViewWidth = (u32) (currWindowSize.x - 15);
-    m_renderer->getContext()->m_gameViewHeight = (u32) (currWindowSize.y - 35);
+    m_renderer->getContext()->m_gameViewWidth = glm::max((u32) (currWindowSize.x - 15), (u32) 1);
+    m_renderer->getContext()->m_gameViewHeight = glm::max((u32) (currWindowSize.y - 35), (u32) 1);
     //m_renderer->getContext()->resizeGameViewPass({(u32) currWindowSize.x, (u32) currWindowSize.y});
     camera->getAspect() = (float) (currWindowSize.x - 15) / (float) (currWindowSize.y - 35);
   }

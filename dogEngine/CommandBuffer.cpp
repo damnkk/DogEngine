@@ -25,6 +25,13 @@ void CommandBuffer::end() {
   m_isBegin = false;
 }
 
+void CommandBuffer::pushMark(const char* name) {
+  m_context->pushMarker(m_commandBuffer, name);
+}
+void CommandBuffer::popMark() {
+  m_context->popMarker(m_commandBuffer);
+}
+
 void CommandBuffer::reset() {
   m_currRenderPass = nullptr;
   m_isRecording = false;
@@ -113,7 +120,7 @@ void CommandBuffer::bindIndexBuffer(BufferHandle ib, u32 offset, VkIndexType iTy
   vkCmdBindIndexBuffer(m_commandBuffer, realBuffer, offse, iType);
 }
 
-void CommandBuffer::bindDescriptorSet(std::vector<DescriptorSetHandle> set, u32 firstSet, u32* offsets, u32 numOffsets) {
+void CommandBuffer::bindDescriptorSet(const std::vector<DescriptorSetHandle>& set, u32 firstSet, u32* offsets, u32 numOffsets) {
   for (int i = 0; i < set.size(); ++i) {
     DescriptorSet* dset = m_context->accessDescriptorSet(set[i]);
     if (!dset) { DG_ERROR("You are trying to bind an invalid descriptor set") }

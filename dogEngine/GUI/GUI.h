@@ -42,7 +42,9 @@ class GUI {
                                                                    ->m_currentFrame]; }
   Renderer*                   getRenderer() { return m_renderer; }
   VkCommandPool&              getCommandPool() { return m_commandPool; }
-  VkSemaphore&                getSemaphore() { return m_uiFinishSemaphore; }
+  VkSemaphore&                getCurrSemaphore() { return m_uiFinishSemaphore[m_renderer->getContext()
+                                                                   ->m_currentFrame]; }
+  std::vector<VkSemaphore>&   getSemaphores() { return m_uiFinishSemaphore; }
 
   template<typename T>
   void addViewer(std::shared_ptr<T> pViewer);
@@ -66,7 +68,7 @@ class GUI {
   Renderer*                  m_renderer;
   VkCommandPool              m_commandPool;
   std::vector<CommandBuffer> m_commandBuffers = std::vector<CommandBuffer>(3);
-  VkSemaphore                m_uiFinishSemaphore;
+  std::vector<VkSemaphore>   m_uiFinishSemaphore = std::vector<VkSemaphore>(3);
 
   //Imgui about
   ImGuiIO*                                      m_io = nullptr;

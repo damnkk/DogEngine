@@ -6,11 +6,15 @@
 namespace dg {
 
 struct CommandBuffer {
-  void init(DeviceContext *context);
+  void init(DeviceContext* context);
   void destroy();
 
   void begin();
   void end();
+
+  // debug util
+  void pushMark(const char* name);
+  void popMark();
 
   //just for temproary one time submit command buffer
   void flush(VkQueue queue);
@@ -18,17 +22,17 @@ struct CommandBuffer {
   void bindPipeline(PipelineHandle pip);
   void bindVertexBuffer(BufferHandle vb, u32 binding, u32 offset);
   void bindIndexBuffer(BufferHandle ib, u32 offset, VkIndexType index_type);
-  void bindDescriptorSet(std::vector<DescriptorSetHandle> set, u32 firstSet, u32 *offsets, u32 numOffsets);
+  void bindDescriptorSet(const std::vector<DescriptorSetHandle>& set, u32 firstSet, u32* offsets, u32 numOffsets);
   template<typename T>
-  void bindPushConstants(VkShaderStageFlags pipelineStage, T *pushBlock);
+  void bindPushConstants(VkShaderStageFlags pipelineStage, T* pushBlock);
   void endpass() {
     vkCmdEndRenderPass(m_commandBuffer);
     m_currRenderPass = nullptr;
     m_isRecording = false;
   }
 
-  void setScissor(const Rect2DInt *rect);
-  void setViewport(const ViewPort *viewport);
+  void setScissor(const Rect2DInt* rect);
+  void setViewport(const ViewPort* viewport);
   void setDepthStencilState(VkBool32 enable);
 
   void clearColor();
@@ -41,25 +45,25 @@ struct CommandBuffer {
 
   void disPatch(u32 groupX, u32 groupY, u32 groupZ);
 
-  void barrier(const ExecutionBarrier &barrier);
+  void barrier(const ExecutionBarrier& barrier);
 
   void reset();
 
-  DeviceContext *m_context;
-  VkCommandBuffer m_commandBuffer;
-  VkDescriptorSet m_descriptorSets[16];
-  RenderPass *m_currRenderPass;
-  Pipeline *m_pipeline;
-  VkFramebuffer m_currFrameBuffer;
+  DeviceContext*              m_context;
+  VkCommandBuffer             m_commandBuffer;
+  VkDescriptorSet             m_descriptorSets[16];
+  RenderPass*                 m_currRenderPass;
+  Pipeline*                   m_pipeline;
+  VkFramebuffer               m_currFrameBuffer;
   std::array<VkClearValue, 2> m_clears;
-  ResourceHandle m_handle;
-  u32 m_currentCommand;
-  bool m_isBegin = false;
-  bool m_isRecording;
-  bool m_baked;
+  ResourceHandle              m_handle;
+  u32                         m_currentCommand;
+  bool                        m_isBegin = false;
+  bool                        m_isRecording;
+  bool                        m_baked;
 };
 template<typename T>
-void CommandBuffer::bindPushConstants(VkShaderStageFlags pipelineStage, T *pushBlock) {
+void CommandBuffer::bindPushConstants(VkShaderStageFlags pipelineStage, T* pushBlock) {
   vkCmdPushConstants(m_commandBuffer, m_pipeline->m_pipelineLayout, pipelineStage, 0, sizeof(T), pushBlock);
 }
 }// namespace dg

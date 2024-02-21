@@ -137,4 +137,4 @@ struct Material : public Resource {
 };
 }// namespace dg
 
-#endif DGRESOURCE_H
+#endif //DGRESOURCE_H

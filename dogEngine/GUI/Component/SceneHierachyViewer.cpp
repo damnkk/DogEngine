@@ -55,25 +55,16 @@ void SceneHierachyViewer::OnGUI() {
     ImGui::TextColored({217.0 / 255.0, 128.0 / 255.0, 250.0 / 255.0, 1.0f}, "%s", m_renderer->getResourceLoader()->getSceneGraph()->getNodeName(selectNode).c_str());
     glm::mat4& matrix = m_sceneGraph->m_localTransforms[selectNode];
     glm::vec3  pos = glm::vec3(matrix[3]);
+    glm::vec3  oldPos = pos;
     glm::vec3  scale = glm::vec3(glm::length(glm::vec3(matrix[0])),
                                  glm::length(glm::vec3(matrix[1])),
                                  glm::length(glm::vec3(matrix[2])));
-    glm::mat4  rotationMatrix = glm::mat4(1.0f);
-    rotationMatrix[0][0] = matrix[0][0] / scale.x;
-    rotationMatrix[1][0] = matrix[1][0] / scale.x;
-    rotationMatrix[2][0] = matrix[2][0] / scale.x;
-
-    rotationMatrix[0][1] = matrix[2][1] / scale.y;
-    rotationMatrix[1][1] = matrix[2][1] / scale.y;
-    rotationMatrix[2][1] = matrix[2][1] / scale.y;
-
-    rotationMatrix[0][2] = matrix[2][2] / scale.z;
-    rotationMatrix[1][2] = matrix[2][2] / scale.z;
-    rotationMatrix[2][2] = matrix[2][2] / scale.z;
+    glm::vec3  oldScale = scale;
 
     //rotate used here saves the last rotate component value, to avoid state reconstruction causing
     //float number pricision lost
     glm::vec3& rotate = m_sceneGraph->m_rotateRecord[selectNode];
+    glm::vec3  oldRotate = rotate;
 
     ImGui::Text("Position");
     ImGui::SameLine(100.0);
@@ -100,7 +91,10 @@ void SceneHierachyViewer::OnGUI() {
     ImGui::SameLine(100.0);
     ImGui::DragFloat3("##Scale", (float*) &scale, 0.1f, 0.00001, 1000000000);
     matrix = glm::translate(glm::mat4(1.0f), pos) * glm::mat4_cast(rotatQuat) * glm::scale(glm::mat4(1.0f), scale);
-    //matrix = glm::translate(glm::mat4(1.0f), pos) * rotateMatrix * glm::scale(glm::mat4(1.0f), scale);
+    if (oldPos != pos || oldScale != scale || oldRotate != rotate) {
+      m_sceneGraph->markAsChanged(selectNode);
+    }
+
   } else {
     ImGui::Text("No scene node been selected");
   }

@@ -40,6 +40,10 @@ glm::mat4 getTranslation(const glm::vec3& translate, const glm::vec3& rotate,
   return transMat * rotateMat * scaleMat;
 }
 
+PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectNameEXT;
+PFN_vkCmdBeginDebugUtilsLabelEXT vkCmdBeginDebugUtilsLabelEXT;
+PFN_vkCmdEndDebugUtilsLabelEXT   vkCmdEndDebugUtilsLabelEXT;
+
 ContextCreateInfo& ContextCreateInfo::setWindow(u32 width, u32 height, void* windowHandle) {
   if (!windowHandle) {
     DG_ERROR("Invalid window pointer")
@@ -122,19 +126,8 @@ struct CommandBufferRing {
 const std::vector<const char*> deviceExtensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
-PFN_vkSetDebugUtilsObjectNameEXT pfnSetDebugUtilsObjectNameEXT;
-PFN_vkCmdBeginDebugUtilsLabelEXT pfnCmdBeginDebugUtilsLableEXT;
-PFN_vkCmdEndDebugUtilsLabelEXT   pfnCmdEndDebugUtilsLabesEXT;
-static CommandBufferRing         commandBufferRing;
+static CommandBufferRing commandBufferRing;
 
-void DeviceContext::setResourceName(VkObjectType objectType, uint64_t handle, const char* name) {
-  if (!m_debugUtilsExtentUsed) return;
-  VkDebugUtilsObjectNameInfoEXT nameinfo = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
-  nameinfo.objectType = objectType;
-  nameinfo.objectHandle = handle;
-  nameinfo.pObjectName = name;
-  pfnSetDebugUtilsObjectNameEXT(m_logicDevice, &nameinfo);
-}
 void CommandBufferRing::init(DeviceContext* contex) {
   if (!contex) {
     DG_ERROR("Invalid contex pointer, check this again")
@@ -2167,9 +2160,9 @@ void DeviceContext::init(const ContextCreateInfo& contextInfo) {
   DGASSERT(result == VK_SUCCESS);
   DG_INFO("Logical device created successfully");
   if (m_debugUtilsExtentUsed) {
-    pfnSetDebugUtilsObjectNameEXT = (PFN_vkSetDebugUtilsObjectNameEXT) vkGetDeviceProcAddr(m_logicDevice, "vkSetDebugUtilsObjectNameEXT");
-    pfnCmdBeginDebugUtilsLableEXT = (PFN_vkCmdBeginDebugUtilsLabelEXT) vkGetDeviceProcAddr(m_logicDevice, "pfnCmdBeginDebugUtilsLableEXT");
-    pfnCmdEndDebugUtilsLabesEXT = (PFN_vkCmdEndDebugUtilsLabelEXT) vkGetDeviceProcAddr(m_logicDevice, "pfnCmdEndDebugUtilsLabesEXT");
+    vkSetDebugUtilsObjectNameEXT = (PFN_vkSetDebugUtilsObjectNameEXT) vkGetDeviceProcAddr(m_logicDevice, "vkSetDebugUtilsObjectNameEXT");
+    vkCmdBeginDebugUtilsLabelEXT = (PFN_vkCmdBeginDebugUtilsLabelEXT) vkGetDeviceProcAddr(m_logicDevice, "vkCmdBeginDebugUtilsLabelEXT");
+    vkCmdEndDebugUtilsLabelEXT = (PFN_vkCmdEndDebugUtilsLabelEXT) vkGetDeviceProcAddr(m_logicDevice, "vkCmdEndDebugUtilsLabelEXT");
   }
 
   vkGetDeviceQueue(m_logicDevice, m_graphicQueueIndex, 0, &m_graphicsQueue);
@@ -2388,9 +2381,7 @@ void DeviceContext::init(const ContextCreateInfo& contextInfo) {
 void DeviceContext::newFrame() {
 
   VkFence* renderCompleteFence = &m_render_queue_complete_fence[m_currentFrame];
-  //if (vkGetFenceStatus(m_logicDevice, *renderCompleteFence) != VK_SUCCESS) {
   vkWaitForFences(m_logicDevice, 1, renderCompleteFence, VK_TRUE, UINT64_MAX);
-  //};
   VkResult res = vkAcquireNextImageKHR(m_logicDevice, m_swapchain, UINT64_MAX, m_image_acquired_semaphore[m_currentFrame], VK_NULL_HANDLE, &m_currentSwapchainImageIndex);
   if (res == VK_ERROR_OUT_OF_DATE_KHR) {
     reCreateSwapChain();
@@ -2479,7 +2470,7 @@ void DeviceContext::present() {
   //draw UI
   wait_stages = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
   subInfo.pWaitSemaphores = renderCompleteSemaphore;
-  subInfo.pSignalSemaphores = &GUI::getInstance().getSemaphore();
+  subInfo.pSignalSemaphores = &GUI::getInstance().getCurrSemaphore();
   subInfo.commandBufferCount = 1;
   subInfo.pCommandBuffers = &GUI::getInstance().getCurrentFramCb()->m_commandBuffer;
   subInfo.pWaitDstStageMask = &wait_stages;
@@ -2490,7 +2481,7 @@ void DeviceContext::present() {
   presentInfo.pSwapchains = &m_swapchain;
   presentInfo.swapchainCount = 1;
   presentInfo.waitSemaphoreCount = 1;
-  presentInfo.pWaitSemaphores = &GUI::getInstance().getSemaphore();
+  presentInfo.pWaitSemaphores = &GUI::getInstance().getCurrSemaphore();
   presentInfo.pResults = nullptr;
   VkResult res = vkQueuePresentKHR(m_graphicsQueue, &presentInfo);
   m_queuedCommandBuffer.clear();
@@ -2645,6 +2636,29 @@ void DeviceContext::Destroy() {
   DebugMessanger::GetInstance()->Clear();
   vkDestroyInstance(m_instance, nullptr);
   DG_INFO("Context destroied successfully");
+}
+
+void DeviceContext::setResourceName(VkObjectType objectType, uint64_t handle, const char* name) {
+  if (!m_debugUtilsExtentUsed) return;
+  VkDebugUtilsObjectNameInfoEXT nameinfo = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
+  nameinfo.objectType = objectType;
+  nameinfo.objectHandle = handle;
+  nameinfo.pObjectName = name;
+  vkSetDebugUtilsObjectNameEXT(m_logicDevice, &nameinfo);
+}
+
+void DeviceContext::pushMarker(VkCommandBuffer cmd, const char* name) {
+  VkDebugUtilsLabelEXT label = {VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT};
+  label.pLabelName = name;
+  label.color[0] = 1.0f;
+  label.color[1] = 1.0f;
+  label.color[2] = 1.0f;
+  label.color[3] = 1.0f;
+  vkCmdBeginDebugUtilsLabelEXT(cmd, &label);
+}
+
+void DeviceContext::popMarker(VkCommandBuffer cmd) {
+  vkCmdEndDebugUtilsLabelEXT(cmd);
 }
 
 std::vector<const char*> DeviceContext::fillFilterdNameArray(const std::vector<VkExtensionProperties>& properties,

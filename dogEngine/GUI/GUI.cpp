@@ -61,9 +61,9 @@ void guiVulkanInit(GUI& ui) {
     ui.getCommandBuffer()[i].m_context = ui.getRenderer()->getContext().get();
     ui.getCommandBuffer()[i].m_handle = i;
     ui.getCommandBuffer()[i].reset();
+    VkSemaphoreCreateInfo smInfo{VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
+    vkCreateSemaphore(ui.getRenderer()->getContext()->m_logicDevice, &smInfo, nullptr, &ui.getSemaphores()[i]);
   }
-  VkSemaphoreCreateInfo smInfo{VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
-  vkCreateSemaphore(ui.getRenderer()->getContext()->m_logicDevice, &smInfo, nullptr, &ui.getSemaphore());
 }
 
 void GUI::init(Renderer* render) {
@@ -127,7 +127,6 @@ void GUI::init(Renderer* render) {
 // }
 
 void GUI::newGUIFrame() {
-  vkResetCommandBuffer(getCurrentFramCb()->m_commandBuffer, 0);
   ImGui_ImplVulkan_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
@@ -185,7 +184,9 @@ void GUI::KeysControl(bool* keys) {
 
 void GUI::Destroy() {
   vkDestroyCommandPool(m_renderer->getContext()->m_logicDevice, m_commandPool, nullptr);
-  vkDestroySemaphore(m_renderer->getContext()->m_logicDevice, m_uiFinishSemaphore, nullptr);
+  for (int i = 0; i < 3; ++i) {
+    vkDestroySemaphore(m_renderer->getContext()->m_logicDevice, m_uiFinishSemaphore[i], nullptr);
+  }
   ImGui_ImplVulkan_Shutdown();
   ImGui_ImplGlfw_Shutdown();
   ImGui::DestroyContext();

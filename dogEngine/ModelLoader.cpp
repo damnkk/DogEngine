@@ -256,6 +256,7 @@ void ResourceLoader::executeScene(std::shared_ptr<SceneGraph> scene) {
         m_renderer->getContext()->m_viewProjectUniformBuffer,
         m_meshes[c.second].matUniformBufferHandle});
   }
+  scene->markAsChanged(0);
   scene->recalculateAllTransforms();
 }
 }// namespace dg

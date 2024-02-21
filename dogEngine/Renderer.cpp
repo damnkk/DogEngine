@@ -321,15 +321,17 @@ void Renderer::executeScene() {
 
 void Renderer::drawScene() {
   CommandBuffer* cmd = m_context->getCommandBuffer(QueueType::Enum::Graphics, true);
-  Rect2DInt      scissor;
-  scissor = {0, 0, (u16) m_context->m_gameViewWidth, (u16) m_context->m_gameViewHeight};
+  cmd->pushMark("DrawScene");
+  Rect2DInt scissor{0, 0, (u16) m_context->m_gameViewWidth, (u16) m_context->m_gameViewHeight};
   cmd->setScissor(&scissor);
-  ViewPort viewPort;
-  viewPort.max_depth = 1.0f;
-  viewPort.min_depth = 0.0f;
-  viewPort.rect.width = scissor.width;
-  viewPort.rect.height = scissor.height;
-
+  ViewPort viewPort{
+      .rect{
+          .x = 0.0f,
+          .y = 0.0f,
+          .width = (float) scissor.width,
+          .height = (float) scissor.height},
+      .min_depth = 0.0f,
+      .max_depth = 1.0f};
   cmd->setViewport(&viewPort);
   for (int i = 0; i < m_renderObjects.size(); ++i) {
     auto& currRenderObject = m_renderObjects[i];
@@ -337,7 +339,8 @@ void Renderer::drawScene() {
     cmd->bindPipeline(currRenderObject.materialPtr->program->passes[0].pipeline);
     cmd->bindVertexBuffer(currRenderObject.vertexBuffer, 0, 0);
     cmd->bindIndexBuffer(currRenderObject.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-    vkCmdSetDepthTestEnable(cmd->m_commandBuffer, currRenderObject.materialPtr->depthTest);
+    vkCmdSetDepthTestEnable(cmd->m_commandBuffer, true);
+
     Buffer* globalUniformBuffer = m_context->accessBuffer(currRenderObject.globalUniform);
     if (!globalUniformBuffer) {
       DG_WARN("Invalid camera view Buffer");
@@ -348,9 +351,6 @@ void Renderer::drawScene() {
     UniformData udata{};
     udata.cameraPos = m_camera->getPosition();
     udata.cameraDirectory = m_camera->getDirectVector();
-    static auto startTime = std::chrono::high_resolution_clock::now();
-    auto        endTime = std::chrono::high_resolution_clock::now();
-
     udata.projectMatrix = m_camera->getProjectMatrix();
     udata.viewMatrix = m_camera->getViewMatrix();
     memcpy(data, &udata, sizeof(UniformData));
@@ -365,11 +365,12 @@ void Renderer::drawScene() {
     vmaMapMemory(m_context->m_vma, materialBuffer->m_allocation, &data);
     memcpy(data, &um, sizeof(Material::UniformMaterial));
     vmaUnmapMemory(m_context->m_vma, materialBuffer->m_allocation);
+
     cmd->bindDescriptorSet(currRenderObject.descriptors, 0, nullptr, 0);
     cmd->bindDescriptorSet({m_context->m_bindlessDescriptorSet}, 1, nullptr, 0);
-    //cmd->draw(TopologyType::Enum::Triangle, 0, currRenderObject.m_vertexCount, 0, 0);
     cmd->drawIndexed(TopologyType::Enum::Triangle, currRenderObject.vertexIndicesCount, 1, 0, 0, 0);
   }
+  cmd->popMark();
   this->m_context->queueCommandBuffer(cmd);
 }
 

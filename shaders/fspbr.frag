@@ -278,5 +278,4 @@ void main() {
   vec3 ambient = IBL(N, V, baseColor.xyz, roughness, metallic);
   color += ambient * (mix(1.0, ao, umat.mrFactor.z));
   outColor = vec4(saturation(encode_srgb(color), 1.2), baseColor.w);
-  //outColor = vec4(vec3(1.0f), 1.0f);
 }
