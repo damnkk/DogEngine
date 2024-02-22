@@ -9,6 +9,7 @@ BufferCreateInfo& BufferCreateInfo::reset() {
   m_sourceData = nullptr;
   m_deviceOnly = true;
   m_presistent = false;
+  name = {};
   return *this;
 }
 

@@ -48,14 +48,23 @@ Mesh ResourceLoader::convertAIMesh(aiMesh* mesh) {
       srcIndices.push_back(mesh->mFaces[i].mIndices[j]);
     }
   }
+  VkBufferUsageFlags rayTracingFlags = 0;
+  VkBufferUsageFlags flag = 0;
+  if (m_renderer->getContext()->m_supportRayTracing) {
+    flag = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+    rayTracingFlags = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+  }
   dgMesh.indexCount = mesh->mNumFaces * 3;
-  dgMesh.vertexBufferHandle = m_renderer->upLoadVertexDataToGPU(vertices, mesh->mName.C_Str());
-  dgMesh.indexBufferHandle = m_renderer->upLoadVertexDataToGPU(srcIndices, mesh->mName.C_Str());
+  dgMesh.vertexBuffer = m_renderer->upLoadVertexDataToGPU(vertices, mesh->mName.C_Str(), flag | rayTracingFlags);
+  dgMesh.indexBuffer = m_renderer->upLoadVertexDataToGPU(srcIndices, mesh->mName.C_Str(), flag | rayTracingFlags);
   BufferCreateInfo bufferInfo{};
   std::string      uniformName = std::string(mesh->mName.C_Str()) + std::string("uniform");
   bufferInfo.reset().setName(uniformName.c_str()).setDeviceOnly(false).setUsageSize(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(Material::UniformMaterial));
-  dgMesh.matUniformBufferHandle = m_renderer->createBuffer(bufferInfo)->handle;
-
+  dgMesh.matUniformBuffer = m_renderer->createBuffer(bufferInfo)->handle;
+  std::vector<u32> primitiveMaterialIndex(mesh->mNumFaces, mesh->mMaterialIndex);
+  std::string      name("primitiveMaterialIndex");
+  bufferInfo.reset().setName((uniformName + name).c_str()).setDeviceOnly(true).setUsageSize(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | flag, sizeof(u32) * primitiveMaterialIndex.size());
+  dgMesh.primitiveMaterialIndexBuffer = m_renderer->createBuffer(bufferInfo)->handle;
   return dgMesh;
 }
 
@@ -242,7 +251,7 @@ void ResourceLoader::executeScene(std::shared_ptr<SceneGraph> scene) {
     Material* mat = m_materials[material->second];
     //create descriptor set here
     DescriptorSetCreateInfo setInfo{};
-    setInfo.reset().setName(scene->m_nodeNames[scene->m_nameForNodeMap[c.first]].c_str()).setLayout(mat->program->passes[0].descriptorSetLayout[0]).buffer(m_renderer->getContext()->m_viewProjectUniformBuffer, 0).buffer(m_meshes[c.second].matUniformBufferHandle, 1);
+    setInfo.reset().setName(scene->m_nodeNames[scene->m_nameForNodeMap[c.first]].c_str()).setLayout(mat->program->passes[0].descriptorSetLayout[0]).buffer(m_renderer->getContext()->m_viewProjectUniformBuffer, 0).buffer(m_meshes[c.second].matUniformBuffer, 1);
     DescriptorSetHandle desc = m_renderer->getContext()->createDescriptorSet(setInfo);
     m_renderObjects.push_back(RenderObject{
         c.second,
@@ -251,10 +260,10 @@ void ResourceLoader::executeScene(std::shared_ptr<SceneGraph> scene) {
         m_materials[material->second],
         {desc},
         m_renderer->getContext()->m_gameViewPass,
-        m_meshes[c.second].vertexBufferHandle,
-        m_meshes[c.second].indexBufferHandle,
+        m_meshes[c.second].vertexBuffer,
+        m_meshes[c.second].indexBuffer,
         m_renderer->getContext()->m_viewProjectUniformBuffer,
-        m_meshes[c.second].matUniformBufferHandle});
+        m_meshes[c.second].matUniformBuffer});
   }
   scene->markAsChanged(0);
   scene->recalculateAllTransforms();

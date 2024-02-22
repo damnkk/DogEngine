@@ -26,22 +26,27 @@ int main() {
   contextInfo.m_debug = true;
   VkPhysicalDeviceAccelerationStructureFeaturesKHR accelFeatures{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR};
   VkPhysicalDeviceRayTracingPipelineFeaturesKHR    rtPipelineFeatures{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR};
+  VkPhysicalDeviceDescriptorIndexingFeaturesEXT    descIndexingFeatures{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT};
+  VkPhysicalDeviceBufferAddressFeaturesEXT         bufferAddressFeatures{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES};
+
   contextInfo.addInstanceLayer("VK_LAYER_KHRONOS_validation")
       .addDeviceExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME)
       .addDeviceExtension(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME)
       .addDeviceExtension(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, false, &accelFeatures)
-      .addDeviceExtension(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, false, &rtPipelineFeatures);
+      .addDeviceExtension(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, false, &rtPipelineFeatures)
+      .addDeviceExtension(VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME, false, &bufferAddressFeatures)
+      .addDeviceExtension(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME, false, &descIndexingFeatures);
   std::shared_ptr<DeviceContext> context = std::make_shared<DeviceContext>();
   context->init(contextInfo);
   Renderer renderer;
   renderer.init(context);
 
   //renderer.loadModel("./models/BoomBoxWithAxes/BoomBoxWithAxes.gltf");
-  renderer.loadModel("./models/Sponza/Sponza.gltf");
+  //renderer.loadModel("./models/Sponza/Sponza.gltf");
   //renderer.loadModel("./models/orrery/scene.gltf");
   //renderer.loadModel("./models/Camera_01_2k/Camera_01_2k.gltf");
   //renderer.loadModel("./models/DamagedHelmet/DamagedHelmet.gltf");
-  //renderer.loadModel("./models/MetalRoughSpheres/MetalRoughSpheres.gltf");
+  renderer.loadModel("./models/MetalRoughSpheres/MetalRoughSpheres.gltf");
   //renderer.loadModel("./models/scene/scene.gltf");
   //renderer.loadModel("./models/Bistro_v5_2/Interiorgltf/bistro1.gltf");
   //renderer.loadModel("./models/duck/12248_Bird_v1_L2.obj");

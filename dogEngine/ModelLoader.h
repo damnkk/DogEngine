@@ -83,9 +83,11 @@ struct Mesh {
   u32 vertexCount = 0;
   u32 indexCount = 0;
 
-  BufferHandle vertexBufferHandle;
-  BufferHandle indexBufferHandle;
-  BufferHandle matUniformBufferHandle;
+  BufferHandle vertexBuffer;
+  BufferHandle indexBuffer;
+  BufferHandle matUniformBuffer;
+  //for ray tracing
+  BufferHandle primitiveMaterialIndexBuffer;
 };
 
 struct RenderObject {
@@ -109,7 +111,11 @@ class ResourceLoader {
   void       loadSceneGraph(std::string sceneGraphPath);
   Material*  convertAIMaterialToDescription(const aiMaterial* aiMat, std::string basePath);
   Mesh       convertAIMesh(aiMesh* mesh);
-  void       executeScene(std::shared_ptr<SceneGraph> scene);
+
+  // rasterization
+  void executeScene(std::shared_ptr<SceneGraph> scene);
+  //ray tracing
+  void executeSceneRT(std::shared_ptr<SceneGraph> scene);
 
  public:
   const std::vector<RenderObject>& getRenderObjects() { return m_renderObjects; }

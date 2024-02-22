@@ -66,7 +66,7 @@ ContextCreateInfo& ContextCreateInfo::addInstanceExtension(const char* name, boo
 }
 
 ContextCreateInfo& ContextCreateInfo::addDeviceExtension(const char* name, bool optional, void* pFeatureStruct, uint32_t version) {
-  m_deviceExtensions.emplace_back(name, optional);
+  m_deviceExtensions.emplace_back(name, optional, pFeatureStruct, version);
   return *this;
 }
 
@@ -433,7 +433,7 @@ void DeviceContext::resize(u16 width, u16 height) {
   m_resized = true;
 }
 
-void getRequiredExtensions(std::vector<const char*>& extensions) {
+void getRequiredInstanceExtensions(std::vector<const char*>& extensions) {
   u32          extCount = 0;
   const char** extensionName;
   extensionName = glfwGetRequiredInstanceExtensions(&extCount);
@@ -443,6 +443,25 @@ void getRequiredExtensions(std::vector<const char*>& extensions) {
 #if defined(VULKAN_DEBUG)
   extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 #endif
+}
+
+void* getRequiredDeviceExtensions(VkPhysicalDevice phyDevice, const ContextCreateInfo::ExtArray& deviceExtArray) {
+  VkPhysicalDeviceFeatures2 phy2{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
+  struct ExtensionHeader {
+    VkStructureType sType;
+    void*           pNext;
+  };
+  auto* header = reinterpret_cast<ExtensionHeader*>(&phy2);
+  for (int i = 0; i < deviceExtArray.size(); ++i) {
+    if (!deviceExtArray[i].pFeatureStruct) {
+      DG_WARN("Device feature structure of name: {} is not provided, this device feature may not be enable!", deviceExtArray[i].name.c_str());
+      continue;
+    }
+    header->pNext = deviceExtArray[i].pFeatureStruct;
+    header = reinterpret_cast<ExtensionHeader*>(header->pNext);
+  }
+  vkGetPhysicalDeviceFeatures2(phyDevice, &phy2);
+  return phy2.pNext;
 }
 
 bool DeviceContext::getFamilyIndex(VkPhysicalDevice& device) {
@@ -931,7 +950,6 @@ BufferHandle DeviceContext::createBuffer(BufferCreateInfo& bufferInfo) {
 
   VmaAllocationCreateInfo vmaInfo = {};
   vmaInfo.flags = bufferInfo.m_deviceOnly ? VMA_ALLOCATION_CREATE_STRATEGY_BEST_FIT_BIT : VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT;
-  //if(bufferInfo.m_presistent) vmaInfo.flags = vmaInfo.flags|VMA_ALLOCATION_CREATE_MAPPED_BIT;
   vmaInfo.usage = VMA_MEMORY_USAGE_AUTO;
 
   VmaAllocationInfo vmaAllocInfo;
@@ -2006,7 +2024,7 @@ void DeviceContext::init(const ContextCreateInfo& contextInfo) {
   vkEnumerateInstanceExtensionProperties(nullptr, &instanceExtensionCount, extensions.data());
   std::vector<void*>       features;
   std::vector<const char*> instanceExtensions = fillFilterdNameArray(extensions, contextInfo.m_instanceExtensions, features);
-  getRequiredExtensions(instanceExtensions);
+  getRequiredInstanceExtensions(instanceExtensions);
 
   u32 instanceLayerCount;
   vkEnumerateInstanceLayerProperties(&instanceLayerCount, nullptr);
@@ -2132,29 +2150,30 @@ void DeviceContext::init(const ContextCreateInfo& contextInfo) {
     queueInfos[2].queueCount = 1;
     queueInfos[2].queueFamilyIndex = m_transferQueueIndex;
   }
-  m_rayTracingPipelineFeatures = VkPhysicalDeviceRayTracingPipelineFeaturesKHR{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR};
-  m_accelerationStructureFeatures = VkPhysicalDeviceAccelerationStructureFeaturesKHR{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR, &m_rayTracingPipelineFeatures};
+  // m_rayTracingPipelineFeatures = VkPhysicalDeviceRayTracingPipelineFeaturesKHR{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR};
+  // m_accelerationStructureFeatures = VkPhysicalDeviceAccelerationStructureFeaturesKHR{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR, &m_rayTracingPipelineFeatures};
 
-  VkPhysicalDeviceDescriptorIndexingFeaturesEXT indexingFeatures{};
-  VkPhysicalDeviceFeatures2                     phy2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, &indexingFeatures};
-  indexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
-  indexingFeatures.pNext = nullptr;
-  indexingFeatures.runtimeDescriptorArray = VK_TRUE;
-  indexingFeatures.descriptorBindingVariableDescriptorCount = VK_TRUE;
-  indexingFeatures.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
-  indexingFeatures.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
-  indexingFeatures.descriptorBindingStorageImageUpdateAfterBind = VK_TRUE;
-  indexingFeatures.descriptorBindingPartiallyBound = VK_TRUE;
-  indexingFeatures.pNext = &m_accelerationStructureFeatures;
+  // VkPhysicalDeviceDescriptorIndexingFeaturesEXT indexingFeatures{};
+  // VkPhysicalDeviceFeatures2                     phy2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, &indexingFeatures};
+  // indexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
+  // indexingFeatures.pNext = nullptr;
+  // indexingFeatures.runtimeDescriptorArray = VK_TRUE;
+  // indexingFeatures.descriptorBindingVariableDescriptorCount = VK_TRUE;
+  // indexingFeatures.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+  // indexingFeatures.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
+  // indexingFeatures.descriptorBindingStorageImageUpdateAfterBind = VK_TRUE;
+  // indexingFeatures.descriptorBindingPartiallyBound = VK_TRUE;
+  // indexingFeatures.pNext = &m_accelerationStructureFeatures;
 
-  vkGetPhysicalDeviceFeatures2(m_physicalDevice, &phy2);
+  // vkGetPhysicalDeviceFeatures2(m_physicalDevice, &phy2);
+  void* FeatureLists = getRequiredDeviceExtensions(m_physicalDevice, contextInfo.m_deviceExtensions);
 
   VkDeviceCreateInfo deviceInfo = {VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO};
   deviceInfo.queueCreateInfoCount = queueCount;
   deviceInfo.pQueueCreateInfos = queueInfos.data();
   deviceInfo.enabledExtensionCount = deviceExtensions.size();
   deviceInfo.ppEnabledExtensionNames = deviceExtensions.data();
-  deviceInfo.pNext = &indexingFeatures;
+  deviceInfo.pNext = FeatureLists;
 
   result = vkCreateDevice(m_physicalDevice, &deviceInfo, nullptr, &m_logicDevice);
   DGASSERT(result == VK_SUCCESS);
@@ -2237,6 +2256,7 @@ void DeviceContext::init(const ContextCreateInfo& contextInfo) {
   vmaInfo.physicalDevice = m_physicalDevice;
   vmaInfo.device = m_logicDevice;
   vmaInfo.instance = m_instance;
+  vmaInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
   //vmaInfo.pVulkanFunctions = &vulkanFunctions;
 
   result = vmaCreateAllocator(&vmaInfo, &m_vma);

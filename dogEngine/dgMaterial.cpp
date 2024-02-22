@@ -277,6 +277,7 @@ void generateSpecularEnvTexture(Renderer* renderer, TextureHandle handle, Textur
   }
   renderer->addImageBarrier(cmd->m_commandBuffer, specTexture, ResourceState::RESOURCE_STATE_COPY_DEST, ResourceState::RESOURCE_STATE_SHADER_RESOURCE, 0, specTexture->m_mipLevel, false);
   cmd->flush(renderer->getContext()->m_graphicsQueue);
+
   //RDOC_CATCH_END
   renderer->getContext()->DestroyPipeline(specPipeline);
   renderer->getContext()->DestroyFrameBuffer(specFBO, true);
