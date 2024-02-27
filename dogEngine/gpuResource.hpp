@@ -250,14 +250,14 @@ struct TextureCreateInfo {
 struct BufferCreateInfo {
   VkDeviceSize       m_bufferSize;
   VkBufferUsageFlags m_bufferUsage;
-  void*              m_sourceData = nullptr;
+  const void*        m_sourceData = nullptr;
   std::string        name;
   bool               m_deviceOnly = true;
   bool               m_presistent = false;
 
   BufferCreateInfo& reset();
   BufferCreateInfo& setUsageSize(VkBufferUsageFlags usage, VkDeviceSize size);
-  BufferCreateInfo& setData(void* data);
+  BufferCreateInfo& setData(const void* data);
   BufferCreateInfo& setName(const char* name);
   BufferCreateInfo& setDeviceOnly(bool deviceOnly);
 };

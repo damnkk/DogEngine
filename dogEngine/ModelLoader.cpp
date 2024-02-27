@@ -21,6 +21,14 @@ std::vector<char> readFile(const std::string& filename) {
   return buffer;
 }
 
+ResourceLoader::ResourceLoader(Renderer* renderer) : m_renderer(renderer) {
+  m_rtBuilder.setup(renderer->getContext().get());
+}
+
+void ResourceLoader::destroy() {
+  m_rtBuilder.destroy();
+}
+
 Mesh ResourceLoader::convertAIMesh(aiMesh* mesh) {
   Mesh               dgMesh;
   bool               hasTexCoords = mesh->HasTextureCoords(0);
@@ -29,7 +37,8 @@ Mesh ResourceLoader::convertAIMesh(aiMesh* mesh) {
   std::vector<u32>   srcIndices;
 
   std::vector<Vertex> vertices;
-  for (size_t i = 0; i < mesh->mNumVertices; ++i) {
+  vertices.reserve(mesh->mNumVertices);
+  for (int i = 0; i < mesh->mNumVertices; ++i) {
     const aiVector3D v = mesh->mVertices[i];
     const aiVector3D n = mesh->mNormals[i];
     const aiVector3D t = hasTexCoords ? mesh->mTextureCoords[0][i] : aiVector3D(0.0f);
@@ -63,7 +72,7 @@ Mesh ResourceLoader::convertAIMesh(aiMesh* mesh) {
   dgMesh.matUniformBuffer = m_renderer->createBuffer(bufferInfo)->handle;
   std::vector<u32> primitiveMaterialIndex(mesh->mNumFaces, mesh->mMaterialIndex);
   std::string      name("primitiveMaterialIndex");
-  bufferInfo.reset().setName((uniformName + name).c_str()).setDeviceOnly(true).setUsageSize(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | flag, sizeof(u32) * primitiveMaterialIndex.size());
+  bufferInfo.reset().setName((uniformName + name).c_str()).setDeviceOnly(true).setUsageSize(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | flag, sizeof(u32) * primitiveMaterialIndex.size()).setData(primitiveMaterialIndex.data());
   dgMesh.primitiveMaterialIndexBuffer = m_renderer->createBuffer(bufferInfo)->handle;
   return dgMesh;
 }
@@ -267,5 +276,105 @@ void ResourceLoader::executeScene(std::shared_ptr<SceneGraph> scene) {
   }
   scene->markAsChanged(0);
   scene->recalculateAllTransforms();
+
+  executeSceneRT(scene);
+}
+
+inline VkTransformMatrixKHR toTransformMatrixKHR(glm::mat4 matrix) {
+  glm::mat4            temp = glm::transpose(matrix);
+  VkTransformMatrixKHR outMatrix;
+  memcpy(&outMatrix, &temp, sizeof(VkTransformMatrixKHR));
+  return outMatrix;
+}
+
+void ResourceLoader::executeSceneRT(std::shared_ptr<SceneGraph> scene) {
+  std::vector<Material::UniformMaterial> rtMaterials;
+  BufferHandle                           materialArray;
+  {
+    for (int i = 0; i < m_materials.size(); ++i) {
+
+      Material::UniformMaterial mat;
+      mat = m_materials[i]->uniformMaterial;
+      for (auto& tex : m_materials[i]->textureMap) {
+        mat.textureIndices[tex.second.bindIdx] = {(int) tex.second.texture.index};
+      }
+      rtMaterials.push_back(mat);
+    }
+    BufferCreateInfo materialArrayBufferCI{};
+    materialArrayBufferCI.reset().setDeviceOnly(true).setUsageSize(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, sizeof(Material::UniformMaterial) * rtMaterials.size()).setName("Material array").setData(rtMaterials.data());
+    materialArray = m_renderer->createBuffer(materialArrayBufferCI)->handle;
+  }
+
+  std::vector<MeshDescRT> meshDescRts;
+  BufferHandle            meshDescArray;
+
+  //---------------create blas -- mesh to vkGeometryKHR----------------
+  std::vector<RayTracingBuilder::BlasInput> allBlasInput;
+  allBlasInput.reserve(m_meshes.size());
+  {
+    for (int i = 0; i < m_meshes.size(); ++i) {
+      // get meshDesc
+      auto                      context = m_renderer->getContext();
+      Buffer*                   vertexBuffer = context->accessBuffer(m_meshes[i].vertexBuffer);
+      Buffer*                   indexBuffer = context->accessBuffer(m_meshes[i].indexBuffer);
+      Buffer*                   primitiveMatBuffer = context->accessBuffer(m_meshes[i].primitiveMaterialIndexBuffer);
+      Buffer*                   matArray = context->accessBuffer(materialArray);
+      MeshDescRT                meshDesc;
+      VkBufferDeviceAddressInfo addressInfo{VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO};
+      addressInfo.buffer = vertexBuffer->m_buffer;
+      meshDesc.vertexAddress = vkGetBufferDeviceAddress(context->m_logicDevice, &addressInfo);
+      addressInfo.buffer = indexBuffer->m_buffer;
+      meshDesc.indexAddress = vkGetBufferDeviceAddress(context->m_logicDevice, &addressInfo);
+      addressInfo.buffer = primitiveMatBuffer->m_buffer;
+      meshDesc.primitiveMatIdxAddress = vkGetBufferDeviceAddress(context->m_logicDevice, &addressInfo);
+      addressInfo.buffer = matArray->m_buffer;
+      meshDesc.materialAddress = vkGetBufferDeviceAddressKHR(context->m_logicDevice, &addressInfo);
+      meshDescRts.push_back(meshDesc);
+
+      //get BlasInput
+      int                                             maxPrimitiveCount = m_meshes[i].indexCount / 3;
+      VkAccelerationStructureGeometryTrianglesDataKHR triangles{VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR};
+      triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
+      triangles.vertexData.deviceAddress = meshDesc.vertexAddress;
+      triangles.vertexStride = sizeof(Vertex);
+      triangles.indexType = VK_INDEX_TYPE_UINT32;
+      triangles.indexData.deviceAddress = meshDesc.indexAddress;
+      triangles.maxVertex = m_meshes[i].indexCount - 1;
+
+      VkAccelerationStructureGeometryKHR asGeom{VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR};
+      asGeom.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR;
+      asGeom.flags = VK_GEOMETRY_OPAQUE_BIT_KHR;
+      asGeom.geometry.triangles = triangles;
+      VkAccelerationStructureBuildRangeInfoKHR offset;
+      offset.primitiveOffset = 0;
+      offset.primitiveCount = maxPrimitiveCount;
+      offset.transformOffset = 0;
+      offset.firstVertex = 0;
+      RayTracingBuilder::BlasInput input;
+      input.asGeometry.emplace_back(asGeom);
+      input.asBuildOffsetInfo.emplace_back(offset);
+      allBlasInput.push_back(input);
+    }
+    BufferCreateInfo meshDescRtsBufferCI{};
+    meshDescRtsBufferCI.reset().setDeviceOnly(true).setUsageSize(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, sizeof(MeshDescRT) * meshDescRts.size()).setName("MeshDescArray").setData(meshDescRts.data());
+    meshDescArray = m_renderer->createBuffer(meshDescRtsBufferCI)->handle;
+  }
+
+  m_rtBuilder.buildBlas(allBlasInput, VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR);
+
+  //build tlas
+  std::vector<VkAccelerationStructureInstanceKHR> tlas;
+  tlas.reserve(m_renderObjects.size());
+  for (const auto& c : scene->m_meshMap) {
+    VkAccelerationStructureInstanceKHR rayInst{};
+    rayInst.transform = toTransformMatrixKHR(scene->getGlobalTransformsFromIdx(c.first));
+    rayInst.instanceCustomIndex = c.second;
+    rayInst.accelerationStructureReference = m_rtBuilder.getBlasDeviceAddress(c.second);
+    rayInst.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
+    rayInst.mask = 0xFF;
+    rayInst.instanceShaderBindingTableRecordOffset = 0;
+    tlas.emplace_back(rayInst);
+  }
+  m_rtBuilder.buildTlas(tlas, VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR);
 }
 }// namespace dg

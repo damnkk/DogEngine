@@ -28,14 +28,16 @@ int main() {
   VkPhysicalDeviceRayTracingPipelineFeaturesKHR    rtPipelineFeatures{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR};
   VkPhysicalDeviceDescriptorIndexingFeaturesEXT    descIndexingFeatures{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT};
   VkPhysicalDeviceBufferAddressFeaturesEXT         bufferAddressFeatures{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES};
+  VkPhysicalDeviceHostQueryResetFeatures           hostQueryResetFeatures{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES};
 
   contextInfo.addInstanceLayer("VK_LAYER_KHRONOS_validation")
       .addDeviceExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME)
       .addDeviceExtension(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME)
       .addDeviceExtension(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, false, &accelFeatures)
       .addDeviceExtension(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, false, &rtPipelineFeatures)
-      .addDeviceExtension(VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME, false, &bufferAddressFeatures)
-      .addDeviceExtension(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME, false, &descIndexingFeatures);
+      .addDeviceExtension(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME, false, &bufferAddressFeatures)
+      .addDeviceExtension(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME, false, &descIndexingFeatures)
+      .addDeviceExtension(VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME, false, &hostQueryResetFeatures);
   std::shared_ptr<DeviceContext> context = std::make_shared<DeviceContext>();
   context->init(contextInfo);
   Renderer renderer;

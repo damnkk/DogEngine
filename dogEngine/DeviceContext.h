@@ -16,6 +16,7 @@
 #include "gpuResource.hpp"
 #include "renderdoc/renderdoc_app.h"
 #include <GLFW/glfw3.h>
+
 namespace dg {
 
 struct CommandBuffer;
@@ -176,28 +177,10 @@ struct DeviceContext {
   bool                             gameViewResize = false;
 
   //---------------- ray tracing ------------------
-  PFN_vkCreateRayTracingPipelinesKHR                vkCreateRayTracingPipelinesKHR;
-  PFN_vkCmdTraceRaysKHR                             vkCmdTraceRaysKHR;
-  PFN_vkCmdTraceRaysIndirectKHR                     vkCmdTraceRaysIndirectKHR;
-  PFN_vkGetRayTracingShaderGroupHandlesKHR          vkGetRayTracingShaderGroupHandlesKHR;
-  PFN_vkGetBufferDeviceAddressKHR                   vkGetBufferDeviceAddressKHR;
-  PFN_vkCreateAccelerationStructureKHR              vkCreateAccelerationStructureKHR;
-  PFN_vkDestroyAccelerationStructureKHR             vkDestroyAccelerationStructureKHR;
-  PFN_vkGetAccelerationStructureDeviceAddressKHR    vkGetAccelerationStructureDeviceAddressKHR;
-  PFN_vkGetAccelerationStructureBuildSizesKHR       vkGetAccelerationStructureBuildSizesKHR;
-  PFN_vkCmdBuildAccelerationStructuresKHR           vkCmdBuildAccelerationStructuresKHR;
-  PFN_vkCmdBuildAccelerationStructuresIndirectKHR   vkCmdBuildAccelerationStructuresIndirectKHR;
-  PFN_vkCmdWriteAccelerationStructuresPropertiesKHR vkCmdWriteAccelerationStructuresPropertiesKHR;
-  PFN_vkCmdCopyAccelerationStructureKHR             vkCmdCopyAccelerationStructureKHR;
-  PFN_vkCmdCopyMemoryToAccelerationStructureKHR     vkCmdCopyMemoryToAccelerationStructureKHR;
-  PFN_vkBuildAccelerationStructuresKHR              vkBuildAccelerationStructuresKHR;
-  PFN_vkWriteAccelerationStructuresPropertiesKHR    vkWriteAccelerationStructuresPropertiesKHR;
-  PFN_vkCopyAccelerationStructureKHR                vkCopyAccelerationStructureKHR;
-  PFN_vkCopyMemoryToAccelerationStructureKHR        vkCopyMemoryToAccelerationStructureKHR;
-  VkPhysicalDeviceRayTracingPipelineFeaturesKHR     m_rayTracingPipelineFeatures;
-  VkPhysicalDeviceRayTracingPipelinePropertiesKHR   m_rayTracingPipelineProperties;
-  VkPhysicalDeviceAccelerationStructureFeaturesKHR  m_accelerationStructureFeatures;
-  bool                                              m_supportRayTracing = false;
+  VkPhysicalDeviceRayTracingPipelineFeaturesKHR    m_rayTracingPipelineFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR};
+  VkPhysicalDeviceRayTracingPipelinePropertiesKHR  m_rayTracingPipelineProperties = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
+  VkPhysicalDeviceAccelerationStructureFeaturesKHR m_accelerationStructureFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR};
+  bool                                             m_supportRayTracing = false;
 
   u32  m_graphicQueueIndex = -1;
   u32  m_computeQueueIndex = -1;

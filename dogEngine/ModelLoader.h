@@ -14,6 +14,7 @@
 #include "assimp/postprocess.h"
 #include "assimp/scene.h"
 
+#include "dgRayTraceBuilder.h"
 #include "dgSceneGraph.h"
 
 namespace dg {
@@ -90,6 +91,13 @@ struct Mesh {
   BufferHandle primitiveMaterialIndexBuffer;
 };
 
+struct MeshDescRT {
+  VkDeviceAddress vertexAddress;
+  VkDeviceAddress indexAddress;
+  VkDeviceAddress materialAddress;
+  VkDeviceAddress primitiveMatIdxAddress;
+};
+
 struct RenderObject {
   u32                              meshIndex;
   u32                              transformIndex;
@@ -103,14 +111,21 @@ struct RenderObject {
   BufferHandle                     materialUniform;
 };
 
+// struct TlasInstance {
+//   glm::mat4 transformMatrix;
+//   u32       instanceIdx;
+// };
+
 class ResourceLoader {
  public:
   ResourceLoader() {}
-  ResourceLoader(Renderer* renderer) : m_renderer(renderer) {}
+  ResourceLoader(Renderer* renderer);
+  void       destroy();
   SceneGraph loadModel(std::string modelPath);
   void       loadSceneGraph(std::string sceneGraphPath);
   Material*  convertAIMaterialToDescription(const aiMaterial* aiMat, std::string basePath);
-  Mesh       convertAIMesh(aiMesh* mesh);
+
+  Mesh convertAIMesh(aiMesh* mesh);
 
   // rasterization
   void executeScene(std::shared_ptr<SceneGraph> scene);
@@ -138,6 +153,8 @@ class ResourceLoader {
 
  private:
   std::vector<RenderObject> m_renderObjects;
+  RayTracingBuilder         m_rtBuilder;
+  //std::vector<TlasInstance> m_tlasInstances;
 };
 
 }// namespace dg

@@ -25,13 +25,6 @@ void CommandBuffer::end() {
   m_isBegin = false;
 }
 
-void CommandBuffer::pushMark(const char* name) {
-  m_context->pushMarker(m_commandBuffer, name);
-}
-void CommandBuffer::popMark() {
-  m_context->popMarker(m_commandBuffer);
-}
-
 void CommandBuffer::reset() {
   m_currRenderPass = nullptr;
   m_isRecording = false;
@@ -60,6 +53,7 @@ void CommandBuffer::flush(VkQueue queue) {
   res = vkWaitForFences(this->m_context->m_logicDevice, 1, &fence, true, UINT64_MAX);
   DGASSERT(res == VK_SUCCESS);
   vkDestroyFence(this->m_context->m_logicDevice, fence, nullptr);
+  reset();
 }
 
 void CommandBuffer::bindPass(RenderPassHandle pass) {

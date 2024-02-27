@@ -1,7 +1,7 @@
 #ifndef VERTEX_H
 #define VERTEX_H
-#include<iostream>
 #include "dgpch.h"
+#include <iostream>
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -11,17 +11,24 @@
 // #define GLFW_INCLUDE_VULKAN
 // #include <GLFW/glfw3.h>
 
-namespace dg{
-struct Vertex{
-    glm::vec3 pos = glm::vec3(0.0f);
-    glm::vec3 normal = glm::vec3(0.0f);
-    glm::vec4 tangent = glm::vec4(0.0f);
-    glm::vec2 texCoord = glm::vec2(0.0f);
+namespace dg {
+struct Vertex {
+  glm::vec3 pos = glm::vec3(0.0f);
+  glm::vec3 normal = glm::vec3(0.0f);
+  glm::vec4 tangent = glm::vec4(0.0f);
+  glm::vec2 texCoord = glm::vec2(0.0f);
+  Vertex&   operator=(Vertex& vert) {
+    this->pos = vert.pos;
+    this->normal = vert.normal;
+    this->tangent = vert.tangent;
+    this->texCoord = vert.texCoord;
+    return *this;
+  }
 
-    static VkVertexInputBindingDescription getBindingDescription();
-    static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();
+  static VkVertexInputBindingDescription                getBindingDescription();
+  static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();
 };
 
 }// namespace dg
 
-#endif //VERTEX_H
+#endif//VERTEX_H

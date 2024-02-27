@@ -144,6 +144,7 @@ void Renderer::destroy() {
   m_buffers.destroy();
   m_materials.destroy();
   m_samplers.destroy();
+  m_resourceLoader->destroy();
   destroySkyBox();
   m_context->Destroy();
 }
@@ -321,8 +322,7 @@ void Renderer::executeScene() {
 
 void Renderer::drawScene() {
   CommandBuffer* cmd = m_context->getCommandBuffer(QueueType::Enum::Graphics, true);
-  cmd->pushMark("DrawScene");
-  Rect2DInt scissor{0, 0, (u16) m_context->m_gameViewWidth, (u16) m_context->m_gameViewHeight};
+  Rect2DInt      scissor{0, 0, (u16) m_context->m_gameViewWidth, (u16) m_context->m_gameViewHeight};
   cmd->setScissor(&scissor);
   ViewPort viewPort{
       .rect{
@@ -339,7 +339,7 @@ void Renderer::drawScene() {
     cmd->bindPipeline(currRenderObject.materialPtr->program->passes[0].pipeline);
     cmd->bindVertexBuffer(currRenderObject.vertexBuffer, 0, 0);
     cmd->bindIndexBuffer(currRenderObject.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-    vkCmdSetDepthTestEnable(cmd->m_commandBuffer, true);
+    vkCmdSetDepthTestEnable(cmd->m_commandBuffer, currRenderObject.materialPtr->depthTest);
 
     Buffer* globalUniformBuffer = m_context->accessBuffer(currRenderObject.globalUniform);
     if (!globalUniformBuffer) {
@@ -370,7 +370,6 @@ void Renderer::drawScene() {
     cmd->bindDescriptorSet({m_context->m_bindlessDescriptorSet}, 1, nullptr, 0);
     cmd->drawIndexed(TopologyType::Enum::Triangle, currRenderObject.vertexIndicesCount, 1, 0, 0, 0);
   }
-  cmd->popMark();
   this->m_context->queueCommandBuffer(cmd);
 }
 

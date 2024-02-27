@@ -40,10 +40,6 @@ glm::mat4 getTranslation(const glm::vec3& translate, const glm::vec3& rotate,
   return transMat * rotateMat * scaleMat;
 }
 
-PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectNameEXT;
-PFN_vkCmdBeginDebugUtilsLabelEXT vkCmdBeginDebugUtilsLabelEXT;
-PFN_vkCmdEndDebugUtilsLabelEXT   vkCmdEndDebugUtilsLabelEXT;
-
 ContextCreateInfo& ContextCreateInfo::setWindow(u32 width, u32 height, void* windowHandle) {
   if (!windowHandle) {
     DG_ERROR("Invalid window pointer")
@@ -123,8 +119,7 @@ struct CommandBufferRing {
   std::vector<u32>           m_nextFreePerThreadFrame;
 };
 
-const std::vector<const char*> deviceExtensions = {
-    VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+std::vector<const char*> deviceExtensions = {};
 
 static CommandBufferRing commandBufferRing;
 
@@ -1664,7 +1659,7 @@ DescriptorSetHandle DeviceContext::createDescriptorSet(DescriptorSetCreateInfo& 
 ShaderStateHandle DeviceContext::createShaderState(ShaderStateCreation& shaderInfo) {
   ShaderStateHandle handle = {m_shaderStates.obtainResource()};
   if (handle.index == k_invalid_index) return handle;
-  if (shaderInfo.m_stageCount == 0 || &shaderInfo.m_stages[0] == nullptr) {
+  if (shaderInfo.m_stageCount == 0 || shaderInfo.m_stages.empty()) {
     DG_ERROR("Shader {} does not contain shader stages.", shaderInfo.name);
   }
   ShaderState* state = accessShaderState(handle);
@@ -2050,7 +2045,7 @@ void DeviceContext::init(const ContextCreateInfo& contextInfo) {
   DGASSERT(result == VK_SUCCESS);
   DG_INFO("Instance created successfully");
 #if defined(VULKAN_DEBUG)
-  DebugMessanger::GetInstance()->SetupDebugMessenger(m_instance);
+  DebugMessanger::GetInstance()->SetupDebugMessenger(this);
 
   if (HMODULE mod = GetModuleHandleA("renderdoc.dll")) {
     pRENDERDOC_GetAPI RENDERDOC_GetAPI =
@@ -2103,6 +2098,7 @@ void DeviceContext::init(const ContextCreateInfo& contextInfo) {
       for (auto prop : props) {
         if (strcmp(prop.extensionName, reqDeviceExtension.name.c_str()) == 0) {
           found = true;
+          deviceExtensions.push_back(reqDeviceExtension.name.c_str());
           break;
         }
       }
@@ -2150,22 +2146,7 @@ void DeviceContext::init(const ContextCreateInfo& contextInfo) {
     queueInfos[2].queueCount = 1;
     queueInfos[2].queueFamilyIndex = m_transferQueueIndex;
   }
-  // m_rayTracingPipelineFeatures = VkPhysicalDeviceRayTracingPipelineFeaturesKHR{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR};
-  // m_accelerationStructureFeatures = VkPhysicalDeviceAccelerationStructureFeaturesKHR{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR, &m_rayTracingPipelineFeatures};
 
-  // VkPhysicalDeviceDescriptorIndexingFeaturesEXT indexingFeatures{};
-  // VkPhysicalDeviceFeatures2                     phy2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, &indexingFeatures};
-  // indexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
-  // indexingFeatures.pNext = nullptr;
-  // indexingFeatures.runtimeDescriptorArray = VK_TRUE;
-  // indexingFeatures.descriptorBindingVariableDescriptorCount = VK_TRUE;
-  // indexingFeatures.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
-  // indexingFeatures.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
-  // indexingFeatures.descriptorBindingStorageImageUpdateAfterBind = VK_TRUE;
-  // indexingFeatures.descriptorBindingPartiallyBound = VK_TRUE;
-  // indexingFeatures.pNext = &m_accelerationStructureFeatures;
-
-  // vkGetPhysicalDeviceFeatures2(m_physicalDevice, &phy2);
   void* FeatureLists = getRequiredDeviceExtensions(m_physicalDevice, contextInfo.m_deviceExtensions);
 
   VkDeviceCreateInfo deviceInfo = {VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO};
@@ -2178,11 +2159,7 @@ void DeviceContext::init(const ContextCreateInfo& contextInfo) {
   result = vkCreateDevice(m_physicalDevice, &deviceInfo, nullptr, &m_logicDevice);
   DGASSERT(result == VK_SUCCESS);
   DG_INFO("Logical device created successfully");
-  if (m_debugUtilsExtentUsed) {
-    vkSetDebugUtilsObjectNameEXT = (PFN_vkSetDebugUtilsObjectNameEXT) vkGetDeviceProcAddr(m_logicDevice, "vkSetDebugUtilsObjectNameEXT");
-    vkCmdBeginDebugUtilsLabelEXT = (PFN_vkCmdBeginDebugUtilsLabelEXT) vkGetDeviceProcAddr(m_logicDevice, "vkCmdBeginDebugUtilsLabelEXT");
-    vkCmdEndDebugUtilsLabelEXT = (PFN_vkCmdEndDebugUtilsLabelEXT) vkGetDeviceProcAddr(m_logicDevice, "vkCmdEndDebugUtilsLabelEXT");
-  }
+  load_VK_EXTENSIONS(m_instance, vkGetInstanceProcAddr, m_logicDevice, vkGetDeviceProcAddr);
 
   vkGetDeviceQueue(m_logicDevice, m_graphicQueueIndex, 0, &m_graphicsQueue);
   vkGetDeviceQueue(m_logicDevice, m_computeQueueIndex, 0, &m_computeQueue);
@@ -2219,29 +2196,6 @@ void DeviceContext::init(const ContextCreateInfo& contextInfo) {
   vulkanFunctions.vkGetDeviceProcAddr = &vkGetDeviceProcAddr;
 
   if (m_supportRayTracing) {
-    vkCreateRayTracingPipelinesKHR = (PFN_vkCreateRayTracingPipelinesKHR) vkGetDeviceProcAddr(m_logicDevice, "vkCreateRayTracingPipelinesKHR");
-    vkCmdTraceRaysKHR = (PFN_vkCmdTraceRaysKHR) vkGetDeviceProcAddr(m_logicDevice, "vkCmdTraceRaysKHR");
-    vkCmdTraceRaysIndirectKHR = (PFN_vkCmdTraceRaysIndirectKHR) vkGetDeviceProcAddr(m_logicDevice, "vkCmdTraceRaysIndirectKHR");
-
-    vkGetRayTracingShaderGroupHandlesKHR = (PFN_vkGetRayTracingShaderGroupHandlesKHR) vkGetDeviceProcAddr(m_logicDevice, "vkGetRayTracingShaderGroupHandlesKHR");
-    vkGetBufferDeviceAddressKHR = (PFN_vkGetBufferDeviceAddressKHR) vkGetDeviceProcAddr(m_logicDevice, "vkGetBufferDeviceAddressKHR");
-    vkGetAccelerationStructureDeviceAddressKHR = (PFN_vkGetAccelerationStructureDeviceAddressKHR) vkGetDeviceProcAddr(m_logicDevice, "vkGetAccelerationStructureDeviceAddressKHR");
-    vkGetAccelerationStructureBuildSizesKHR = (PFN_vkGetAccelerationStructureBuildSizesKHR) vkGetDeviceProcAddr(m_logicDevice, "vkGetAccelerationStructureBuildSizesKHR");
-
-    vkCreateAccelerationStructureKHR = (PFN_vkCreateAccelerationStructureKHR) vkGetDeviceProcAddr(m_logicDevice, "vkCreateAccelerationStructureKHR");
-    vkDestroyAccelerationStructureKHR = (PFN_vkDestroyAccelerationStructureKHR) vkGetDeviceProcAddr(m_logicDevice, "vkDestroyAccelerationStructureKHR");
-
-    vkCmdBuildAccelerationStructuresKHR = (PFN_vkCmdBuildAccelerationStructuresKHR) vkGetDeviceProcAddr(m_logicDevice, "vkCmdBuildAccelerationStructuresKHR");
-    vkCmdBuildAccelerationStructuresIndirectKHR = (PFN_vkCmdBuildAccelerationStructuresIndirectKHR) vkGetDeviceProcAddr(m_logicDevice, "vkCmdBuildAccelerationStructuresIndirectKHR");
-    vkCmdWriteAccelerationStructuresPropertiesKHR = (PFN_vkCmdWriteAccelerationStructuresPropertiesKHR) vkGetDeviceProcAddr(m_logicDevice, "vkCmdWriteAccelerationStructuresPropertiesKHR");
-    vkCmdCopyAccelerationStructureKHR = (PFN_vkCmdCopyAccelerationStructureKHR) vkGetDeviceProcAddr(m_logicDevice, "vkCmdCopyAccelerationStructureKHR");
-    vkCmdCopyMemoryToAccelerationStructureKHR = (PFN_vkCmdCopyMemoryToAccelerationStructureKHR) vkGetDeviceProcAddr(m_logicDevice, "vkCmdCopyMemoryToAccelerationStructureKHR");
-
-    vkBuildAccelerationStructuresKHR = (PFN_vkBuildAccelerationStructuresKHR) vkGetDeviceProcAddr(m_logicDevice, "vkBuildAccelerationStructuresKHR");
-    vkWriteAccelerationStructuresPropertiesKHR = (PFN_vkWriteAccelerationStructuresPropertiesKHR) vkGetDeviceProcAddr(m_logicDevice, "vkWriteAccelerationStructuresPropertiesKHR");
-    vkCopyAccelerationStructureKHR = (PFN_vkCopyAccelerationStructureKHR) vkGetDeviceProcAddr(m_logicDevice, "vkCopyAccelerationStructureKHR");
-    vkCopyMemoryToAccelerationStructureKHR = (PFN_vkCopyMemoryToAccelerationStructureKHR) vkGetDeviceProcAddr(m_logicDevice, "vkCopyMemoryToAccelerationStructureKHR");
-    m_rayTracingPipelineProperties = VkPhysicalDeviceRayTracingPipelinePropertiesKHR{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
     VkPhysicalDeviceProperties2 prop2{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
     prop2.pNext = &m_rayTracingPipelineProperties;
     vkGetPhysicalDeviceProperties2(m_physicalDevice, &prop2);
@@ -2407,7 +2361,6 @@ void DeviceContext::newFrame() {
     reCreateSwapChain();
   }
   vkResetFences(m_logicDevice, 1, renderCompleteFence);
-  ////commandBufferRing.resetPools(m_currentFrame);
 }
 
 void DeviceContext::present() {
@@ -2660,11 +2613,7 @@ void DeviceContext::Destroy() {
 
 void DeviceContext::setResourceName(VkObjectType objectType, uint64_t handle, const char* name) {
   if (!m_debugUtilsExtentUsed) return;
-  VkDebugUtilsObjectNameInfoEXT nameinfo = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
-  nameinfo.objectType = objectType;
-  nameinfo.objectHandle = handle;
-  nameinfo.pObjectName = name;
-  vkSetDebugUtilsObjectNameEXT(m_logicDevice, &nameinfo);
+  DebugMessanger::GetInstance()->setObjectName(handle, name, objectType);
 }
 
 void DeviceContext::pushMarker(VkCommandBuffer cmd, const char* name) {

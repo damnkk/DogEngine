@@ -13,7 +13,7 @@ BufferCreateInfo& BufferCreateInfo::reset() {
   return *this;
 }
 
-BufferCreateInfo& BufferCreateInfo::setData(void* data) {
+BufferCreateInfo& BufferCreateInfo::setData(const void* data) {
   m_sourceData = data;
   return *this;
 }

@@ -12,10 +12,6 @@ struct CommandBuffer {
   void begin();
   void end();
 
-  // debug util
-  void pushMark(const char* name);
-  void popMark();
-
   //just for temproary one time submit command buffer
   void flush(VkQueue queue);
   void bindPass(RenderPassHandle pass);
