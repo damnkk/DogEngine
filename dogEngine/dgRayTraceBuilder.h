@@ -24,7 +24,7 @@ class RayTracingBuilder {
   void                       buildBlas(const std::vector<BlasInput>& input, VkBuildAccelerationStructureFlagsKHR flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR);
   void                       updateBlas(u32 blasIdx, BlasInput& blas, VkBuildAccelerationStructureFlagsKHR flags);
   void                       buildTlas(const std::vector<VkAccelerationStructureInstanceKHR>& instances, VkBuildAccelerationStructureFlagsKHR flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR, bool update = false);
-  void                       cmdCreateTlas(CommandBuffer* cmd, u32 instanceCount, VkDeviceAddress instBufferAddr, BufferHandle scratchBufferHandle, VkBuildAccelerationStructureFlagsKHR flags, bool update, bool motion);
+  void                       cmdCreateTlas(CommandBuffer* cmd, u32 instanceCount, VkDeviceAddress instBufferAddr, BufferHandle& scratchBufferHandle, VkBuildAccelerationStructureFlagsKHR flags, bool update, bool motion);
 
   template<class T>
   void buildTlas(const std::vector<T>&                instances,
@@ -51,7 +51,7 @@ class RayTracingBuilder {
     BufferHandle scratchBuffer{k_invalid_index};
     cmdCreateTlas(cmd, countInstance, instBufferAddr, scratchBuffer, flags, update, motion);
     cmd->flush(m_context->m_graphicsQueue);
-    // m_context->destroyBufferInstant(scratchBuffer.index);
+    m_context->destroyBufferInstant(scratchBuffer.index);
     m_context->destroyBufferInstant(bufferHandle.index);
   }
 

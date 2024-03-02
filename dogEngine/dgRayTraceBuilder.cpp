@@ -168,6 +168,49 @@ void RayTracingBuilder::buildTlas(const std::vector<VkAccelerationStructureInsta
   buildTlas(instances, flags, update, false);
 }
 
-void RayTracingBuilder::cmdCreateTlas(CommandBuffer* cmd, u32 instanceCount, VkDeviceAddress instBufferAddr, BufferHandle scratchBufferHandle, VkBuildAccelerationStructureFlagsKHR flags, bool update, bool motion) {
+void RayTracingBuilder::cmdCreateTlas(CommandBuffer* cmd, u32 instanceCount, VkDeviceAddress instBufferAddr, BufferHandle& scratchBufferHandle, VkBuildAccelerationStructureFlagsKHR flags, bool update, bool motion) {
+  VkAccelerationStructureGeometryInstancesDataKHR instancesVk{VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR};
+  instancesVk.data.deviceAddress = instBufferAddr;
+
+  VkAccelerationStructureGeometryKHR topASGeometry{VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR};
+  topASGeometry.geometryType = VK_GEOMETRY_TYPE_INSTANCES_KHR;
+  topASGeometry.geometry.instances = instancesVk;
+
+  VkAccelerationStructureBuildGeometryInfoKHR buildInfo{VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR};
+  buildInfo.flags = flags;
+  buildInfo.geometryCount = 1;
+  buildInfo.pGeometries = &topASGeometry;
+  buildInfo.mode = update?VK_BUILD_ACCELERATION_STRUCTURE_MODE_UPDATE_KHR:VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
+  buildInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
+  
+  VkAccelerationStructureBuildSizesInfoKHR sizeInfo{VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR};
+  vkGetAccelerationStructureBuildSizesKHR(m_context->m_logicDevice, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &buildInfo, &instanceCount, &sizeInfo);
+  if(update==false){
+    VkAccelerationStructureCreateInfoKHR createInfo{VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR};
+    createInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
+    createInfo.size = sizeInfo.accelerationStructureSize;
+    BufferCreateInfo tlasBufferInfo{};
+    tlasBufferInfo.reset().setName("tlasBuffer").setUsageSize(VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR|VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, createInfo.size).setDeviceOnly(true);
+    m_tlas.buffer = m_context->createBuffer(tlasBufferInfo);
+    Buffer* tlasBuffer = m_context->accessBuffer(m_tlas.buffer);
+    createInfo.buffer = tlasBuffer->m_buffer;
+    vkCreateAccelerationStructureKHR(m_context->m_logicDevice, &createInfo, nullptr, &m_tlas.accel);
+    DebugMessanger::GetInstance()->setObjectName((uint64_t)m_tlas.accel, "tlas", VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR);
+  }
+  BufferCreateInfo scratchBufferInfo{};
+  scratchBufferInfo.reset().setDeviceOnly(true).setName("scratchBuffer").setUsageSize(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, sizeInfo.buildScratchSize);
+  scratchBufferHandle = m_context->createBuffer(scratchBufferInfo);
+  Buffer* scratchBuffer = m_context->accessBuffer(scratchBufferHandle);
+  VkBufferDeviceAddressInfo scratchAddrInfo{VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO};
+  scratchAddrInfo.buffer = scratchBuffer->m_buffer;
+  VkDeviceAddress scratchAddr = vkGetBufferDeviceAddressKHR(m_context->m_logicDevice, &scratchAddrInfo);
+
+  buildInfo.srcAccelerationStructure = update?m_tlas.accel:VK_NULL_HANDLE;
+  buildInfo.dstAccelerationStructure = m_tlas.accel;
+  buildInfo.scratchData.deviceAddress = scratchAddr;
+
+  VkAccelerationStructureBuildRangeInfoKHR buildOffsetInfo{instanceCount,0,0,0};
+  const VkAccelerationStructureBuildRangeInfoKHR* pBuildOffsetInfo = &buildOffsetInfo;
+  vkCmdBuildAccelerationStructuresKHR(cmd->m_commandBuffer, 1, &buildInfo,&pBuildOffsetInfo);
 }
-}// namespace dg
+}// namespace dg;

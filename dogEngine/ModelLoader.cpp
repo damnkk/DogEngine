@@ -376,5 +376,23 @@ void ResourceLoader::executeSceneRT(std::shared_ptr<SceneGraph> scene) {
     tlas.emplace_back(rayInst);
   }
   m_rtBuilder.buildTlas(tlas, VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR);
+
+//prepare raytracing pipeline's descriptor
+  DescriptorSetLayoutCreateInfo setLayout0{};
+  setLayout0.reset().setName("AccStructure&OutputImageBinding").addBinding({VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR,0,1,"accelerationStructure"})
+  .addBinding({VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,0,1,"outputImage"});
+  DescriptorSetLayoutHandle layoutHandle0 = m_renderer->getContext()->createDescriptorSetLayout(setLayout0);
+
+  DescriptorSetLayoutCreateInfo setLayout1{};
+  setLayout1.reset().setName("CameraTransform&objectDescArray").addBinding({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,0,1,"CameraTransForm"})
+  .addBinding({VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,0,1,"objectDescArray"});
+  DescriptorSetLayoutHandle layoutHandle1 = m_renderer->getContext()->createDescriptorSetLayout(setLayout1);
+
+  //descriptorSet3 is bindless descriptor witch is handled in device context, so we don't do anything here.
+  DescriptorSetCreateInfo setInfo0{};
+  setInfo0.reset().setName("accStructure&OutputImageBindingDesc").setLayout(layoutHandle0);
+
+//ming
+
 }
 }// namespace dg

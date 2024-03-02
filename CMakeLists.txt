@@ -25,14 +25,8 @@ endif()
 #set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_executable(vulkan_learning Vulkan.cpp)
 target_include_directories(vulkan_learning PUBLIC
-                            #${VULKAN_SDK_PATH}/Include
                             ${CMAKE_SOURCE_DIR}/dogEngine 
                             ${CMAKE_SOURCE_DIR}/external/glslang/glslang/include
-                            #${CMAKE_SOURCE_DIR}/external/glm/glm
-                            # ${CMAKE_SOURCE_DIR}/external/glfw/include
-                            # ${CMAKE_SOURCE_DIR}/external/VMA/include
-                            # ${CMAKE_SOURCE_DIR}/external/stb
-                            # ${CMAKE_SOURCE_DIR}/external/spdlog/include
                             )
 target_link_libraries(vulkan_learning
                       dogEngine)
