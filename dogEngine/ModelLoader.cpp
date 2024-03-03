@@ -377,22 +377,37 @@ void ResourceLoader::executeSceneRT(std::shared_ptr<SceneGraph> scene) {
   }
   m_rtBuilder.buildTlas(tlas, VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR);
 
-//prepare raytracing pipeline's descriptor
+  //prepare raytracing pipeline's descriptor
   DescriptorSetLayoutCreateInfo setLayout0{};
-  setLayout0.reset().setName("AccStructure&OutputImageBinding").addBinding({VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR,0,1,"accelerationStructure"})
-  .addBinding({VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,0,1,"outputImage"});
+  setLayout0.reset().setName("AccStructure&OutputImageBinding").addBinding({VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 0, 1, "accelerationStructure"}).addBinding({VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, 1, "outputImage"});
   DescriptorSetLayoutHandle layoutHandle0 = m_renderer->getContext()->createDescriptorSetLayout(setLayout0);
 
-  DescriptorSetLayoutCreateInfo setLayout1{};
-  setLayout1.reset().setName("CameraTransform&objectDescArray").addBinding({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,0,1,"CameraTransForm"})
-  .addBinding({VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,0,1,"objectDescArray"});
-  DescriptorSetLayoutHandle layoutHandle1 = m_renderer->getContext()->createDescriptorSetLayout(setLayout1);
+  // DescriptorSetLayoutCreateInfo setLayout1{};
+  // setLayout1.reset().setName("CameraTransform&objectDescArray").addBinding({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, 1, "CameraTransForm"}).addBinding({VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, 1, "objectDescArray"});
+  // DescriptorSetLayoutHandle layoutHandle1 = m_renderer->getContext()->createDescriptorSetLayout(setLayout1);
 
   //descriptorSet3 is bindless descriptor witch is handled in device context, so we don't do anything here.
   DescriptorSetCreateInfo setInfo0{};
-  setInfo0.reset().setName("accStructure&OutputImageBindingDesc").setLayout(layoutHandle0);
+  setInfo0.reset().setName("accStructure&OutputImageBindingDesc").setLayout(layoutHandle0).accelerateStrcture(m_rtBuilder.getAccelerationStructure(), 0).texture(m_renderer->getContext()->m_gameViewFrameTextures[0], 1);
+  DescriptorSetHandle set0 = m_renderer->getContext()->createDescriptorSet(setInfo0);
 
-//ming
+  // DescriptorSetCreateInfo setInfo1{};
+  // setInfo1.reset().setName("cameraTransform&objectDescArray").setLayout(layoutHandle1).buffer(m_renderer->getContext()->m_viewProjectUniformBuffer, 0).buffer(meshDescArray, 1);
+  // DescriptorSetHandle set1 = m_renderer->getContext()->createDescriptorSet(setInfo1);
 
+  //set push constant
+  VkPushConstantRange constRange;
+  constRange.offset = 0;
+  constRange.size = sizeof(RtPushConstant);
+  constRange.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+
+  // prepare pipeline
+  ShaderStateCreation stateCI{};
+  stateCI.reset().setName("ry shader state").addStage("./shader/rayGen.rgen", VK_SHADER_STAGE_RAYGEN_BIT_KHR).addStage("./shader/rayClosestHit.rchit", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR).addStage("./shader/rayMiss.rmiss", VK_SHADER_STAGE_MISS_BIT_KHR);
+  PipelineCreateInfo rtPipelineInfo{};
+  //rtPipelineInfo.addDescriptorSetlayout(layoutHandle0).addDescriptorSetlayout(layoutHandle1).addDescriptorSetlayout(m_renderer->getContext()->m_bindlessDescriptorSetLayout).addPushConstant(constRange);
+  rtPipelineInfo.m_shaderState = stateCI;
+
+  //ming
 }
 }// namespace dg

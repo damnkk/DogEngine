@@ -225,7 +225,7 @@ void generateSpecularEnvTexture(Renderer* renderer, TextureHandle handle, Textur
   pipelineInfo.m_shaderState.addStage("./shaders/prefilter.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
   pipelineInfo.m_shaderState.setName("irraPipeline");
   pipelineInfo.addDescriptorSetlayout(renderer->getContext()->m_bindlessDescriptorSetLayout);
-  pipelineInfo.addPushConstants(push);
+  pipelineInfo.addPushConstant(push);
   PipelineHandle specPipeline = renderer->getContext()->createPipeline(pipelineInfo);
   CommandBuffer* cmd = renderer->getContext()->getInstantCommandBuffer();
   //RDOC_CATCH_START

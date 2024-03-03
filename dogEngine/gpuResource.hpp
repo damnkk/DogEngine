@@ -93,6 +93,10 @@ typedef enum ResourceState {
   RESOURCE_STATE_SHADING_RATE_SOURCE = 0x8000,
 };
 
+struct RtPushConstant {
+  u32 frameCount;
+};
+
 struct Texture {
   VkImage               m_image;
   VkDescriptorImageInfo m_imageInfo;
@@ -109,6 +113,11 @@ struct Texture {
   u8                    m_flags = 0;
 
   void setSampler(std::shared_ptr<DeviceContext> context, SamplerHandle handle);
+};
+
+struct AccelKHR {
+  VkAccelerationStructureKHR accel = VK_NULL_HANDLE;
+  BufferHandle               buffer;
 };
 
 struct Buffer {
@@ -168,9 +177,9 @@ struct DescriptorSet {
   std::vector<ResourceHandle> m_resources;
   std::vector<SamplerHandle>  m_samples;
   std::vector<u32>            m_bindings;
-
-  const DescriptorSetLayout* m_layout;
-  u32                        m_resourceNums;
+  AccelKHR                    m_accel;
+  const DescriptorSetLayout*  m_layout;
+  u32                         m_resourceNums;
 };
 
 struct RenderPass {
@@ -434,6 +443,7 @@ struct DescriptorSetCreateInfo {
   std::vector<ResourceHandle> m_resources;
   std::vector<SamplerHandle>  m_samplers;
   std::vector<u32>            m_bindings;
+  AccelKHR                    m_accel;
 
   DescriptorSetLayoutHandle m_layout;
   u32                       m_resourceNums = 0;
@@ -443,6 +453,7 @@ struct DescriptorSetCreateInfo {
   DescriptorSetCreateInfo& setName(const char* name);
   DescriptorSetCreateInfo& texture(TextureHandle handle, u32 binding);
   DescriptorSetCreateInfo& buffer(BufferHandle handle, u32 binding);
+  DescriptorSetCreateInfo& accelerateStrcture(AccelKHR accStructure, u32 binding);
   DescriptorSetCreateInfo& textureSampler(TextureHandle tex, SamplerHandle sampler, u32 binding);
   DescriptorSetCreateInfo& setLayout(DescriptorSetLayoutHandle handle);
 };
@@ -485,7 +496,7 @@ struct PipelineCreateInfo {
   u32                 m_numActivateLayouts = 0;
   std::string         name;
   PipelineCreateInfo& addDescriptorSetlayout(const DescriptorSetLayoutHandle& handle);
-  PipelineCreateInfo& addPushConstants(VkPushConstantRange push);
+  PipelineCreateInfo& addPushConstant(VkPushConstantRange push);
   PipelineCreateInfo& setRayBoundNum(u32 num) {
     m_rayBoundNum = num;
     return *this;

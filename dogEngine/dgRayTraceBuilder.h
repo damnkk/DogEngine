@@ -4,11 +4,6 @@
 
 namespace dg {
 
-struct AccelKHR {
-  VkAccelerationStructureKHR accel = VK_NULL_HANDLE;
-  BufferHandle               buffer;
-};
-
 class RayTracingBuilder {
  public:
   struct BlasInput {
@@ -17,14 +12,14 @@ class RayTracingBuilder {
     VkBuildAccelerationStructureFlagsKHR                  flags{0};
   };
 
-  void                       setup(DeviceContext* context);
-  void                       destroy();
-  VkAccelerationStructureKHR getAccelerationStructure() const;
-  VkDeviceAddress            getBlasDeviceAddress(u32 blasID);
-  void                       buildBlas(const std::vector<BlasInput>& input, VkBuildAccelerationStructureFlagsKHR flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR);
-  void                       updateBlas(u32 blasIdx, BlasInput& blas, VkBuildAccelerationStructureFlagsKHR flags);
-  void                       buildTlas(const std::vector<VkAccelerationStructureInstanceKHR>& instances, VkBuildAccelerationStructureFlagsKHR flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR, bool update = false);
-  void                       cmdCreateTlas(CommandBuffer* cmd, u32 instanceCount, VkDeviceAddress instBufferAddr, BufferHandle& scratchBufferHandle, VkBuildAccelerationStructureFlagsKHR flags, bool update, bool motion);
+  void            setup(DeviceContext* context);
+  void            destroy();
+  AccelKHR        getAccelerationStructure() const;
+  VkDeviceAddress getBlasDeviceAddress(u32 blasID);
+  void            buildBlas(const std::vector<BlasInput>& input, VkBuildAccelerationStructureFlagsKHR flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR);
+  void            updateBlas(u32 blasIdx, BlasInput& blas, VkBuildAccelerationStructureFlagsKHR flags);
+  void            buildTlas(const std::vector<VkAccelerationStructureInstanceKHR>& instances, VkBuildAccelerationStructureFlagsKHR flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR, bool update = false);
+  void            cmdCreateTlas(CommandBuffer* cmd, u32 instanceCount, VkDeviceAddress instBufferAddr, BufferHandle& scratchBufferHandle, VkBuildAccelerationStructureFlagsKHR flags, bool update, bool motion);
 
   template<class T>
   void buildTlas(const std::vector<T>&                instances,

@@ -257,6 +257,13 @@ DescriptorSetCreateInfo& DescriptorSetCreateInfo::texture(TextureHandle handle, 
   return *this;
 }
 
+DescriptorSetCreateInfo& DescriptorSetCreateInfo::accelerateStrcture(AccelKHR accel, u32 binding) {
+  m_accel = accel;
+  m_bindings[m_resourceNums] = binding;
+  ++m_resourceNums;
+  return *this;
+}
+
 DescriptorSetCreateInfo& DescriptorSetCreateInfo::setLayout(DescriptorSetLayoutHandle handle) {
   m_layout = handle;
   return *this;
@@ -445,7 +452,7 @@ PipelineCreateInfo& PipelineCreateInfo::addDescriptorSetlayout(const DescriptorS
   m_descLayout[m_numActivateLayouts++] = info;
   return *this;
 }
-PipelineCreateInfo& PipelineCreateInfo::addPushConstants(VkPushConstantRange push) {
+PipelineCreateInfo& PipelineCreateInfo::addPushConstant(VkPushConstantRange push) {
   m_pushConstants.push_back(push);
   return *this;
 }

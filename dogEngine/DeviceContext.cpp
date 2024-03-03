@@ -1523,15 +1523,19 @@ DescriptorSetLayoutHandle DeviceContext::createDescriptorSetLayout(DescriptorSet
   return handle;
 }
 
-static void vk_fill_write_descriptor_sets(DeviceContext* context, const DescriptorSetLayout* setLayout, VkDescriptorSet vk_descriptor_set,
+static void vk_fill_write_descriptor_sets(DeviceContext* context, const DescriptorSetLayout* setLayout, DescriptorSet* descriptor_set,
                                           VkWriteDescriptorSet* descriptorWrite, VkDescriptorBufferInfo* bufferInfo, VkDescriptorImageInfo* imageInfo,
-                                          VkSampler* sampler, const u32& num_resources, const std::vector<ResourceHandle>& resources, std::vector<SamplerHandle>& samplers, const std::vector<u32>& bindings) {
+                                          VkSampler* sampler, const u32& num_resources) {//, const std::vector<ResourceHandle>& resources, std::vector<SamplerHandle>& samplers, const std::vector<u32>& bindings) {
+  auto                                         bindings = descriptor_set->m_bindings;
+  auto                                         resources = descriptor_set->m_resources;
+  auto                                         samplers = descriptor_set->m_samples;
+  VkWriteDescriptorSetAccelerationStructureKHR asInfo{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR};
   for (int i = 0; i < num_resources; ++i) {
     u32   layoutBindingIndex = bindings[i];
     auto& binding = setLayout->m_vkBindings[layoutBindingIndex];
 
     descriptorWrite[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descriptorWrite[i].dstSet = vk_descriptor_set;
+    descriptorWrite[i].dstSet = descriptor_set->m_vkdescriptorSet;
     descriptorWrite[i].dstBinding = binding.binding;
     descriptorWrite[i].dstArrayElement = 0;
     descriptorWrite[i].descriptorCount = binding.descriptorCount;
@@ -1601,8 +1605,15 @@ static void vk_fill_write_descriptor_sets(DeviceContext* context, const Descript
         descriptorWrite[i].pBufferInfo = &bufferInfo[i];
         break;
       }
+      case (VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR): {
+        descriptorWrite[i].descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+        asInfo.accelerationStructureCount = 1;
+        asInfo.pAccelerationStructures = &descriptor_set->m_accel.accel;
+        descriptorWrite[i].pNext = &asInfo;
+        break;
+      }
       default: {
-        DG_ERROR("Unsupported descriptor type: ", binding.descriptorType);
+        DG_ERROR("Unsupported descriptor type: {}", binding.descriptorType);
         break;
       }
     }
@@ -1634,17 +1645,19 @@ DescriptorSetHandle DeviceContext::createDescriptorSet(DescriptorSetCreateInfo& 
     DGASSERT(res == VK_SUCCESS)
   }
 
-  set->m_bindings = dcinfo.m_bindings;
   set->m_resources = dcinfo.m_resources;
   set->m_samples = dcinfo.m_samplers;
+  set->m_bindings = dcinfo.m_bindings;
+  set->m_resourceNums = dcinfo.m_resourceNums;
   set->m_layout = layout;
+  set->m_accel = dcinfo.m_accel;
 
   Sampler*               sampler = accessSampler(m_defaultSampler);
   const u32              numResources = dcinfo.m_resourceNums;
   VkWriteDescriptorSet   descriptor_write[32];
   VkDescriptorBufferInfo buffer_info[32];
   VkDescriptorImageInfo  image_info[32];
-  vk_fill_write_descriptor_sets(this, layout, set->m_vkdescriptorSet, descriptor_write, buffer_info, image_info, &sampler->m_sampler, numResources, dcinfo.m_resources, dcinfo.m_samplers, dcinfo.m_bindings);
+  vk_fill_write_descriptor_sets(this, layout, set, descriptor_write, buffer_info, image_info, &sampler->m_sampler, numResources);
 
   for (int i = 0; i < numResources; ++i) {
     set->m_resources[i] = dcinfo.m_resources[i];

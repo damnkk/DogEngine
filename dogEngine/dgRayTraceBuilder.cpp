@@ -14,8 +14,8 @@ void RayTracingBuilder::destroy() {
   m_context->DestroyBuffer(m_tlas.buffer);
 }
 
-VkAccelerationStructureKHR RayTracingBuilder::getAccelerationStructure() const {
-  return m_tlas.accel;
+AccelKHR RayTracingBuilder::getAccelerationStructure() const {
+  return m_tlas;
 }
 
 VkDeviceAddress RayTracingBuilder::getBlasDeviceAddress(u32 blasID) {
