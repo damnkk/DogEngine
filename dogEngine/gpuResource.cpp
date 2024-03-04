@@ -34,7 +34,8 @@ BufferCreateInfo& BufferCreateInfo::setDeviceOnly(bool deviceOnly) {
   return *this;
 }
 
-SamplerCreateInfo& SamplerCreateInfo::set_min_mag_mip(VkFilter min, VkFilter max, VkSamplerMipmapMode mipMode) {
+SamplerCreateInfo& SamplerCreateInfo::set_min_mag_mip(VkFilter min, VkFilter max,
+                                                      VkSamplerMipmapMode mipMode) {
   m_minFilter = min;
   m_maxFilter = max;
   m_mipmapMode = mipMode;
@@ -44,12 +45,15 @@ SamplerCreateInfo& SamplerCreateInfo::set_address_u(VkSamplerAddressMode u) {
   m_addressU = u;
   return *this;
 }
-SamplerCreateInfo& SamplerCreateInfo::set_address_uv(VkSamplerAddressMode u, VkSamplerAddressMode v) {
+SamplerCreateInfo& SamplerCreateInfo::set_address_uv(VkSamplerAddressMode u,
+                                                     VkSamplerAddressMode v) {
   m_addressU = u;
   m_addressV = v;
   return *this;
 }
-SamplerCreateInfo& SamplerCreateInfo::set_address_uvw(VkSamplerAddressMode u, VkSamplerAddressMode v, VkSamplerAddressMode w) {
+SamplerCreateInfo& SamplerCreateInfo::set_address_uvw(VkSamplerAddressMode u,
+                                                      VkSamplerAddressMode v,
+                                                      VkSamplerAddressMode w) {
   m_addressU = u;
   m_addressV = v;
   m_addressW = w;
@@ -144,7 +148,9 @@ RenderPassCreateInfo& RenderPassCreateInfo::setDepthStencilTexture(TextureHandle
   return *this;
 }
 
-RenderPassCreateInfo& RenderPassCreateInfo::setOperations(RenderPassOperation::Enum color, RenderPassOperation::Enum depth, RenderPassOperation::Enum stencil) {
+RenderPassCreateInfo& RenderPassCreateInfo::setOperations(RenderPassOperation::Enum color,
+                                                          RenderPassOperation::Enum depth,
+                                                          RenderPassOperation::Enum stencil) {
   this->m_color = color;
   this->m_depth = depth;
   this->m_stencil = stencil;
@@ -167,7 +173,8 @@ FrameBufferCreateInfo& FrameBufferCreateInfo::reset() {
 
 FrameBufferCreateInfo& FrameBufferCreateInfo::addRenderTarget(TextureHandle texture) {
   if (m_numRenderTargets == k_max_image_outputs) {
-    DG_ERROR("There is already ", k_max_image_outputs, " color attachments in this FrameBuffer, can add more");
+    DG_ERROR("There is already ", k_max_image_outputs,
+             " color attachments in this FrameBuffer, can add more");
     exit(-1);
   }
   m_outputTextures[m_numRenderTargets++] = texture;
@@ -214,14 +221,16 @@ DescriptorSetLayoutCreateInfo& DescriptorSetLayoutCreateInfo::setName(const char
 
 DescriptorSetLayoutCreateInfo& DescriptorSetLayoutCreateInfo::addBinding(const Binding& binding) {
   if (m_bindingNum >= k_max_discriptor_nums_per_set) {
-    DG_ERROR("Max number of binding is ", std::to_string(k_max_discriptor_nums_per_set), " can't add more binding!")
+    DG_ERROR("Max number of binding is ", std::to_string(k_max_discriptor_nums_per_set),
+             " can't add more binding!")
     exit(-1);
   }
   m_bindings[m_bindingNum++] = binding;
   return *this;
 }
 
-DescriptorSetLayoutCreateInfo& DescriptorSetLayoutCreateInfo::setBindingAtIndex(const Binding& binding, u32 index) {
+DescriptorSetLayoutCreateInfo&
+DescriptorSetLayoutCreateInfo::setBindingAtIndex(const Binding& binding, u32 index) {
   m_bindings[index] = binding;
   m_bindingNum = index + 1 > m_bindingNum ? (index + 1) : m_bindingNum;
   return *this;
@@ -269,7 +278,8 @@ DescriptorSetCreateInfo& DescriptorSetCreateInfo::setLayout(DescriptorSetLayoutH
   return *this;
 }
 
-DescriptorSetCreateInfo& DescriptorSetCreateInfo::textureSampler(TextureHandle handle, SamplerHandle sampler, u32 binding) {
+DescriptorSetCreateInfo&
+DescriptorSetCreateInfo::textureSampler(TextureHandle handle, SamplerHandle sampler, u32 binding) {
   m_resources[m_resourceNums] = handle.index;
   m_samplers[m_resourceNums] = sampler;
   m_bindings[m_resourceNums] = binding;
@@ -289,7 +299,8 @@ DepthStencilCreation& DepthStencilCreation::setDepth(bool enable, bool write, Vk
   return *this;
 }
 
-BlendState& BlendState::setAlpha(VkBlendFactor sourceColor, VkBlendFactor destinColor, VkBlendOp operation) {
+BlendState& BlendState::setAlpha(VkBlendFactor sourceColor, VkBlendFactor destinColor,
+                                 VkBlendOp operation) {
   m_sourceColor = sourceColor;
   m_destinationColor = destinColor;
   m_alphaOperation = operation;
@@ -297,7 +308,8 @@ BlendState& BlendState::setAlpha(VkBlendFactor sourceColor, VkBlendFactor destin
   return *this;
 }
 
-BlendState& BlendState::setColor(VkBlendFactor sourceColor, VkBlendFactor destinColor, VkBlendOp operation) {
+BlendState& BlendState::setColor(VkBlendFactor sourceColor, VkBlendFactor destinColor,
+                                 VkBlendOp operation) {
   m_sourceColor = sourceColor;
   m_destinationColor = destinColor;
   m_alphaOperation = operation;
@@ -317,7 +329,8 @@ BlendStateCreation& BlendStateCreation::reset() {
 
 BlendState& BlendStateCreation::add_blend_state() {
   if (m_activeStates >= k_max_image_outputs) {
-    DG_ERROR("Max number of blend state is ", std::to_string(k_max_image_outputs), " can't add more blend state!")
+    DG_ERROR("Max number of blend state is ", std::to_string(k_max_image_outputs),
+             " can't add more blend state!")
     exit(-1);
   }
   return m_blendStates[m_activeStates++];
@@ -334,9 +347,11 @@ ShaderStateCreation& ShaderStateCreation::setName(const char* name) {
   return *this;
 }
 
-ShaderStateCreation& ShaderStateCreation::addStage(void* code, u32 codeSize, VkShaderStageFlagBits type) {
+ShaderStateCreation& ShaderStateCreation::addStage(void* code, u32 codeSize,
+                                                   VkShaderStageFlagBits type) {
   if (m_stageCount >= k_max_shader_stages) {
-    DG_ERROR("Max number of shader stages is ", std::to_string(k_max_shader_stages), " can't add more shader stage!")
+    DG_ERROR("Max number of shader stages is ", std::to_string(k_max_shader_stages),
+             " can't add more shader stage!")
     exit(-1);
   }
   m_stages.push_back({});
@@ -345,7 +360,10 @@ ShaderStateCreation& ShaderStateCreation::addStage(void* code, u32 codeSize, VkS
   m_stages.back().m_codeSize = codeSize;
   m_stages.back().m_type = type;
   setSpvInput(true);
-  if ((type & (VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR | VK_SHADER_STAGE_CALLABLE_BIT_KHR))) {
+  if ((type
+       & (VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR
+          | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR
+          | VK_SHADER_STAGE_CALLABLE_BIT_KHR))) {
     switch (type) {
       case VK_SHADER_STAGE_RAYGEN_BIT_KHR: {
         m_stages[m_stageCount].m_rayTracingShaderType = ShaderStage::eRayGen;
@@ -375,7 +393,8 @@ ShaderStateCreation& ShaderStateCreation::addStage(void* code, u32 codeSize, VkS
 
 ShaderStateCreation& ShaderStateCreation::addStage(std::string path, VkShaderStageFlagBits type) {
   if (m_stageCount >= k_max_shader_stages) {
-    DG_ERROR("Max number of shader stages is ", std::to_string(k_max_shader_stages), " can't add more shader stage!")
+    DG_ERROR("Max number of shader stages is ", std::to_string(k_max_shader_stages),
+             " can't add more shader stage!")
     exit(-1);
   }
   // m_stages[m_stageCount].m_shaderPath = path;
@@ -384,7 +403,10 @@ ShaderStateCreation& ShaderStateCreation::addStage(std::string path, VkShaderSta
 
   m_stages.back().m_shaderPath = path;
   m_stages.back().m_type = type;
-  if ((type & (VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR | VK_SHADER_STAGE_CALLABLE_BIT_KHR))) {
+  if ((type
+       & (VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR
+          | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR
+          | VK_SHADER_STAGE_CALLABLE_BIT_KHR))) {
     switch (type) {
       case VK_SHADER_STAGE_RAYGEN_BIT_KHR: {
         m_stages[m_stageCount].m_rayTracingShaderType = ShaderStage::eRayGen;
@@ -419,9 +441,7 @@ ShaderStateCreation& ShaderStateCreation::setSpvInput(bool value) {
 
 RenderPassOutput& RenderPassOutput::reset() {
   m_numColorFormats = 0;
-  for (int i = 0; i < k_max_image_outputs; ++i) {
-    m_colorFormats[i] = VK_FORMAT_UNDEFINED;
-  }
+  for (int i = 0; i < k_max_image_outputs; ++i) { m_colorFormats[i] = VK_FORMAT_UNDEFINED; }
   m_depthStencilFormat = VK_FORMAT_UNDEFINED;
   m_colorOperation = RenderPassOperation::DontCare;
   return *this;
@@ -437,16 +457,20 @@ RenderPassOutput& RenderPassOutput::depth(VkFormat format) {
   return *this;
 }
 
-RenderPassOutput& RenderPassOutput::setOperations(RenderPassOperation::Enum color, RenderPassOperation::Enum depth, RenderPassOperation::Enum stencil) {
+RenderPassOutput& RenderPassOutput::setOperations(RenderPassOperation::Enum color,
+                                                  RenderPassOperation::Enum depth,
+                                                  RenderPassOperation::Enum stencil) {
   m_colorOperation = color;
   m_depthOperation = depth;
   m_stencilOperation = stencil;
   return *this;
 }
 
-PipelineCreateInfo& PipelineCreateInfo::addDescriptorSetlayout(const DescriptorSetLayoutHandle& info) {
+PipelineCreateInfo&
+PipelineCreateInfo::addDescriptorSetlayout(const DescriptorSetLayoutHandle& info) {
   if (m_numActivateLayouts >= k_max_descriptor_set_layouts) {
-    DG_ERROR("The max descriptor set layout num for per pipeline is limited to ", std::to_string(k_max_descriptor_set_layouts), " can't add more layout info!")
+    DG_ERROR("The max descriptor set layout num for per pipeline is limited to ",
+             std::to_string(k_max_descriptor_set_layouts), " can't add more layout info!")
     exit(-1);
   }
   m_descLayout[m_numActivateLayouts++] = info;
@@ -457,9 +481,7 @@ PipelineCreateInfo& PipelineCreateInfo::addPushConstant(VkPushConstantRange push
   return *this;
 }
 
-RenderPassOutput& PipelineCreateInfo::renderPassOutput() {
-  return m_renderPassOutput;
-}
+RenderPassOutput& PipelineCreateInfo::renderPassOutput() { return m_renderPassOutput; }
 
 bool RenderPass::operator==(RenderPass& pass) {
   if (pass.m_outputTextures.size() != m_outputTextures.size()) return false;

@@ -13,7 +13,9 @@ int renderSceneTree(const SceneGraph& scene, int node) {
   int         selected = -1;
   std::string name = scene.getNodeName(node);
   std::string label = name.empty() ? (std::string("Node") + std::to_string(node)) : name;
-  const int   flags = (scene.m_nodeHierarchy[node].firstChild < 0) ? ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_Bullet : 0;
+  const int   flags = (scene.m_nodeHierarchy[node].firstChild < 0)
+        ? ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_Bullet
+        : 0;
   const bool  opened = ImGui::TreeNodeEx(&scene.m_nodeHierarchy[node], flags, "%s", label.c_str());
   ImGui::PushID(node);
   if (ImGui::IsItemClicked(0)) {
@@ -22,7 +24,8 @@ int renderSceneTree(const SceneGraph& scene, int node) {
   }
 
   if (opened) {
-    for (int ch = scene.m_nodeHierarchy[node].firstChild; ch != -1; ch = scene.m_nodeHierarchy[ch].nextSibling) {
+    for (int ch = scene.m_nodeHierarchy[node].firstChild; ch != -1;
+         ch = scene.m_nodeHierarchy[ch].nextSibling) {
       int subNode = renderSceneTree(scene, ch);
       if (subNode > -1) selected = subNode;
     }
@@ -36,14 +39,17 @@ void SceneHierachyViewer::OnGUI() {
   if (!m_sceneGraph) m_sceneGraph = m_renderer->getResourceLoader()->getSceneGraph();
   ImGui::Begin("Scene Hierachy");
   ImGui::BeginChild("Graph", ImVec2(ImGui::GetWindowWidth() - 15, ImGui::GetWindowHeight() - 200),
-                    ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_AlwaysAutoResize | ImGuiChildFlags_Border);
+                    ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY
+                        | ImGuiChildFlags_AlwaysAutoResize | ImGuiChildFlags_Border);
   int idx = renderSceneTree(*(m_sceneGraph), 0);
   if (m_sceneGraph->m_materialMap.contains(selectNode)) {
-    MaterialViewer::setMaterialPtr(m_renderer->getResourceLoader()->getMaterialWidthIdx(m_sceneGraph->m_materialMap.at(selectNode)));
+    MaterialViewer::setMaterialPtr(m_renderer->getResourceLoader()->getMaterialWidthIdx(
+        m_sceneGraph->m_materialMap.at(selectNode)));
   } else {
     MaterialViewer::setMaterialPtr(nullptr);
   }
-  if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && ImGui::IsWindowHovered() && !ImGui::IsAnyItemHovered() && !ImGui::IsAnyItemActive()) {
+  if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && ImGui::IsWindowHovered()
+      && !ImGui::IsAnyItemHovered() && !ImGui::IsAnyItemActive()) {
     MaterialViewer::setMaterialPtr(nullptr);
     selectNode = -1;
   }
@@ -52,14 +58,16 @@ void SceneHierachyViewer::OnGUI() {
   if (selectNode > -1) {
     ImGui::Text("Node Name");
     ImGui::SameLine(100.0);
-    ImGui::TextColored({217.0 / 255.0, 128.0 / 255.0, 250.0 / 255.0, 1.0f}, "%s", m_renderer->getResourceLoader()->getSceneGraph()->getNodeName(selectNode).c_str());
+    ImGui::TextColored(
+        {217.0 / 255.0, 128.0 / 255.0, 250.0 / 255.0, 1.0f}, "%s",
+        m_renderer->getResourceLoader()->getSceneGraph()->getNodeName(selectNode).c_str());
     glm::mat4& matrix = m_sceneGraph->m_localTransforms[selectNode];
     glm::vec3  pos = glm::vec3(matrix[3]);
     glm::vec3  oldPos = pos;
-    glm::vec3  scale = glm::vec3(glm::length(glm::vec3(matrix[0])),
-                                 glm::length(glm::vec3(matrix[1])),
-                                 glm::length(glm::vec3(matrix[2])));
-    glm::vec3  oldScale = scale;
+    glm::vec3  scale =
+        glm::vec3(glm::length(glm::vec3(matrix[0])), glm::length(glm::vec3(matrix[1])),
+                  glm::length(glm::vec3(matrix[2])));
+    glm::vec3 oldScale = scale;
 
     //rotate used here saves the last rotate component value, to avoid state reconstruction causing
     //float number pricision lost
@@ -90,7 +98,8 @@ void SceneHierachyViewer::OnGUI() {
     ImGui::Text("Scale");
     ImGui::SameLine(100.0);
     ImGui::DragFloat3("##Scale", (float*) &scale, 0.1f, 0.00001, 1000000000);
-    matrix = glm::translate(glm::mat4(1.0f), pos) * glm::mat4_cast(rotatQuat) * glm::scale(glm::mat4(1.0f), scale);
+    matrix = glm::translate(glm::mat4(1.0f), pos) * glm::mat4_cast(rotatQuat)
+        * glm::scale(glm::mat4(1.0f), scale);
     if (oldPos != pos || oldScale != scale || oldRotate != rotate) {
       m_sceneGraph->markAsChanged(selectNode);
     }

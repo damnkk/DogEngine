@@ -20,22 +20,18 @@ class DebugMessanger {
 
  private:
   DebugMessanger() = default;
-  static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
-      VkDebugUtilsMessageSeverityFlagBitsEXT      messageSeverity,
-      VkDebugUtilsMessageTypeFlagsEXT             messageType,
-      const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-      void*                                       pUserdata);
+  static VKAPI_ATTR VkBool32 VKAPI_CALL
+  DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT      messageSeverity,
+                VkDebugUtilsMessageTypeFlagsEXT             messageType,
+                const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserdata);
 
-  VkResult CreateDebugUtilsMessengerEXT(
-      VkInstance                                instance,
-      const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
-      const VkAllocationCallbacks*              pAllocator,
-      VkDebugUtilsMessengerEXT*                 pDebugMessenger);
+  VkResult CreateDebugUtilsMessengerEXT(VkInstance                                instance,
+                                        const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+                                        const VkAllocationCallbacks*              pAllocator,
+                                        VkDebugUtilsMessengerEXT*                 pDebugMessenger);
 
-  void DestroyDebugUtilsMessengerEXT(
-      VkInstance&                  instance,
-      VkDebugUtilsMessengerEXT&    debugMessenger,
-      const VkAllocationCallbacks* pAllocator);
+  void DestroyDebugUtilsMessengerEXT(VkInstance& instance, VkDebugUtilsMessengerEXT& debugMessenger,
+                                     const VkAllocationCallbacks* pAllocator);
 
  private:
   static DebugMessanger*   s_Instance;

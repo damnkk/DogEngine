@@ -38,13 +38,15 @@ class GUI {
   void endGUIFrame();
 
   std::vector<CommandBuffer>& getCommandBuffer() { return m_commandBuffers; }
-  CommandBuffer*              getCurrentFramCb() { return &m_commandBuffers[m_renderer->getContext()
-                                                                   ->m_currentFrame]; }
-  Renderer*                   getRenderer() { return m_renderer; }
-  VkCommandPool&              getCommandPool() { return m_commandPool; }
-  VkSemaphore&                getCurrSemaphore() { return m_uiFinishSemaphore[m_renderer->getContext()
-                                                                   ->m_currentFrame]; }
-  std::vector<VkSemaphore>&   getSemaphores() { return m_uiFinishSemaphore; }
+  CommandBuffer*              getCurrentFramCb() {
+    return &m_commandBuffers[m_renderer->getContext()->m_currentFrame];
+  }
+  Renderer*      getRenderer() { return m_renderer; }
+  VkCommandPool& getCommandPool() { return m_commandPool; }
+  VkSemaphore&   getCurrSemaphore() {
+    return m_uiFinishSemaphore[m_renderer->getContext()->m_currentFrame];
+  }
+  std::vector<VkSemaphore>& getSemaphores() { return m_uiFinishSemaphore; }
 
   template<typename T>
   void addViewer(std::shared_ptr<T> pViewer);

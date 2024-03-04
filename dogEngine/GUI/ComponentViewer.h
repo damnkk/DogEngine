@@ -22,13 +22,13 @@ class ComponentViewer {
   ComponentViewer();
   ComponentViewer(std::string conponentName);
   virtual ~ComponentViewer();
-  void HelpMarker(const char *desc);
+  void         HelpMarker(const char* desc);
   virtual void OnGUI() {
     DG_ERROR("You are trying to innovate an unoverloaded function")
     exit(-1);
   };
   std::string m_name;
-  Renderer *m_renderer = nullptr;
+  Renderer*   m_renderer = nullptr;
 };
 }// namespace dg
 #endif//COMPONENTVIEWER_H

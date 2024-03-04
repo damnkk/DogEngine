@@ -113,23 +113,17 @@ bool endsWith(const char* s, const char* part) {
 }
 
 glslang_stage_t getShaderStageFromShaderName(const char* fileName) {
-  if (endsWith(fileName, ".vert"))
-    return GLSLANG_STAGE_VERTEX;
+  if (endsWith(fileName, ".vert")) return GLSLANG_STAGE_VERTEX;
 
-  if (endsWith(fileName, ".frag"))
-    return GLSLANG_STAGE_FRAGMENT;
+  if (endsWith(fileName, ".frag")) return GLSLANG_STAGE_FRAGMENT;
 
-  if (endsWith(fileName, ".geom"))
-    return GLSLANG_STAGE_GEOMETRY;
+  if (endsWith(fileName, ".geom")) return GLSLANG_STAGE_GEOMETRY;
 
-  if (endsWith(fileName, ".comp"))
-    return GLSLANG_STAGE_COMPUTE;
+  if (endsWith(fileName, ".comp")) return GLSLANG_STAGE_COMPUTE;
 
-  if (endsWith(fileName, ".tesc"))
-    return GLSLANG_STAGE_TESSCONTROL;
+  if (endsWith(fileName, ".tesc")) return GLSLANG_STAGE_TESSCONTROL;
 
-  if (endsWith(fileName, ".tese"))
-    return GLSLANG_STAGE_TESSEVALUATION;
+  if (endsWith(fileName, ".tese")) return GLSLANG_STAGE_TESSEVALUATION;
 
   return GLSLANG_STAGE_VERTEX;
 }
@@ -215,9 +209,7 @@ ShaderCompiler::SpvObject ShaderCompiler::compileShader(std::string path) {
     glslang_program_SPIRV_get(program, res.spvData.data());
     {
       const char* spirv_messages = glslang_program_SPIRV_get_messages(program);
-      if (spirv_messages) {
-        DG_ERROR(spirv_messages);
-      }
+      if (spirv_messages) { DG_ERROR(spirv_messages); }
     }
     glslang_program_delete(program);
     glslang_shader_delete(shader);

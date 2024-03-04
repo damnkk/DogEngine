@@ -14,10 +14,7 @@ struct Renderer;
 struct objLoader;
 struct gltfLoader;
 
-enum RenderMode {
-  eRasterize,
-  eRayTracing
-};
+enum RenderMode { eRasterize, eRayTracing };
 
 struct ResourceCache {
   void destroy(Renderer* renderer);
@@ -45,9 +42,11 @@ struct Renderer {
   void                     addSkyBox(std::string skyTexPath);
 
   TextureHandle upLoadTextureToGPU(std::string& texPath, TextureCreateInfo& texInfo);
-  void          addImageBarrier(VkCommandBuffer cmdBuffer, Texture* texture, ResourceState oldState, ResourceState newState, u32 baseMipLevel, u32 mipCount, bool isDepth);
+  void          addImageBarrier(VkCommandBuffer cmdBuffer, Texture* texture, ResourceState oldState,
+                                ResourceState newState, u32 baseMipLevel, u32 mipCount, bool isDepth);
   template<typename T>
-  BufferHandle upLoadVertexDataToGPU(std::vector<T>& bufferData, const char* meshName, VkBufferUsageFlags flags = 0);
+  BufferHandle upLoadVertexDataToGPU(std::vector<T>& bufferData, const char* meshName,
+                                     VkBufferUsageFlags flags = 0);
 
   void destroyTexture(TextureResource* textureRes);
   void destroyBuffer(BufferResource* bufferRes);
@@ -98,7 +97,8 @@ struct Renderer {
 };
 
 template<typename T>
-BufferHandle Renderer::upLoadVertexDataToGPU(std::vector<T>& bufferData, const char* meshName, VkBufferUsageFlags flags) {
+BufferHandle Renderer::upLoadVertexDataToGPU(std::vector<T>& bufferData, const char* meshName,
+                                             VkBufferUsageFlags flags) {
   if (bufferData.empty()) return {k_invalid_index};
   VkDeviceSize     BufSize = bufferData.size() * sizeof(T);
   BufferCreateInfo bufferInfo;

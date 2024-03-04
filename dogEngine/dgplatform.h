@@ -26,39 +26,21 @@ enum Enum {
 }
 
 namespace QueueType {
-enum Enum {
-  Graphics,
-  Compute,
-  CopyTransfer
-};
+enum Enum { Graphics, Compute, CopyTransfer };
 
-enum Mask {
-  Graphic_mask = 1 << 0,
-  Compute_mask = 1 << 1,
-  CopyTransfer_mask = 1 << 2
-};
+enum Mask { Graphic_mask = 1 << 0, Compute_mask = 1 << 1, CopyTransfer_mask = 1 << 2 };
 
-static const char* s_value_names[] = {
-    "Graphics", "compute", "CopyTransfer", "Count"};
+static const char* s_value_names[] = {"Graphics", "compute", "CopyTransfer", "Count"};
 
 }// namespace QueueType
 
 namespace RenderPassType {
-enum Enum {
-  Geometry,
-  SwapChain,
-  Compute
-};
+enum Enum { Geometry, SwapChain, Compute };
 }
 
 namespace RenderPassOperation {
 
-enum Enum {
-  DontCare,
-  Load,
-  Clear,
-  Count
-};// enum Enum
+enum Enum { DontCare, Load, Clear, Count };// enum Enum
 }// namespace RenderPassOperation
 
 namespace TextureType {
@@ -84,8 +66,9 @@ enum Mask {
   UNDEFINED_MASK = 1 << 7
 };
 
-static const char* s_values_names[] = {
-    "Texture1D", "Texture2D", "Texture3D", "TextureCube", "Texture_1D_Array", "Texture_2D_Array", "Texture_Cube_Array"};
+static const char* s_values_names[] = {"Texture1D",         "Texture2D",        "Texture3D",
+                                       "TextureCube",       "Texture_1D_Array", "Texture_2D_Array",
+                                       "Texture_Cube_Array"};
 
 static const char* ToString(Enum e) {
   return e < Enum::UNDEFINED ? "Unsupported Texture" : s_values_names[e];
@@ -93,14 +76,7 @@ static const char* ToString(Enum e) {
 }// namespace TextureType
 
 namespace TextureFlags {
-enum Enum {
-  Default,
-  RenderTarget,
-  Compute,
-  Sparse,
-  ShadingRate,
-  Count
-};
+enum Enum { Default, RenderTarget, Compute, Sparse, ShadingRate, Count };
 
 enum Mask {
   Default_mask = 1 << 0,
@@ -110,8 +86,7 @@ enum Mask {
   ShadingRate_mask = 1 << 4
 };
 
-static const char* s_value_names[] = {
-    "Default", "RenderTarget", "Compute", "Count"};
+static const char* s_value_names[] = {"Default", "RenderTarget", "Compute", "Count"};
 
 static const char* ToString(Enum e) {
   return ((u32) e < Enum::Count ? s_value_names[(int) e] : "unsupported");
@@ -140,8 +115,9 @@ enum Enum {
   Count
 };
 
-static const char* s_value_names[] = {
-    "Float", "Float2", "Float3", "Float4", "Mat4", "Byte", "Byte4N", "UByte", "UByte4N", "Short2", "Short2N", "Short4", "Short4N", "Uint", "Uint2", "Uint4", "Count"};
+static const char* s_value_names[] = {"Float",   "Float2", "Float3",  "Float4", "Mat4",    "Byte",
+                                      "Byte4N",  "UByte",  "UByte4N", "Short2", "Short2N", "Short4",
+                                      "Short4N", "Uint",   "Uint2",   "Uint4",  "Count"};
 
 static const char* ToString(Enum e) {
   return ((u32) e < Enum::Count ? s_value_names[(int) e] : "unsupported");
@@ -149,14 +125,7 @@ static const char* ToString(Enum e) {
 }// namespace VertexComponentFormat
 
 namespace ColorWriteEnabled {
-enum Enum {
-  Red,
-  Green,
-  Blue,
-  Alpha,
-  All,
-  Count
-};
+enum Enum { Red, Green, Blue, Alpha, All, Count };
 
 enum Mask {
   Red_mask = 1 << 0,
@@ -166,8 +135,7 @@ enum Mask {
   All_mask = Red_mask | Green_mask | Blue_mask | Alpha_mask
 };
 
-static const char* s_value_names[] = {
-    "Red", "Green", "Blue", "Alpha", "All", "Count"};
+static const char* s_value_names[] = {"Red", "Green", "Blue", "Alpha", "All", "Count"};
 
 static const char* ToString(Enum e) {
   return ((u32) e < Enum::Count ? s_value_names[(int) e] : "unsupported");
@@ -175,20 +143,11 @@ static const char* ToString(Enum e) {
 }// namespace ColorWriteEnabled
 
 namespace VertexInputRate {
-enum Enum {
-  PerVertex,
-  PerInstance,
-  Count
-};
+enum Enum { PerVertex, PerInstance, Count };
 
-enum Mask {
-  PerVertex_mask = 1 << 0,
-  PerInstance_mask = 1 << 1,
-  Count_mask = 1 << 2
-};
+enum Mask { PerVertex_mask = 1 << 0, PerInstance_mask = 1 << 1, Count_mask = 1 << 2 };
 
-static const char* s_value_names[] = {
-    "PerVertex", "PerInstance", "Count"};
+static const char* s_value_names[] = {"PerVertex", "PerInstance", "Count"};
 
 static const char* ToString(Enum e) {
   return ((u32) e < Enum::Count ? s_value_names[(int) e] : "unsupported");
@@ -196,12 +155,7 @@ static const char* ToString(Enum e) {
 }// namespace VertexInputRate
 
 namespace FillMode {
-enum Enum {
-  Wireframe,
-  Solid,
-  Point,
-  Count
-};
+enum Enum { Wireframe, Solid, Point, Count };
 
 enum Mask {
   Wireframe_mask = 1 << 0,
@@ -210,8 +164,7 @@ enum Mask {
   Count_mask = 1 << 3
 };
 
-static const char* s_value_names[] = {
-    "Wireframe", "Solid", "Point", "Count"};
+static const char* s_value_names[] = {"Wireframe", "Solid", "Point", "Count"};
 
 static const char* ToString(Enum e) {
   return ((u32) e < Enum::Count ? s_value_names[(int) e] : "unsupported");
@@ -221,17 +174,17 @@ static const char* ToString(Enum e) {
 namespace TextureFormat {
 
 inline bool is_depth_stencil(VkFormat value) {
-  return value == VK_FORMAT_D16_UNORM_S8_UINT || value == VK_FORMAT_D24_UNORM_S8_UINT || value == VK_FORMAT_D32_SFLOAT_S8_UINT;
+  return value == VK_FORMAT_D16_UNORM_S8_UINT || value == VK_FORMAT_D24_UNORM_S8_UINT
+      || value == VK_FORMAT_D32_SFLOAT_S8_UINT;
 }
 inline bool is_depth_only(VkFormat value) {
   return value >= VK_FORMAT_D16_UNORM && value < VK_FORMAT_D32_SFLOAT;
 }
-inline bool is_stencil_only(VkFormat value) {
-  return value == VK_FORMAT_S8_UINT;
-}
+inline bool is_stencil_only(VkFormat value) { return value == VK_FORMAT_S8_UINT; }
 
 inline bool has_depth(VkFormat value) {
-  return (value >= VK_FORMAT_D16_UNORM && value < VK_FORMAT_S8_UINT) || (value >= VK_FORMAT_D16_UNORM_S8_UINT && value <= VK_FORMAT_D32_SFLOAT_S8_UINT);
+  return (value >= VK_FORMAT_D16_UNORM && value < VK_FORMAT_S8_UINT)
+      || (value >= VK_FORMAT_D16_UNORM_S8_UINT && value <= VK_FORMAT_D32_SFLOAT_S8_UINT);
 }
 inline bool has_stencil(VkFormat value) {
   return value >= VK_FORMAT_S8_UINT && value <= VK_FORMAT_D32_SFLOAT_S8_UINT;
@@ -267,14 +220,7 @@ enum Mask {
 }// namespace PipelineStage
 
 namespace TopologyType {
-enum Enum {
-  Unknown,
-  Point,
-  Line,
-  Triangle,
-  Patch,
-  Count
-};
+enum Enum { Unknown, Point, Line, Triangle, Patch, Count };
 
 enum Mask {
   Unknown_mask = 1 << 0,
@@ -285,8 +231,7 @@ enum Mask {
   Count_mask = 1 << 5
 };
 
-static const char* s_value_names[] = {
-    "Unknown", "Point", "Line", "Triangle", "Patch", "Count"};
+static const char* s_value_names[] = {"Unknown", "Point", "Line", "Triangle", "Patch", "Count"};
 
 static const char* ToString(Enum e) {
   return ((u32) e < Enum::Count ? s_value_names[(int) e] : "unsupported");

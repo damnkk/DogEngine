@@ -23,7 +23,8 @@ int SceneGraph::addNode(int parent, int level) {
       //after node delection, the first child node's lastSibling may be lost,for this situation,
       //this branch can find the last sibling node at runtime
       if (dest <= -1) {
-        for (dest = s; m_nodeHierarchy[dest].nextSibling > -1; dest = m_nodeHierarchy[dest].nextSibling)
+        for (dest = s; m_nodeHierarchy[dest].nextSibling > -1;
+             dest = m_nodeHierarchy[dest].nextSibling)
           ;
       }
       m_nodeHierarchy[dest].nextSibling = newNode;
@@ -60,7 +61,8 @@ int SceneGraph::addNode(int parent, int level, std::string nodeName) {
       //after node delection, the first child node's lastSibling may be lost,for this situation,
       //this branch can find the last sibling node at runtime
       if (dest <= -1) {
-        for (dest = s; m_nodeHierarchy[dest].nextSibling > -1; dest = m_nodeHierarchy[dest].nextSibling)
+        for (dest = s; m_nodeHierarchy[dest].nextSibling > -1;
+             dest = m_nodeHierarchy[dest].nextSibling)
           ;
       }
       m_nodeHierarchy[dest].nextSibling = newNode;
@@ -77,9 +79,7 @@ int SceneGraph::addNode(int parent, int level, std::string nodeName) {
 }
 
 void addUniqueIdx(std::vector<u32>& v, int index) {
-  if (!std::binary_search(v.begin(), v.end(), index)) {
-    v.push_back(index);
-  }
+  if (!std::binary_search(v.begin(), v.end(), index)) { v.push_back(index); }
 }
 
 void SceneGraph::collectNodesToDelete(int node, std::vector<u32>& nodes) {
@@ -91,7 +91,9 @@ void SceneGraph::collectNodesToDelete(int node, std::vector<u32>& nodes) {
 
 int findLastNonDeletedItem(const SceneGraph& scene, const std::vector<int>& newIndices, int node) {
   if (node == -1) return -1;
-  return (newIndices[node] == -1) ? findLastNonDeletedItem(scene, newIndices, scene.m_nodeHierarchy[node].nextSibling) : newIndices[node];
+  return (newIndices[node] == -1)
+      ? findLastNonDeletedItem(scene, newIndices, scene.m_nodeHierarchy[node].nextSibling)
+      : newIndices[node];
 }
 void shiftMapIndices(std::unordered_map<u32, u32>& items, std::vector<int>& indices) {
   std::unordered_map<u32, u32> newItems;
@@ -117,9 +119,7 @@ void SceneGraph::deleteSceneNodes(const std::vector<u32>& nodesToDelete) {
   eraseSelected(nodes, indicesToDelete);
   std::vector<int> newIndices(oldSize, -1);
   //the deleted nodes' indices of newindices will be set to -1
-  for (u32 i = 0; i < nodes.size(); ++i) {
-    newIndices[nodes[i]] = i;
-  }
+  for (u32 i = 0; i < nodes.size(); ++i) { newIndices[nodes[i]] = i; }
   auto nodeMover = [this, &newIndices](Hierarchy& h) {
     Hierarchy archy;
     archy.parent = (h.parent != -1) ? newIndices[h.parent] : -1;
@@ -130,7 +130,8 @@ void SceneGraph::deleteSceneNodes(const std::vector<u32>& nodesToDelete) {
     archy.level = h.level;
     return archy;
   };
-  std::transform(m_nodeHierarchy.begin(), m_nodeHierarchy.end(), m_nodeHierarchy.begin(), nodeMover);
+  std::transform(m_nodeHierarchy.begin(), m_nodeHierarchy.end(), m_nodeHierarchy.begin(),
+                 nodeMover);
   eraseSelected(m_nodeHierarchy, indicesToDelete);
   eraseSelected(m_localTransforms, indicesToDelete);
   eraseSelected(m_globalTransforms, indicesToDelete);
@@ -149,8 +150,7 @@ void SceneGraph::markAsChanged(int node) {
   }
 }
 
-void recalculateGlobalTransforms(SceneGraph& scene) {
-}
+void recalculateGlobalTransforms(SceneGraph& scene) {}
 
 void SceneGraph::recalculateAllTransforms() {
   if (!m_changedAtThisFrame[0].empty()) {

@@ -26,7 +26,8 @@ struct BoundingBox {
   glm::vec3 m_min = glm::vec3(0.0f);
   glm::vec3 m_max = glm::vec3(0.0f);
   BoundingBox() = default;
-  BoundingBox(glm::vec3 min, glm::vec3 max) : m_min(glm::min(min, max)), m_max(glm::max(min, max)) {}
+  BoundingBox(glm::vec3 min, glm::vec3 max)
+      : m_min(glm::min(min, max)), m_max(glm::max(min, max)) {}
   BoundingBox(glm::vec3* point, u32 pointCount) {
     glm::vec3 vmax(std::numeric_limits<float>::max());
     glm::vec3 vmin(std::numeric_limits<float>::min());
@@ -48,18 +49,12 @@ struct BoundingBox {
 
   void transform(const glm::mat4& t) {
     glm::vec3 corners[] = {
-        glm::vec3(m_min.x, m_min.y, m_min.z),
-        glm::vec3(m_min.x, m_max.y, m_min.z),
-        glm::vec3(m_min.x, m_min.y, m_max.z),
-        glm::vec3(m_min.x, m_max.y, m_max.z),
-        glm::vec3(m_max.x, m_min.y, m_min.z),
-        glm::vec3(m_max.x, m_max.y, m_min.z),
-        glm::vec3(m_max.x, m_min.y, m_max.z),
-        glm::vec3(m_max.x, m_max.y, m_max.z),
+        glm::vec3(m_min.x, m_min.y, m_min.z), glm::vec3(m_min.x, m_max.y, m_min.z),
+        glm::vec3(m_min.x, m_min.y, m_max.z), glm::vec3(m_min.x, m_max.y, m_max.z),
+        glm::vec3(m_max.x, m_min.y, m_min.z), glm::vec3(m_max.x, m_max.y, m_min.z),
+        glm::vec3(m_max.x, m_min.y, m_max.z), glm::vec3(m_max.x, m_max.y, m_max.z),
     };
-    for (auto& v : corners) {
-      v = glm::vec3(t * glm::vec4(v, 1.0f));
-    }
+    for (auto& v : corners) { v = glm::vec3(t * glm::vec4(v, 1.0f)); }
     *this = BoundingBox(corners, 8);
   }
 
@@ -139,7 +134,8 @@ class ResourceLoader {
   Renderer*                        m_renderer;
 
  protected:
-  void traverse(const aiScene* sourceScene, SceneGraph& sceneGraph, aiNode* node, int parent, int level);
+  void traverse(const aiScene* sourceScene, SceneGraph& sceneGraph, aiNode* node, int parent,
+                int level);
 
  private:
   Assimp::Importer            m_modelImporter;

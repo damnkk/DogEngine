@@ -35,9 +35,7 @@ void GUI::keycallback() {
     camera->getPosition() +=
         sensitivity * glm::normalize(glm::cross(camera->getDirectVector(), camera->getUpVector()));
   }
-  if (m_io->KeysDown[ImGuiKey_Space]) {
-    camera->getPosition() += sensitivity * glm::vec3(0, 1, 0);
-  }
+  if (m_io->KeysDown[ImGuiKey_Space]) { camera->getPosition() += sensitivity * glm::vec3(0, 1, 0); }
   if (m_io->KeysDown[ImGuiKey_LeftCtrl]) {
     camera->getPosition() -= sensitivity * glm::vec3(0, 1, 0);
   }
@@ -62,7 +60,8 @@ void guiVulkanInit(GUI& ui) {
     ui.getCommandBuffer()[i].m_handle = i;
     ui.getCommandBuffer()[i].reset();
     VkSemaphoreCreateInfo smInfo{VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
-    vkCreateSemaphore(ui.getRenderer()->getContext()->m_logicDevice, &smInfo, nullptr, &ui.getSemaphores()[i]);
+    vkCreateSemaphore(ui.getRenderer()->getContext()->m_logicDevice, &smInfo, nullptr,
+                      &ui.getSemaphores()[i]);
   }
 }
 
@@ -93,7 +92,8 @@ void GUI::init(Renderer* render) {
   init_info.MinImageCount = dg::k_max_swapchain_images;
   init_info.ImageCount = dg::k_max_swapchain_images;
   init_info.CheckVkResultFn = nullptr;
-  ImGui_ImplVulkan_Init(&init_info, context->accessRenderPass(context->m_swapChainPass)->m_renderPass);
+  ImGui_ImplVulkan_Init(&init_info,
+                        context->accessRenderPass(context->m_swapChainPass)->m_renderPass);
 
   m_SettingsData = new SettingsData();
   m_LightSpeed = new float(1.0f);
@@ -160,26 +160,16 @@ void GUI::endGUIFrame() {
   }
 }
 
-ImDrawData* GUI::GetDrawData() {
-  return ImGui::GetDrawData();
-}
+ImDrawData* GUI::GetDrawData() { return ImGui::GetDrawData(); }
 
 void GUI::KeysControl(bool* keys) {
-  if (keys[GLFW_KEY_1]) {
-    m_SettingsData->render_target = 0;
-  }
+  if (keys[GLFW_KEY_1]) { m_SettingsData->render_target = 0; }
 
-  if (keys[GLFW_KEY_2]) {
-    m_SettingsData->render_target = 1;
-  }
+  if (keys[GLFW_KEY_2]) { m_SettingsData->render_target = 1; }
 
-  if (keys[GLFW_KEY_3]) {
-    m_SettingsData->render_target = 2;
-  }
+  if (keys[GLFW_KEY_3]) { m_SettingsData->render_target = 2; }
 
-  if (keys[GLFW_KEY_4]) {
-    m_SettingsData->render_target = 3;
-  }
+  if (keys[GLFW_KEY_4]) { m_SettingsData->render_target = 3; }
 }
 
 void GUI::Destroy() {

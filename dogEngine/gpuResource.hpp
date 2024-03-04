@@ -220,11 +220,7 @@ struct FrameBuffer {
 };
 
 struct ShaderState {
-  enum PipelineType {
-    eGraphics,
-    eCompute,
-    eRayTracing
-  } m_pipelineType;
+  enum PipelineType { eGraphics, eCompute, eRayTracing } m_pipelineType;
   VkPipelineShaderStageCreateInfo                   m_shaderStageInfo[k_max_shader_stages];
   std::vector<VkRayTracingShaderGroupCreateInfoKHR> m_shaderGroupInfo;
   std::string                                       m_name;
@@ -287,7 +283,8 @@ struct SamplerCreateInfo {
   SamplerCreateInfo& set_min_mag_mip(VkFilter min, VkFilter max, VkSamplerMipmapMode mipMode);
   SamplerCreateInfo& set_address_u(VkSamplerAddressMode u);
   SamplerCreateInfo& set_address_uv(VkSamplerAddressMode u, VkSamplerAddressMode v);
-  SamplerCreateInfo& set_address_uvw(VkSamplerAddressMode u, VkSamplerAddressMode v, VkSamplerAddressMode w);
+  SamplerCreateInfo& set_address_uvw(VkSamplerAddressMode u, VkSamplerAddressMode v,
+                                     VkSamplerAddressMode w);
   SamplerCreateInfo& set_name(const char* name);
   SamplerCreateInfo& set_LodMinMaxBias(float min, float max, float bias);
 };
@@ -316,8 +313,7 @@ struct DepthStencilCreation {
   bool m_depthWriteEnable = true;
   bool m_stencilEnable = true;
   u32  m_pad = 5;
-  DepthStencilCreation() : m_depthEnable(true), m_depthWriteEnable(true), m_stencilEnable(false) {
-  }
+  DepthStencilCreation() : m_depthEnable(true), m_depthWriteEnable(true), m_stencilEnable(false) {}
   DepthStencilCreation& setDepth(bool enable, bool write, VkCompareOp compareTest);
 };
 
@@ -336,8 +332,7 @@ struct BlendState {
   bool m_separateBlend = true;
   u32  m_pad = 6;
 
-  BlendState() : m_blendEnabled(false), m_separateBlend(false) {
-  }
+  BlendState() : m_blendEnabled(false), m_separateBlend(false) {}
   BlendState& setColor(VkBlendFactor sourceColor, VkBlendFactor destinColor, VkBlendOp blendop);
   BlendState& setAlpha(VkBlendFactor sourceColor, VkBlendFactor destinColor, VkBlendOp blendop);
   BlendState& setColorWriteMask(ColorWriteEnabled::Mask value);
@@ -434,8 +429,7 @@ struct RenderPassOutput {
   RenderPassOutput& reset();
   RenderPassOutput& color(VkFormat format);
   RenderPassOutput& depth(VkFormat format);
-  RenderPassOutput& setOperations(RenderPassOperation::Enum color,
-                                  RenderPassOperation::Enum depth,
+  RenderPassOutput& setOperations(RenderPassOperation::Enum color, RenderPassOperation::Enum depth,
                                   RenderPassOperation::Enum stencil);
 };
 
@@ -526,7 +520,9 @@ struct RenderPassCreateInfo {
   RenderPassCreateInfo& setScale(float x, float y, u32 resize);
   RenderPassCreateInfo& setDepthStencilTexture(TextureHandle handle);
   RenderPassCreateInfo& setType(RenderPassType::Enum type);
-  RenderPassCreateInfo& setOperations(RenderPassOperation::Enum color, RenderPassOperation::Enum depth, RenderPassOperation::Enum stencil);
+  RenderPassCreateInfo& setOperations(RenderPassOperation::Enum color,
+                                      RenderPassOperation::Enum depth,
+                                      RenderPassOperation::Enum stencil);
 };
 
 struct FrameBufferCreateInfo {
@@ -618,99 +614,106 @@ struct ConstentData {
 };
 
 static VkImageType to_vk_image_type(TextureType::Enum e) {
-  static VkImageType imageTypes[TextureType::UNDEFINED] = {VK_IMAGE_TYPE_1D, VK_IMAGE_TYPE_2D, VK_IMAGE_TYPE_3D, VK_IMAGE_TYPE_2D, VK_IMAGE_TYPE_1D, VK_IMAGE_TYPE_2D, VK_IMAGE_TYPE_3D};
+  static VkImageType imageTypes[TextureType::UNDEFINED] = {
+      VK_IMAGE_TYPE_1D, VK_IMAGE_TYPE_2D, VK_IMAGE_TYPE_3D, VK_IMAGE_TYPE_2D,
+      VK_IMAGE_TYPE_1D, VK_IMAGE_TYPE_2D, VK_IMAGE_TYPE_3D};
   return imageTypes[e];
 }
 
 static VkImageViewType to_vk_image_view_type(TextureType::Enum e) {
-  static VkImageViewType imageViewTypes[TextureType::UNDEFINED] = {VK_IMAGE_VIEW_TYPE_1D, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_VIEW_TYPE_3D, VK_IMAGE_VIEW_TYPE_CUBE, VK_IMAGE_VIEW_TYPE_1D_ARRAY, VK_IMAGE_VIEW_TYPE_2D_ARRAY, VK_IMAGE_VIEW_TYPE_CUBE_ARRAY};
+  static VkImageViewType imageViewTypes[TextureType::UNDEFINED] = {
+      VK_IMAGE_VIEW_TYPE_1D,        VK_IMAGE_VIEW_TYPE_2D,       VK_IMAGE_VIEW_TYPE_3D,
+      VK_IMAGE_VIEW_TYPE_CUBE,      VK_IMAGE_VIEW_TYPE_1D_ARRAY, VK_IMAGE_VIEW_TYPE_2D_ARRAY,
+      VK_IMAGE_VIEW_TYPE_CUBE_ARRAY};
   return imageViewTypes[e];
 }
 
 static VkFormat to_vk_vertex_format(VertexComponentFormat::Enum value) {
   // Float, Float2, Float3, Float4, Mat4, Byte, Byte4N, UByte, UByte4N, Short2, Short2N, Short4, Short4N, Uint, Uint2, Uint4, Count
-  static VkFormat s_vk_vertex_formats[VertexComponentFormat::Count] = {VK_FORMAT_R32_SFLOAT, VK_FORMAT_R32G32_SFLOAT, VK_FORMAT_R32G32B32_SFLOAT, VK_FORMAT_R32G32B32A32_SFLOAT, /*MAT4 TODO*/ VK_FORMAT_R32G32B32A32_SFLOAT,
-                                                                       VK_FORMAT_R8_SINT, VK_FORMAT_R8G8B8A8_SNORM, VK_FORMAT_R8_UINT, VK_FORMAT_R8G8B8A8_UINT, VK_FORMAT_R16G16_SINT, VK_FORMAT_R16G16_SNORM,
-                                                                       VK_FORMAT_R16G16B16A16_SINT, VK_FORMAT_R16G16B16A16_SNORM, VK_FORMAT_R32_UINT, VK_FORMAT_R32G32_UINT, VK_FORMAT_R32G32B32A32_UINT};
+  static VkFormat s_vk_vertex_formats[VertexComponentFormat::Count] = {
+      VK_FORMAT_R32_SFLOAT,
+      VK_FORMAT_R32G32_SFLOAT,
+      VK_FORMAT_R32G32B32_SFLOAT,
+      VK_FORMAT_R32G32B32A32_SFLOAT,
+      /*MAT4 TODO*/ VK_FORMAT_R32G32B32A32_SFLOAT,
+      VK_FORMAT_R8_SINT,
+      VK_FORMAT_R8G8B8A8_SNORM,
+      VK_FORMAT_R8_UINT,
+      VK_FORMAT_R8G8B8A8_UINT,
+      VK_FORMAT_R16G16_SINT,
+      VK_FORMAT_R16G16_SNORM,
+      VK_FORMAT_R16G16B16A16_SINT,
+      VK_FORMAT_R16G16B16A16_SNORM,
+      VK_FORMAT_R32_UINT,
+      VK_FORMAT_R32G32_UINT,
+      VK_FORMAT_R32G32B32A32_UINT};
 
   return s_vk_vertex_formats[value];
 }
 
 static VkAccessFlags util_to_vk_access_flags(ResourceState state) {
   VkAccessFlags ret = 0;
-  if (state & RESOURCE_STATE_COPY_SOURCE) {
-    ret |= VK_ACCESS_TRANSFER_READ_BIT;
-  }
-  if (state & RESOURCE_STATE_COPY_DEST) {
-    ret |= VK_ACCESS_TRANSFER_WRITE_BIT;
-  }
+  if (state & RESOURCE_STATE_COPY_SOURCE) { ret |= VK_ACCESS_TRANSFER_READ_BIT; }
+  if (state & RESOURCE_STATE_COPY_DEST) { ret |= VK_ACCESS_TRANSFER_WRITE_BIT; }
   if (state & RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER) {
     ret |= VK_ACCESS_UNIFORM_READ_BIT | VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
   }
-  if (state & RESOURCE_STATE_INDEX_BUFFER) {
-    ret |= VK_ACCESS_INDEX_READ_BIT;
-  }
+  if (state & RESOURCE_STATE_INDEX_BUFFER) { ret |= VK_ACCESS_INDEX_READ_BIT; }
   if (state & RESOURCE_STATE_UNORDERED_ACCESS) {
     ret |= VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
   }
-  if (state & RESOURCE_STATE_INDIRECT_ARGUMENT) {
-    ret |= VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
-  }
+  if (state & RESOURCE_STATE_INDIRECT_ARGUMENT) { ret |= VK_ACCESS_INDIRECT_COMMAND_READ_BIT; }
   if (state & RESOURCE_STATE_RENDER_TARGET) {
     ret |= VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
   }
   if (state & RESOURCE_STATE_DEPTH_WRITE) {
-    ret |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+    ret |=
+        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
   }
-  if (state & RESOURCE_STATE_SHADER_RESOURCE) {
-    ret |= VK_ACCESS_SHADER_READ_BIT;
-  }
-  if (state & RESOURCE_STATE_PRESENT) {
-    ret |= VK_ACCESS_MEMORY_READ_BIT;
-  }
+  if (state & RESOURCE_STATE_SHADER_RESOURCE) { ret |= VK_ACCESS_SHADER_READ_BIT; }
+  if (state & RESOURCE_STATE_PRESENT) { ret |= VK_ACCESS_MEMORY_READ_BIT; }
   if (state & RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE) {
-    ret |= VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_NV | VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_NV;
+    ret |= VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_NV
+        | VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_NV;
   }
   return ret;
 }
 
 static VkPipelineStageFlags to_vk_pipeline_stage(PipelineStage::Enum value) {
-  static VkPipelineStageFlags s_vk_values[] = {VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT};
+  static VkPipelineStageFlags s_vk_values[] = {VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,
+                                               VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
+                                               VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
+                                               VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                                               VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                               VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                               VK_PIPELINE_STAGE_TRANSFER_BIT};
   return s_vk_values[value];
 }
 
 static VkImageLayout util_to_vk_image_layout(ResourceState usage) {
-  if (usage & RESOURCE_STATE_COPY_SOURCE)
-    return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+  if (usage & RESOURCE_STATE_COPY_SOURCE) return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 
-  if (usage & RESOURCE_STATE_COPY_DEST)
-    return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+  if (usage & RESOURCE_STATE_COPY_DEST) return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 
-  if (usage & RESOURCE_STATE_RENDER_TARGET)
-    return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+  if (usage & RESOURCE_STATE_RENDER_TARGET) return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-  if (usage & RESOURCE_STATE_DEPTH_WRITE)
-    return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+  if (usage & RESOURCE_STATE_DEPTH_WRITE) return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-  if (usage & RESOURCE_STATE_DEPTH_READ)
-    return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+  if (usage & RESOURCE_STATE_DEPTH_READ) return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 
-  if (usage & RESOURCE_STATE_UNORDERED_ACCESS)
-    return VK_IMAGE_LAYOUT_GENERAL;
+  if (usage & RESOURCE_STATE_UNORDERED_ACCESS) return VK_IMAGE_LAYOUT_GENERAL;
 
-  if (usage & RESOURCE_STATE_SHADER_RESOURCE)
-    return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+  if (usage & RESOURCE_STATE_SHADER_RESOURCE) return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-  if (usage & RESOURCE_STATE_PRESENT)
-    return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+  if (usage & RESOURCE_STATE_PRESENT) return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-  if (usage == RESOURCE_STATE_COMMON)
-    return VK_IMAGE_LAYOUT_GENERAL;
+  if (usage == RESOURCE_STATE_COMMON) return VK_IMAGE_LAYOUT_GENERAL;
 
   return VK_IMAGE_LAYOUT_UNDEFINED;
 }
 
-static VkPipelineStageFlags util_determine_pipeline_stage_flags(VkAccessFlags accessFlags, QueueType::Enum queueType) {
+static VkPipelineStageFlags util_determine_pipeline_stage_flags(VkAccessFlags   accessFlags,
+                                                                QueueType::Enum queueType) {
   VkPipelineStageFlags flags = 0;
 
   switch (queueType) {
@@ -718,7 +721,9 @@ static VkPipelineStageFlags util_determine_pipeline_stage_flags(VkAccessFlags ac
       if ((accessFlags & (VK_ACCESS_INDEX_READ_BIT | VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT)) != 0)
         flags |= VK_PIPELINE_STAGE_VERTEX_INPUT_BIT;
 
-      if ((accessFlags & (VK_ACCESS_UNIFORM_READ_BIT | VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT)) != 0) {
+      if ((accessFlags
+           & (VK_ACCESS_UNIFORM_READ_BIT | VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT))
+          != 0) {
         flags |= VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
         flags |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
         /*if ( pRenderer->pActiveGpuSettings->mGeometryShaderSupported ) {
@@ -739,27 +744,41 @@ static VkPipelineStageFlags util_determine_pipeline_stage_flags(VkAccessFlags ac
       if ((accessFlags & VK_ACCESS_INPUT_ATTACHMENT_READ_BIT) != 0)
         flags |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 
-      if ((accessFlags & (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)) != 0)
+      if ((accessFlags
+           & (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT))
+          != 0)
         flags |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
-      if ((accessFlags & (VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)) != 0)
-        flags |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+      if ((accessFlags
+           & (VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT
+              | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT))
+          != 0)
+        flags |=
+            VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
 
       break;
     }
     case QueueType::Compute: {
-      if ((accessFlags & (VK_ACCESS_INDEX_READ_BIT | VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT)) != 0 || (accessFlags & VK_ACCESS_INPUT_ATTACHMENT_READ_BIT) != 0 || (accessFlags & (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)) != 0 || (accessFlags & (VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)) != 0)
+      if ((accessFlags & (VK_ACCESS_INDEX_READ_BIT | VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT)) != 0
+          || (accessFlags & VK_ACCESS_INPUT_ATTACHMENT_READ_BIT) != 0
+          || (accessFlags
+              & (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT))
+              != 0
+          || (accessFlags
+              & (VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT
+                 | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT))
+              != 0)
         return VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
 
-      if ((accessFlags & (VK_ACCESS_UNIFORM_READ_BIT | VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT)) != 0)
+      if ((accessFlags
+           & (VK_ACCESS_UNIFORM_READ_BIT | VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT))
+          != 0)
         flags |= VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
 
       break;
     }
-    case QueueType::CopyTransfer:
-      return VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
-    default:
-      break;
+    case QueueType::CopyTransfer: return VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+    default: break;
   }
 
   // Compatible with both compute and graphics queues
@@ -772,8 +791,7 @@ static VkPipelineStageFlags util_determine_pipeline_stage_flags(VkAccessFlags ac
   if ((accessFlags & (VK_ACCESS_HOST_READ_BIT | VK_ACCESS_HOST_WRITE_BIT)) != 0)
     flags |= VK_PIPELINE_STAGE_HOST_BIT;
 
-  if (flags == 0)
-    flags = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+  if (flags == 0) flags = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 
   return flags;
 }

@@ -96,21 +96,13 @@ struct Material : public Resource {
   void addSpecularEnvMap(Renderer* renderer, TextureHandle handle);
   void setIblMap(Renderer* renderer, std::string path);
   void updateProgram();
-  void setDiffuseTexture(TextureHandle handle) {
-    textureMap["DiffuseTexture"].texture = handle;
-  }
-  void setNormalTexture(TextureHandle handle) {
-    textureMap["NormalTexture"].texture = handle;
-  }
+  void setDiffuseTexture(TextureHandle handle) { textureMap["DiffuseTexture"].texture = handle; }
+  void setNormalTexture(TextureHandle handle) { textureMap["NormalTexture"].texture = handle; }
   void setMRTexture(TextureHandle handle) {
     textureMap["MetallicRoughnessTexture"].texture = handle;
   }
-  void setEmissiveTexture(TextureHandle handle) {
-    textureMap["EmissiveTexture"].texture = handle;
-  }
-  void setAoTexture(TextureHandle handle) {
-    textureMap["AOTexture"].texture = handle;
-  }
+  void setEmissiveTexture(TextureHandle handle) { textureMap["EmissiveTexture"].texture = handle; }
+  void setAoTexture(TextureHandle handle) { textureMap["AOTexture"].texture = handle; }
   void setProgram(const std::shared_ptr<Program>& program);
 
  protected:
@@ -137,4 +129,4 @@ struct Material : public Resource {
 };
 }// namespace dg
 
-#endif //DGRESOURCE_H
+#endif//DGRESOURCE_H

@@ -36,9 +36,7 @@ void CommandBuffer::reset() {
 }
 
 void CommandBuffer::flush(VkQueue queue) {
-  if (this->m_commandBuffer == VK_NULL_HANDLE) {
-    return;
-  }
+  if (this->m_commandBuffer == VK_NULL_HANDLE) { return; }
   vkEndCommandBuffer(this->m_commandBuffer);
   VkSubmitInfo submit{VK_STRUCTURE_TYPE_SUBMIT_INFO};
   submit.commandBufferCount = 1;
@@ -59,7 +57,8 @@ void CommandBuffer::flush(VkQueue queue) {
 void CommandBuffer::bindPass(RenderPassHandle pass) {
   m_isRecording = true;
   RenderPass* renderpas = m_context->accessRenderPass(pass);
-  if (m_currRenderPass && (m_currRenderPass->m_type != RenderPassType::Enum::Compute) && renderpas != m_currRenderPass) {
+  if (m_currRenderPass && (m_currRenderPass->m_type != RenderPassType::Enum::Compute)
+      && renderpas != m_currRenderPass) {
     vkCmdEndRenderPass(m_commandBuffer);
   }
   if (renderpas != m_currRenderPass && (renderpas->m_type != RenderPassType::Enum::Compute)) {
@@ -68,7 +67,9 @@ void CommandBuffer::bindPass(RenderPassHandle pass) {
     passBeginInfo.renderArea.extent = {renderpas->m_width, renderpas->m_height};
     passBeginInfo.clearValueCount = m_clears.size();
     passBeginInfo.pClearValues = m_clears.data();
-    passBeginInfo.framebuffer = renderpas->m_type == RenderPassType::Enum::SwapChain ? m_context->m_swapchainFbos[m_context->m_currentSwapchainImageIndex] : m_context->accessFrameBuffer(renderpas->m_frameBuffers[0])->m_frameBuffer;
+    passBeginInfo.framebuffer = renderpas->m_type == RenderPassType::Enum::SwapChain
+        ? m_context->m_swapchainFbos[m_context->m_currentSwapchainImageIndex]
+        : m_context->accessFrameBuffer(renderpas->m_frameBuffers[0])->m_frameBuffer;
     m_currFrameBuffer = passBeginInfo.framebuffer;
     passBeginInfo.renderArea.offset = {0, 0};
     vkCmdBeginRenderPass(m_commandBuffer, &passBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
@@ -114,13 +115,15 @@ void CommandBuffer::bindIndexBuffer(BufferHandle ib, u32 offset, VkIndexType iTy
   vkCmdBindIndexBuffer(m_commandBuffer, realBuffer, offse, iType);
 }
 
-void CommandBuffer::bindDescriptorSet(const std::vector<DescriptorSetHandle>& set, u32 firstSet, u32* offsets, u32 numOffsets) {
+void CommandBuffer::bindDescriptorSet(const std::vector<DescriptorSetHandle>& set, u32 firstSet,
+                                      u32* offsets, u32 numOffsets) {
   for (int i = 0; i < set.size(); ++i) {
     DescriptorSet* dset = m_context->accessDescriptorSet(set[i]);
     if (!dset) { DG_ERROR("You are trying to bind an invalid descriptor set") }
     m_descriptorSets[i] = dset->m_vkdescriptorSet;
   }
-  vkCmdBindDescriptorSets(m_commandBuffer, m_pipeline->m_bindPoint, m_pipeline->m_pipelineLayout, firstSet, set.size(), m_descriptorSets, 0, nullptr);
+  vkCmdBindDescriptorSets(m_commandBuffer, m_pipeline->m_bindPoint, m_pipeline->m_pipelineLayout,
+                          firstSet, set.size(), m_descriptorSets, 0, nullptr);
 }
 
 void CommandBuffer::setScissor(const Rect2DInt* rect) {
@@ -161,21 +164,22 @@ void CommandBuffer::setViewport(const ViewPort* vp) {
   vkCmdSetViewport(m_commandBuffer, 0, 1, &viewPort);
 }
 
-void CommandBuffer::clearColor() {
-  m_clears[0].color = {0.0, 0.0, 0.0, 1.0f};
-}
+void CommandBuffer::clearColor() { m_clears[0].color = {0.0, 0.0, 0.0, 1.0f}; }
 
 void CommandBuffer::clearDepthStencil(float depth, u8 stencil) {
   m_clears[1].depthStencil.depth = depth;
   m_clears[1].depthStencil.stencil = stencil;
 }
 
-void CommandBuffer::draw(TopologyType::Enum tpType, u32 firstVertex, u32 VertexCount, u32 firstInstance, u32 instanceNum) {
+void CommandBuffer::draw(TopologyType::Enum tpType, u32 firstVertex, u32 VertexCount,
+                         u32 firstInstance, u32 instanceNum) {
   vkCmdDraw(m_commandBuffer, VertexCount, instanceNum, firstVertex, firstInstance);
 }
 
-void CommandBuffer::drawIndexed(TopologyType::Enum tpType, u32 indexCount, u32 instanceCount, u32 firstIndex, u32 vertexOffset, u32 firstInstance) {
-  vkCmdDrawIndexed(m_commandBuffer, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
+void CommandBuffer::drawIndexed(TopologyType::Enum tpType, u32 indexCount, u32 instanceCount,
+                                u32 firstIndex, u32 vertexOffset, u32 firstInstance) {
+  vkCmdDrawIndexed(m_commandBuffer, indexCount, instanceCount, firstIndex, vertexOffset,
+                   firstInstance);
 }
 
 void CommandBuffer::disPatch(u32 groupX, u32 groupY, u32 groupZ) {
@@ -192,11 +196,13 @@ void CommandBuffer::barrier(const ExecutionBarrier& barrier) {
 
   VkAccessFlags sourceAccessMask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT;
   VkAccessFlags sourceBufferAccessMask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT;
-  VkAccessFlags sourceDepthAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+  VkAccessFlags sourceDepthAccessMask =
+      VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
   VkAccessFlags dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
   VkAccessFlags dstBufferAccessmask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT;
-  VkAccessFlags dstDepthAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-  bool          isDepth = false;
+  VkAccessFlags dstDepthAccessMask =
+      VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+  bool isDepth = false;
   if (barrier.numImageBarriers) {
     imageBarriers.resize(barrier.numBufferBarriers);
     for (int i = 0; i < imageBarriers.size(); ++i) {
@@ -208,15 +214,24 @@ void CommandBuffer::barrier(const ExecutionBarrier& barrier) {
       imgBarr.image = tex->m_image;
       imgBarr.oldLayout = tex->m_imageInfo.imageLayout;
       imgBarr.newLayout = barrier.newLayout;
-      imgBarr.srcQueueFamilyIndex = barrier.oldQueueIndex != VK_QUEUE_FAMILY_IGNORED ? barrier.oldQueueIndex : VK_QUEUE_FAMILY_IGNORED;
-      imgBarr.dstQueueFamilyIndex = barrier.newQueueIndex != VK_QUEUE_FAMILY_IGNORED ? barrier.newQueueIndex : VK_QUEUE_FAMILY_IGNORED;
-      imgBarr.subresourceRange.aspectMask = isDepth ? VK_IMAGE_ASPECT_COLOR_BIT : VK_IMAGE_ASPECT_DEPTH_BIT;
+      imgBarr.srcQueueFamilyIndex = barrier.oldQueueIndex != VK_QUEUE_FAMILY_IGNORED
+          ? barrier.oldQueueIndex
+          : VK_QUEUE_FAMILY_IGNORED;
+      imgBarr.dstQueueFamilyIndex = barrier.newQueueIndex != VK_QUEUE_FAMILY_IGNORED
+          ? barrier.newQueueIndex
+          : VK_QUEUE_FAMILY_IGNORED;
+      imgBarr.subresourceRange.aspectMask =
+          isDepth ? VK_IMAGE_ASPECT_COLOR_BIT : VK_IMAGE_ASPECT_DEPTH_BIT;
       imgBarr.subresourceRange.baseArrayLayer = 0;
       imgBarr.subresourceRange.baseMipLevel = 0;
       imgBarr.subresourceRange.layerCount = 1;
       imgBarr.subresourceRange.levelCount = 1;
-      imgBarr.srcAccessMask = barrier.srcImageAccessFlag != VK_ACCESS_FLAG_BITS_MAX_ENUM ? barrier.srcImageAccessFlag : sourceAccessMask;
-      imgBarr.dstAccessMask = barrier.dstImageAccessFlag != VK_ACCESS_FLAG_BITS_MAX_ENUM ? barrier.dstImageAccessFlag : dstAccessMask;
+      imgBarr.srcAccessMask = barrier.srcImageAccessFlag != VK_ACCESS_FLAG_BITS_MAX_ENUM
+          ? barrier.srcImageAccessFlag
+          : sourceAccessMask;
+      imgBarr.dstAccessMask = barrier.dstImageAccessFlag != VK_ACCESS_FLAG_BITS_MAX_ENUM
+          ? barrier.dstImageAccessFlag
+          : dstAccessMask;
       tex->m_imageInfo.imageLayout = imgBarr.newLayout;
     }
   }
@@ -228,10 +243,18 @@ void CommandBuffer::barrier(const ExecutionBarrier& barrier) {
       VkBufferMemoryBarrier& bufBarr = bufferBarriers[i];
       bufBarr.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
       bufBarr.buffer = buf->m_buffer;
-      bufBarr.srcAccessMask = barrier.srcBufferAccessFlag != VK_ACCESS_FLAG_BITS_MAX_ENUM ? barrier.srcBufferAccessFlag : sourceAccessMask;
-      bufBarr.dstAccessMask = barrier.dstBufferAccessFlag != VK_ACCESS_FLAG_BITS_MAX_ENUM ? barrier.dstBufferAccessFlag : dstAccessMask;
-      bufBarr.srcQueueFamilyIndex = barrier.oldQueueIndex != VK_QUEUE_FAMILY_IGNORED ? barrier.oldQueueIndex : VK_QUEUE_FAMILY_IGNORED;
-      bufBarr.dstQueueFamilyIndex = barrier.newQueueIndex != VK_QUEUE_FAMILY_IGNORED ? barrier.newQueueIndex : VK_QUEUE_FAMILY_IGNORED;
+      bufBarr.srcAccessMask = barrier.srcBufferAccessFlag != VK_ACCESS_FLAG_BITS_MAX_ENUM
+          ? barrier.srcBufferAccessFlag
+          : sourceAccessMask;
+      bufBarr.dstAccessMask = barrier.dstBufferAccessFlag != VK_ACCESS_FLAG_BITS_MAX_ENUM
+          ? barrier.dstBufferAccessFlag
+          : dstAccessMask;
+      bufBarr.srcQueueFamilyIndex = barrier.oldQueueIndex != VK_QUEUE_FAMILY_IGNORED
+          ? barrier.oldQueueIndex
+          : VK_QUEUE_FAMILY_IGNORED;
+      bufBarr.dstQueueFamilyIndex = barrier.newQueueIndex != VK_QUEUE_FAMILY_IGNORED
+          ? barrier.newQueueIndex
+          : VK_QUEUE_FAMILY_IGNORED;
       bufBarr.size = buf->m_size;
       bufBarr.offset = 0;
     }
@@ -239,10 +262,14 @@ void CommandBuffer::barrier(const ExecutionBarrier& barrier) {
   VkShaderStageFlags srcPipFlags = to_vk_pipeline_stage(barrier.srcStage);
   VkShaderStageFlags dstPipFlags = to_vk_pipeline_stage(barrier.dstStage);
   if (isDepth) {
-    srcPipFlags |= VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-    dstPipFlags |= VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    srcPipFlags |=
+        VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    dstPipFlags |=
+        VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
   }
-  vkCmdPipelineBarrier(m_commandBuffer, srcPipFlags, dstPipFlags, 0, 0, nullptr, bufferBarriers.size(), bufferBarriers.data(), imageBarriers.size(), imageBarriers.data());
+  vkCmdPipelineBarrier(m_commandBuffer, srcPipFlags, dstPipFlags, 0, 0, nullptr,
+                       bufferBarriers.size(), bufferBarriers.data(), imageBarriers.size(),
+                       imageBarriers.data());
 }
 
 }//namespace dg

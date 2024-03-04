@@ -18,7 +18,8 @@ struct CommandBuffer {
   void bindPipeline(PipelineHandle pip);
   void bindVertexBuffer(BufferHandle vb, u32 binding, u32 offset);
   void bindIndexBuffer(BufferHandle ib, u32 offset, VkIndexType index_type);
-  void bindDescriptorSet(const std::vector<DescriptorSetHandle>& set, u32 firstSet, u32* offsets, u32 numOffsets);
+  void bindDescriptorSet(const std::vector<DescriptorSetHandle>& set, u32 firstSet, u32* offsets,
+                         u32 numOffsets);
   template<typename T>
   void bindPushConstants(VkShaderStageFlags pipelineStage, T* pushBlock);
   void endpass() {
@@ -34,8 +35,10 @@ struct CommandBuffer {
   void clearColor();
   void clearDepthStencil(float depth, u8 stencil);
 
-  void draw(TopologyType::Enum tpType, u32 firstVertex, u32 VertexCount, u32 firstInstance, u32 instanceNum);
-  void drawIndexed(TopologyType::Enum tpType, u32 indexCount, u32 instanctCount, u32 firstIndex, u32 vertexOffset, u32 firstInstance);
+  void draw(TopologyType::Enum tpType, u32 firstVertex, u32 VertexCount, u32 firstInstance,
+            u32 instanceNum);
+  void drawIndexed(TopologyType::Enum tpType, u32 indexCount, u32 instanctCount, u32 firstIndex,
+                   u32 vertexOffset, u32 firstInstance);
   //void                drawIndirect(BufferHandle handle, u32 offset, u32 stride);
   //void                drawIndexIndirect(BufferHandle handle, u32 offset, u32 stride);
 
@@ -60,7 +63,8 @@ struct CommandBuffer {
 };
 template<typename T>
 void CommandBuffer::bindPushConstants(VkShaderStageFlags pipelineStage, T* pushBlock) {
-  vkCmdPushConstants(m_commandBuffer, m_pipeline->m_pipelineLayout, pipelineStage, 0, sizeof(T), pushBlock);
+  vkCmdPushConstants(m_commandBuffer, m_pipeline->m_pipelineLayout, pipelineStage, 0, sizeof(T),
+                     pushBlock);
 }
 }// namespace dg
 

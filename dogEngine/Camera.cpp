@@ -21,7 +21,7 @@ void Camera::updatePosition(float deltaTime) {
   const glm::vec3 forward = direction;
   const glm::vec3 right = glm::normalize(glm::cross(forward, up));
   const glm::vec3 up = glm::normalize(glm::cross(right, forward));
-  glm::vec3 accel(0.0f);
+  glm::vec3       accel(0.0f);
   if (ImGui::IsKeyDown(ImGuiKey_W)) accel += forward;
   if (ImGui::IsKeyDown(ImGuiKey_S)) accel -= forward;
   if (ImGui::IsKeyDown(ImGuiKey_A)) accel -= right;
@@ -34,7 +34,8 @@ void Camera::updatePosition(float deltaTime) {
     moveSpeed -= moveSpeed * glm::min((1.0f / damping) * static_cast<float>(deltaTime), 1.0f);
   } else {
     moveSpeed += accel * acceleration * static_cast<float>(deltaTime);
-    const float maxSpeed = ImGui::IsKeyDown(ImGuiKey_LeftShift) ? this->maxSpeed * fastCoef : this->maxSpeed;
+    const float maxSpeed =
+        ImGui::IsKeyDown(ImGuiKey_LeftShift) ? this->maxSpeed * fastCoef : this->maxSpeed;
     if (glm::length(moveSpeed) > maxSpeed) moveSpeed = glm::normalize(moveSpeed) * maxSpeed;
   }
   pos += moveSpeed * static_cast<float>(deltaTime);
@@ -50,9 +51,7 @@ glm::mat4 Camera::getViewMatrix(bool useEularAngle) {
 }
 
 glm::mat4 Camera::getProjectMatrix(bool ortho) {
-  if (ortho) {
-    return glm::ortho(left, right, down, top, zNear, zFar);
-  }
+  if (ortho) { return glm::ortho(left, right, down, top, zNear, zFar); }
   auto proj = glm::perspective(glm::radians(fov), aspect, zNear, zFar);
   proj[1][1] *= -1;
   return proj;

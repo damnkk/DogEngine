@@ -10,9 +10,7 @@ namespace dg {
 
 std::vector<char> readFile(const std::string& filename) {
   std::ifstream file(filename, std::ios::ate | std::ios::binary);
-  if (!file.is_open()) {
-    throw std::runtime_error("failed to open file!");
-  }
+  if (!file.is_open()) { throw std::runtime_error("failed to open file!"); }
   size_t            fileSize = (size_t) file.tellg();
   std::vector<char> buffer(fileSize);
   file.seekg(0);
@@ -25,9 +23,7 @@ ResourceLoader::ResourceLoader(Renderer* renderer) : m_renderer(renderer) {
   m_rtBuilder.setup(renderer->getContext().get());
 }
 
-void ResourceLoader::destroy() {
-  m_rtBuilder.destroy();
-}
+void ResourceLoader::destroy() { m_rtBuilder.destroy(); }
 
 Mesh ResourceLoader::convertAIMesh(aiMesh* mesh) {
   Mesh               dgMesh;
@@ -61,18 +57,29 @@ Mesh ResourceLoader::convertAIMesh(aiMesh* mesh) {
   VkBufferUsageFlags flag = 0;
   if (m_renderer->getContext()->m_supportRayTracing) {
     flag = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-    rayTracingFlags = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    rayTracingFlags = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR
+        | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
   }
   dgMesh.indexCount = mesh->mNumFaces * 3;
-  dgMesh.vertexBuffer = m_renderer->upLoadVertexDataToGPU(vertices, mesh->mName.C_Str(), flag | rayTracingFlags);
-  dgMesh.indexBuffer = m_renderer->upLoadVertexDataToGPU(srcIndices, mesh->mName.C_Str(), flag | rayTracingFlags);
+  dgMesh.vertexBuffer =
+      m_renderer->upLoadVertexDataToGPU(vertices, mesh->mName.C_Str(), flag | rayTracingFlags);
+  dgMesh.indexBuffer =
+      m_renderer->upLoadVertexDataToGPU(srcIndices, mesh->mName.C_Str(), flag | rayTracingFlags);
   BufferCreateInfo bufferInfo{};
   std::string      uniformName = std::string(mesh->mName.C_Str()) + std::string("uniform");
-  bufferInfo.reset().setName(uniformName.c_str()).setDeviceOnly(false).setUsageSize(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(Material::UniformMaterial));
+  bufferInfo.reset()
+      .setName(uniformName.c_str())
+      .setDeviceOnly(false)
+      .setUsageSize(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(Material::UniformMaterial));
   dgMesh.matUniformBuffer = m_renderer->createBuffer(bufferInfo)->handle;
   std::vector<u32> primitiveMaterialIndex(mesh->mNumFaces, mesh->mMaterialIndex);
   std::string      name("primitiveMaterialIndex");
-  bufferInfo.reset().setName((uniformName + name).c_str()).setDeviceOnly(true).setUsageSize(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | flag, sizeof(u32) * primitiveMaterialIndex.size()).setData(primitiveMaterialIndex.data());
+  bufferInfo.reset()
+      .setName((uniformName + name).c_str())
+      .setDeviceOnly(true)
+      .setUsageSize(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | flag,
+                    sizeof(u32) * primitiveMaterialIndex.size())
+      .setData(primitiveMaterialIndex.data());
   dgMesh.primitiveMaterialIndexBuffer = m_renderer->createBuffer(bufferInfo)->handle;
   return dgMesh;
 }
@@ -98,7 +105,8 @@ glm::mat4 toMat4(const aiMatrix4x4& from) {
   return to;
 }
 
-void ResourceLoader::traverse(const aiScene* sourceScene, SceneGraph& sceneGraph, aiNode* node, int parent, int level) {
+void ResourceLoader::traverse(const aiScene* sourceScene, SceneGraph& sceneGraph, aiNode* node,
+                              int parent, int level) {
   int newNodeId;
   //sceneGraph.maxLevel = std::max(sceneGraph.maxLevel, level);
   if (node->mName.length != 0) {
@@ -107,18 +115,21 @@ void ResourceLoader::traverse(const aiScene* sourceScene, SceneGraph& sceneGraph
     newNodeId = sceneGraph.addNode(parent, level);
   }
   for (size_t i = 0; i < node->mNumMeshes; ++i) {
-    int newSubNodeID = sceneGraph.addNode(newNodeId, level + 1, std::string(node->mName.C_Str()) + "_Mesh_" + std::to_string(i));
+    int newSubNodeID = sceneGraph.addNode(
+        newNodeId, level + 1, std::string(node->mName.C_Str()) + "_Mesh_" + std::to_string(i));
     int mesh = node->mMeshes[i];
     sceneGraph.m_meshMap[newSubNodeID] = m_meshOffset + mesh;
     sceneGraph.m_boundingBoxMap[newSubNodeID] = m_boundingBoxOffset + mesh;
-    sceneGraph.m_materialMap[newSubNodeID] = sourceScene->mMeshes[mesh]->mMaterialIndex + m_materialOffset;
+    sceneGraph.m_materialMap[newSubNodeID] =
+        sourceScene->mMeshes[mesh]->mMaterialIndex + m_materialOffset;
     sceneGraph.m_globalTransforms[newSubNodeID] = glm::mat4(1.0f);
     sceneGraph.m_localTransforms[newSubNodeID] = glm::mat4(1.0f);
   }
   sceneGraph.m_globalTransforms[newNodeId] = glm::mat4(1.0f);
   sceneGraph.m_localTransforms[newNodeId] = toMat4(node->mTransformation);
   glm::vec3& rotateRecord = sceneGraph.m_rotateRecord[newNodeId];
-  glm::extractEulerAngleXYZ(sceneGraph.m_localTransforms[newNodeId], rotateRecord.x, rotateRecord.y, rotateRecord.z);
+  glm::extractEulerAngleXYZ(sceneGraph.m_localTransforms[newNodeId], rotateRecord.x, rotateRecord.y,
+                            rotateRecord.z);
 
   for (u32 n = 0; n < node->mNumChildren; ++n) {
     traverse(sourceScene, sceneGraph, node->mChildren[n], newNodeId, level + 1);
@@ -126,9 +137,12 @@ void ResourceLoader::traverse(const aiScene* sourceScene, SceneGraph& sceneGraph
 }
 
 int       EmptyNameCount = 0;
-Material* ResourceLoader::convertAIMaterialToDescription(const aiMaterial* aiMat, std::string basePath) {
+Material* ResourceLoader::convertAIMaterialToDescription(const aiMaterial* aiMat,
+                                                         std::string       basePath) {
   MaterialCreateInfo matinfo{};
-  matinfo.setName(aiMat->GetName().length == 0 ? ("DefaultMaterialName" + std::to_string(EmptyNameCount)) : std::string(aiMat->GetName().C_Str()));
+  matinfo.setName(aiMat->GetName().length == 0
+                      ? ("DefaultMaterialName" + std::to_string(EmptyNameCount))
+                      : std::string(aiMat->GetName().C_Str()));
   if (aiMat->GetName().length == 0) EmptyNameCount += 1;
   Material* matPtr = m_renderer->createMaterial(matinfo);
   Material& mat = *matPtr;
@@ -150,11 +164,13 @@ Material* ResourceLoader::convertAIMaterialToDescription(const aiMaterial* aiMat
     mat.uniformMaterial.emissiveFactor.b += color.b;
   }
   float tmp;
-  if (aiGetMaterialFloat(aiMat, AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLIC_FACTOR, &tmp) == AI_SUCCESS) {
+  if (aiGetMaterialFloat(aiMat, AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLIC_FACTOR, &tmp)
+      == AI_SUCCESS) {
     mat.uniformMaterial.mrFactor.x = tmp;
   }
 
-  if (aiGetMaterialFloat(aiMat, AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_ROUGHNESS_FACTOR, &tmp) == AI_SUCCESS) {
+  if (aiGetMaterialFloat(aiMat, AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_ROUGHNESS_FACTOR, &tmp)
+      == AI_SUCCESS) {
     mat.uniformMaterial.mrFactor.y = tmp;
   }
 
@@ -167,7 +183,10 @@ Material* ResourceLoader::convertAIMaterialToDescription(const aiMaterial* aiMat
   unsigned int     TextureFlags = 0;
 
   TextureCreateInfo texInfo{};
-  texInfo.setFlag(TextureFlags::Mask::Default_mask).setFormat(VK_FORMAT_R8G8B8A8_SRGB).setBindLess(true).setMipmapLevel(10);
+  texInfo.setFlag(TextureFlags::Mask::Default_mask)
+      .setFormat(VK_FORMAT_R8G8B8A8_SRGB)
+      .setBindLess(true)
+      .setMipmapLevel(10);
 
   if (aiMat->GetTexture(aiTextureType_DIFFUSE, 0, &texPath) == AI_SUCCESS) {
     std::string diffusePath = basePath + '/' + std::string(texPath.C_Str());
@@ -206,9 +225,11 @@ SceneGraph ResourceLoader::loadModel(std::string modelPath) {
     int rootNodeId = m_sceneGraph->addNode(-1, 0, "RootSceneNode");
   }
   const size_t      pathSeparator = modelPath.find_last_of("/\\");
-  const std::string basePath = (pathSeparator != std::string::npos) ? modelPath.substr(0, pathSeparator + 1) : "";
+  const std::string basePath =
+      (pathSeparator != std::string::npos) ? modelPath.substr(0, pathSeparator + 1) : "";
   if (basePath.empty()) DG_WARN("Model base path is null, this may lead to potential mistake");
-  const unsigned int loadFlags = 0 | aiProcess_GenNormals | aiProcess_GenBoundingBoxes | aiProcess_FindInvalidData;
+  const unsigned int loadFlags =
+      0 | aiProcess_GenNormals | aiProcess_GenBoundingBoxes | aiProcess_FindInvalidData;
   DG_INFO("Loading model from path {}", modelPath);
   const aiScene* scene = m_modelImporter.ReadFile(modelPath.c_str(), loadFlags);
   if (!scene || !scene->HasMeshes()) {
@@ -226,7 +247,8 @@ SceneGraph ResourceLoader::loadModel(std::string modelPath) {
     Mesh mesh = convertAIMesh(scene->mMeshes[i]);
     m_meshes.push_back(mesh);
     auto& AABB = scene->mMeshes[i]->mAABB;
-    m_boundingBoxes.emplace_back(glm::vec3(AABB.mMax.x, AABB.mMax.y, AABB.mMax.z), glm::vec3(AABB.mMin.x, AABB.mMin.y, AABB.mMin.z));
+    m_boundingBoxes.emplace_back(glm::vec3(AABB.mMax.x, AABB.mMax.y, AABB.mMax.z),
+                                 glm::vec3(AABB.mMin.x, AABB.mMin.y, AABB.mMin.z));
   }
 
   for (u32 i = 0; i < scene->mNumMaterials; ++i) {
@@ -240,8 +262,7 @@ SceneGraph ResourceLoader::loadModel(std::string modelPath) {
   return {};
 }
 
-void ResourceLoader::loadSceneGraph(std::string sceneGraphPath) {
-}
+void ResourceLoader::loadSceneGraph(std::string sceneGraphPath) {}
 
 void ResourceLoader::executeScene(std::shared_ptr<SceneGraph> scene) {
   if (!scene) {
@@ -254,25 +275,26 @@ void ResourceLoader::executeScene(std::shared_ptr<SceneGraph> scene) {
   }
   for (const auto& c : scene->m_meshMap) {
     auto material = scene->m_materialMap.find(c.first);
-    if (material == scene->m_materialMap.end()) {
-      continue;
-    }
+    if (material == scene->m_materialMap.end()) { continue; }
     Material* mat = m_materials[material->second];
     //create descriptor set here
     DescriptorSetCreateInfo setInfo{};
-    setInfo.reset().setName(scene->m_nodeNames[scene->m_nameForNodeMap[c.first]].c_str()).setLayout(mat->program->passes[0].descriptorSetLayout[0]).buffer(m_renderer->getContext()->m_viewProjectUniformBuffer, 0).buffer(m_meshes[c.second].matUniformBuffer, 1);
+    setInfo.reset()
+        .setName(scene->m_nodeNames[scene->m_nameForNodeMap[c.first]].c_str())
+        .setLayout(mat->program->passes[0].descriptorSetLayout[0])
+        .buffer(m_renderer->getContext()->m_viewProjectUniformBuffer, 0)
+        .buffer(m_meshes[c.second].matUniformBuffer, 1);
     DescriptorSetHandle desc = m_renderer->getContext()->createDescriptorSet(setInfo);
-    m_renderObjects.push_back(RenderObject{
-        c.second,
-        c.first,
-        m_meshes[c.second].indexCount,
-        m_materials[material->second],
-        {desc},
-        m_renderer->getContext()->m_gameViewPass,
-        m_meshes[c.second].vertexBuffer,
-        m_meshes[c.second].indexBuffer,
-        m_renderer->getContext()->m_viewProjectUniformBuffer,
-        m_meshes[c.second].matUniformBuffer});
+    m_renderObjects.push_back(RenderObject{c.second,
+                                           c.first,
+                                           m_meshes[c.second].indexCount,
+                                           m_materials[material->second],
+                                           {desc},
+                                           m_renderer->getContext()->m_gameViewPass,
+                                           m_meshes[c.second].vertexBuffer,
+                                           m_meshes[c.second].indexBuffer,
+                                           m_renderer->getContext()->m_viewProjectUniformBuffer,
+                                           m_meshes[c.second].matUniformBuffer});
   }
   scene->markAsChanged(0);
   scene->recalculateAllTransforms();
@@ -301,7 +323,13 @@ void ResourceLoader::executeSceneRT(std::shared_ptr<SceneGraph> scene) {
       rtMaterials.push_back(mat);
     }
     BufferCreateInfo materialArrayBufferCI{};
-    materialArrayBufferCI.reset().setDeviceOnly(true).setUsageSize(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, sizeof(Material::UniformMaterial) * rtMaterials.size()).setName("Material array").setData(rtMaterials.data());
+    materialArrayBufferCI.reset()
+        .setDeviceOnly(true)
+        .setUsageSize(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT
+                          | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                      sizeof(Material::UniformMaterial) * rtMaterials.size())
+        .setName("Material array")
+        .setData(rtMaterials.data());
     materialArray = m_renderer->createBuffer(materialArrayBufferCI)->handle;
   }
 
@@ -314,11 +342,11 @@ void ResourceLoader::executeSceneRT(std::shared_ptr<SceneGraph> scene) {
   {
     for (int i = 0; i < m_meshes.size(); ++i) {
       // get meshDesc
-      auto                      context = m_renderer->getContext();
-      Buffer*                   vertexBuffer = context->accessBuffer(m_meshes[i].vertexBuffer);
-      Buffer*                   indexBuffer = context->accessBuffer(m_meshes[i].indexBuffer);
-      Buffer*                   primitiveMatBuffer = context->accessBuffer(m_meshes[i].primitiveMaterialIndexBuffer);
-      Buffer*                   matArray = context->accessBuffer(materialArray);
+      auto    context = m_renderer->getContext();
+      Buffer* vertexBuffer = context->accessBuffer(m_meshes[i].vertexBuffer);
+      Buffer* indexBuffer = context->accessBuffer(m_meshes[i].indexBuffer);
+      Buffer* primitiveMatBuffer = context->accessBuffer(m_meshes[i].primitiveMaterialIndexBuffer);
+      Buffer* matArray = context->accessBuffer(materialArray);
       MeshDescRT                meshDesc;
       VkBufferDeviceAddressInfo addressInfo{VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO};
       addressInfo.buffer = vertexBuffer->m_buffer;
@@ -326,14 +354,16 @@ void ResourceLoader::executeSceneRT(std::shared_ptr<SceneGraph> scene) {
       addressInfo.buffer = indexBuffer->m_buffer;
       meshDesc.indexAddress = vkGetBufferDeviceAddress(context->m_logicDevice, &addressInfo);
       addressInfo.buffer = primitiveMatBuffer->m_buffer;
-      meshDesc.primitiveMatIdxAddress = vkGetBufferDeviceAddress(context->m_logicDevice, &addressInfo);
+      meshDesc.primitiveMatIdxAddress =
+          vkGetBufferDeviceAddress(context->m_logicDevice, &addressInfo);
       addressInfo.buffer = matArray->m_buffer;
       meshDesc.materialAddress = vkGetBufferDeviceAddressKHR(context->m_logicDevice, &addressInfo);
       meshDescRts.push_back(meshDesc);
 
       //get BlasInput
-      int                                             maxPrimitiveCount = m_meshes[i].indexCount / 3;
-      VkAccelerationStructureGeometryTrianglesDataKHR triangles{VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR};
+      int maxPrimitiveCount = m_meshes[i].indexCount / 3;
+      VkAccelerationStructureGeometryTrianglesDataKHR triangles{
+          VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR};
       triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
       triangles.vertexData.deviceAddress = meshDesc.vertexAddress;
       triangles.vertexStride = sizeof(Vertex);
@@ -341,7 +371,8 @@ void ResourceLoader::executeSceneRT(std::shared_ptr<SceneGraph> scene) {
       triangles.indexData.deviceAddress = meshDesc.indexAddress;
       triangles.maxVertex = m_meshes[i].indexCount - 1;
 
-      VkAccelerationStructureGeometryKHR asGeom{VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR};
+      VkAccelerationStructureGeometryKHR asGeom{
+          VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR};
       asGeom.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR;
       asGeom.flags = VK_GEOMETRY_OPAQUE_BIT_KHR;
       asGeom.geometry.triangles = triangles;
@@ -356,11 +387,19 @@ void ResourceLoader::executeSceneRT(std::shared_ptr<SceneGraph> scene) {
       allBlasInput.push_back(input);
     }
     BufferCreateInfo meshDescRtsBufferCI{};
-    meshDescRtsBufferCI.reset().setDeviceOnly(true).setUsageSize(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, sizeof(MeshDescRT) * meshDescRts.size()).setName("MeshDescArray").setData(meshDescRts.data());
+    meshDescRtsBufferCI.reset()
+        .setDeviceOnly(true)
+        .setUsageSize(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT
+                          | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                      sizeof(MeshDescRT) * meshDescRts.size())
+        .setName("MeshDescArray")
+        .setData(meshDescRts.data());
     meshDescArray = m_renderer->createBuffer(meshDescRtsBufferCI)->handle;
   }
 
-  m_rtBuilder.buildBlas(allBlasInput, VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR);
+  m_rtBuilder.buildBlas(allBlasInput,
+                        VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_KHR
+                            | VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR);
 
   //build tlas
   std::vector<VkAccelerationStructureInstanceKHR> tlas;
@@ -379,21 +418,37 @@ void ResourceLoader::executeSceneRT(std::shared_ptr<SceneGraph> scene) {
 
   //prepare raytracing pipeline's descriptor
   DescriptorSetLayoutCreateInfo setLayout0{};
-  setLayout0.reset().setName("AccStructure&OutputImageBinding").addBinding({VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 0, 1, "accelerationStructure"}).addBinding({VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, 1, "outputImage"});
-  DescriptorSetLayoutHandle layoutHandle0 = m_renderer->getContext()->createDescriptorSetLayout(setLayout0);
+  setLayout0.reset()
+      .setName("AccStructure&OutputImageBinding")
+      .addBinding({VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 0, 1, "accelerationStructure"})
+      .addBinding({VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, 1, "outputImage"});
+  DescriptorSetLayoutHandle layoutHandle0 =
+      m_renderer->getContext()->createDescriptorSetLayout(setLayout0);
 
-  // DescriptorSetLayoutCreateInfo setLayout1{};
-  // setLayout1.reset().setName("CameraTransform&objectDescArray").addBinding({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, 1, "CameraTransForm"}).addBinding({VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, 1, "objectDescArray"});
-  // DescriptorSetLayoutHandle layoutHandle1 = m_renderer->getContext()->createDescriptorSetLayout(setLayout1);
+  DescriptorSetLayoutCreateInfo setLayout1{};
+  setLayout1.reset()
+      .setName("CameraTransform&objectDescArray")
+      .addBinding({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, 1, "CameraTransForm"})
+      .addBinding({VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, 1, "objectDescArray"});
+  DescriptorSetLayoutHandle layoutHandle1 =
+      m_renderer->getContext()->createDescriptorSetLayout(setLayout1);
 
   //descriptorSet3 is bindless descriptor witch is handled in device context, so we don't do anything here.
   DescriptorSetCreateInfo setInfo0{};
-  setInfo0.reset().setName("accStructure&OutputImageBindingDesc").setLayout(layoutHandle0).accelerateStrcture(m_rtBuilder.getAccelerationStructure(), 0).texture(m_renderer->getContext()->m_gameViewFrameTextures[0], 1);
+  setInfo0.reset()
+      .setName("accStructure&OutputImageBindingDesc")
+      .setLayout(layoutHandle0)
+      .accelerateStrcture(m_rtBuilder.getAccelerationStructure(), 0)
+      .texture(m_renderer->getContext()->m_gameViewFrameTextures[0], 1);
   DescriptorSetHandle set0 = m_renderer->getContext()->createDescriptorSet(setInfo0);
 
-  // DescriptorSetCreateInfo setInfo1{};
-  // setInfo1.reset().setName("cameraTransform&objectDescArray").setLayout(layoutHandle1).buffer(m_renderer->getContext()->m_viewProjectUniformBuffer, 0).buffer(meshDescArray, 1);
-  // DescriptorSetHandle set1 = m_renderer->getContext()->createDescriptorSet(setInfo1);
+  DescriptorSetCreateInfo setInfo1{};
+  setInfo1.reset()
+      .setName("cameraTransform&objectDescArray")
+      .setLayout(layoutHandle1)
+      .buffer(m_renderer->getContext()->m_viewProjectUniformBuffer, 0)
+      .buffer(meshDescArray, 1);
+  DescriptorSetHandle set1 = m_renderer->getContext()->createDescriptorSet(setInfo1);
 
   //set push constant
   VkPushConstantRange constRange;
@@ -403,9 +458,16 @@ void ResourceLoader::executeSceneRT(std::shared_ptr<SceneGraph> scene) {
 
   // prepare pipeline
   ShaderStateCreation stateCI{};
-  stateCI.reset().setName("ry shader state").addStage("./shader/rayGen.rgen", VK_SHADER_STAGE_RAYGEN_BIT_KHR).addStage("./shader/rayClosestHit.rchit", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR).addStage("./shader/rayMiss.rmiss", VK_SHADER_STAGE_MISS_BIT_KHR);
+  stateCI.reset()
+      .setName("ry shader state")
+      .addStage("./shader/rayGen.rgen", VK_SHADER_STAGE_RAYGEN_BIT_KHR)
+      .addStage("./shader/rayClosestHit.rchit", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR)
+      .addStage("./shader/rayMiss.rmiss", VK_SHADER_STAGE_MISS_BIT_KHR);
   PipelineCreateInfo rtPipelineInfo{};
-  //rtPipelineInfo.addDescriptorSetlayout(layoutHandle0).addDescriptorSetlayout(layoutHandle1).addDescriptorSetlayout(m_renderer->getContext()->m_bindlessDescriptorSetLayout).addPushConstant(constRange);
+  rtPipelineInfo.addDescriptorSetlayout(layoutHandle0)
+      .addDescriptorSetlayout(layoutHandle1)
+      .addDescriptorSetlayout(m_renderer->getContext()->m_bindlessDescriptorSetLayout)
+      .addPushConstant(constRange);
   rtPipelineInfo.m_shaderState = stateCI;
 
   //ming

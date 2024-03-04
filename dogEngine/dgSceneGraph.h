@@ -6,7 +6,9 @@
 namespace dg {
 struct Hierarchy {
   Hierarchy() {}
-  Hierarchy(int pParent, int pFirstChild, int pNextSibling, int pLastSibling, int pLevel) : parent(pParent), firstChild(pFirstChild), nextSibling(pNextSibling), lastSibling(pLastSibling), level(pLevel) {}
+  Hierarchy(int pParent, int pFirstChild, int pNextSibling, int pLastSibling, int pLevel)
+      : parent(pParent), firstChild(pFirstChild), nextSibling(pNextSibling),
+        lastSibling(pLastSibling), level(pLevel) {}
   int parent = -1;
   int firstChild = -1;
   int nextSibling = -1;
@@ -44,9 +46,11 @@ struct SceneGraph {
 //if any item in v is founded in selection array, the item will be remove to end of the v;
 template<class T, class Index = u32>
 void eraseSelected(std::vector<T>& v, const std::vector<Index>& selection) {
-  v.resize(std::distance(v.begin(), std::stable_partition(v.begin(), v.end(), [&selection, &v](const T& item) {
-                           return !std::binary_search(selection.begin(), selection.end(), static_cast<Index>(static_cast<const T*>(&item) - &v[0]));
-                         })));
+  v.resize(std::distance(
+      v.begin(), std::stable_partition(v.begin(), v.end(), [&selection, &v](const T& item) {
+        return !std::binary_search(selection.begin(), selection.end(),
+                                   static_cast<Index>(static_cast<const T*>(&item) - &v[0]));
+      })));
 }
 }// namespace dg
 

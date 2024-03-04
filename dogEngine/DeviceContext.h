@@ -31,9 +31,10 @@ struct UniformData {
 };
 
 struct Entry {
-  Entry(const char* entryName, bool isOptional = false, void* pointerFeatureStruct = nullptr, uint32_t checkVersion = 0)
-      : name(entryName), optional(isOptional), pFeatureStruct(pointerFeatureStruct), version(checkVersion) {
-  }
+  Entry(const char* entryName, bool isOptional = false, void* pointerFeatureStruct = nullptr,
+        uint32_t checkVersion = 0)
+      : name(entryName), optional(isOptional), pFeatureStruct(pointerFeatureStruct),
+        version(checkVersion) {}
 
   std::string name;
   bool        optional{false};
@@ -57,7 +58,8 @@ struct ContextCreateInfo {
   ContextCreateInfo& setWindow(u32 width, u32 height, void* windowHandle);
   ContextCreateInfo& addInstanceLayer(const char* name, bool optional = false);
   ContextCreateInfo& addInstanceExtension(const char* name, bool optional = false);
-  ContextCreateInfo& addDeviceExtension(const char* name, bool optional = false, void* pFeatureStruct = nullptr, uint32_t version = 0);
+  ContextCreateInfo& addDeviceExtension(const char* name, bool optional = false,
+                                        void* pFeatureStruct = nullptr, uint32_t version = 0);
   ContextCreateInfo& removeInstanceExtension(const char* name);
   ContextCreateInfo& removeDeviceExtension(const char* name);
 };
@@ -95,7 +97,8 @@ struct DeviceContext {
 
   void resizeOutputTextures(FrameBufferHandle frameBuffer, u32 width, u32 height);
   void updateDescriptorSet(DescriptorSetHandle set);
-  void addImageBarrier(VkCommandBuffer cmdBuffer, Texture* texture, ResourceState oldState, ResourceState newState, u32 baseMipLevel, u32 mipCount, bool isDepth);
+  void addImageBarrier(VkCommandBuffer cmdBuffer, Texture* texture, ResourceState oldState,
+                       ResourceState newState, u32 baseMipLevel, u32 mipCount, bool isDepth);
 
   void resizeGameViewPass(VkExtent2D extent);
 
@@ -177,10 +180,13 @@ struct DeviceContext {
   bool                             gameViewResize = false;
 
   //---------------- ray tracing ------------------
-  VkPhysicalDeviceRayTracingPipelineFeaturesKHR    m_rayTracingPipelineFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR};
-  VkPhysicalDeviceRayTracingPipelinePropertiesKHR  m_rayTracingPipelineProperties = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
-  VkPhysicalDeviceAccelerationStructureFeaturesKHR m_accelerationStructureFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR};
-  bool                                             m_supportRayTracing = false;
+  VkPhysicalDeviceRayTracingPipelineFeaturesKHR m_rayTracingPipelineFeatures = {
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR};
+  VkPhysicalDeviceRayTracingPipelinePropertiesKHR m_rayTracingPipelineProperties = {
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
+  VkPhysicalDeviceAccelerationStructureFeaturesKHR m_accelerationStructureFeatures = {
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR};
+  bool m_supportRayTracing = false;
 
   u32  m_graphicQueueIndex = -1;
   u32  m_computeQueueIndex = -1;
@@ -239,18 +245,17 @@ struct DeviceContext {
 
  protected:
   //properties array is filled by using vkEnumerate* api before invocate the follow
-  std::vector<const char*> fillFilterdNameArray(const std::vector<VkExtensionProperties>& properties,
-                                                const ContextCreateInfo::ExtArray&        requested,
-                                                std::vector<void*>&                       featureStrucutres);
+  std::vector<const char*>
+  fillFilterdNameArray(const std::vector<VkExtensionProperties>& properties,
+                       const ContextCreateInfo::ExtArray&        requested,
+                       std::vector<void*>&                       featureStrucutres);
   std::vector<const char*> fillFilteredNameArray(const std::vector<VkLayerProperties>& properties,
                                                  const ContextCreateInfo::ExtArray&    requested);
 };
 
 static GLFWwindow* createGLFWWindow(u32 width, u32 height) {
   DG_INFO("Window Initiation")
-  if (!glfwInit()) {
-    exit(-1);
-  }
+  if (!glfwInit()) { exit(-1); }
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
   GLFWwindow* window = glfwCreateWindow(width, height, "DogEngine", nullptr, nullptr);
   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR);
