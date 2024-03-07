@@ -446,9 +446,10 @@ void getRequiredInstanceExtensions(std::vector<const char*>& extensions) {
 #endif
 }
 
-void* getRequiredDeviceExtensions(VkPhysicalDevice                   phyDevice,
-                                  const ContextCreateInfo::ExtArray& deviceExtArray) {
-  VkPhysicalDeviceFeatures2 phy2{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
+VkPhysicalDeviceFeatures2 phy2{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
+void*                     getRequiredDeviceExtensions(VkPhysicalDevice                   phyDevice,
+                                                      const ContextCreateInfo::ExtArray& deviceExtArray) {
+
   struct ExtensionHeader {
     VkStructureType sType;
     void*           pNext;
@@ -465,7 +466,7 @@ void* getRequiredDeviceExtensions(VkPhysicalDevice                   phyDevice,
     header = reinterpret_cast<ExtensionHeader*>(header->pNext);
   }
   vkGetPhysicalDeviceFeatures2(phyDevice, &phy2);
-  return phy2.pNext;
+  return &phy2;
 }
 
 bool DeviceContext::getFamilyIndex(VkPhysicalDevice& device) {
@@ -1025,6 +1026,7 @@ BufferHandle DeviceContext::createBuffer(BufferCreateInfo& bufferInfo) {
   return handle;
 }
 
+//mipcount must bigger or equal 1
 void DeviceContext::addImageBarrier(VkCommandBuffer cmdBuffer, Texture* texture,
                                     ResourceState oldState, ResourceState newState,
                                     u32 baseMipLevel, u32 mipCount, bool isDepth) {
@@ -1074,11 +1076,18 @@ void DeviceContext::resizeGameViewPass(VkExtent2D extent) {
     TextureCreateInfo gameViewFrameTextureInfo{};
     gameViewFrameTextureInfo.setName("gameViewFrameTextureRecreate")
         .setExtent({m_gameViewWidth, m_gameViewHeight, 1})
-        .setFormat(VK_FORMAT_R8G8B8A8_UNORM)
-        .setFlag(TextureFlags::Mask::Default_mask | TextureFlags::Mask::RenderTarget_mask)
+        .setFormat(VK_FORMAT_R32G32B32A32_SFLOAT)
+        .setFlag(TextureFlags::Mask::Default_mask | TextureFlags::Mask::RenderTarget_mask
+                 | TextureFlags::Mask::Compute_mask)
         .setMipmapLevel(1)
         .setTextureType(TextureType::Texture2D);
     m_gameViewFrameTextures[i] = createTexture(gameViewFrameTextureInfo);
+    // Texture*       tex = accessTexture(m_gameViewFrameTextures[i]);
+    // CommandBuffer* cmd = getInstantCommandBuffer();
+    // cmd->begin();
+    // addImageBarrier(cmd->m_commandBuffer, tex, RESOURCE_STATE_UNDEFINED, RESOURCE_STATE_COMMON, 0,
+    //                 1, false);
+    // cmd->flush(m_graphicsQueue);
     DescriptorSetCreateInfo descInfo{};
     descInfo.reset()
         .setName("gameViewFrameDesc")
@@ -1668,7 +1677,7 @@ static void vk_fill_write_descriptor_sets(
         descriptorWrite[i].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
         Texture* texture = context->accessTexture({resources[i]});
         imageInfo[i].sampler = *sampler;
-        imageInfo[i].imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+        imageInfo[i].imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         imageInfo[i].imageView = texture->m_imageInfo.imageView;
         descriptorWrite[i].pImageInfo = &imageInfo[i];
         break;
@@ -1802,7 +1811,7 @@ ShaderStateHandle DeviceContext::createShaderState(ShaderStateCreation& shaderIn
       moduleInfo.codeSize = stage.m_codeSize;
       moduleInfo.pCode = (uint32_t*) stage.m_code;
     } else {
-      spvObject = ShaderCompiler::compileShader(shaderInfo.m_stages[i].m_shaderPath);
+      spvObject = ShaderCompiler::compileShader(stage.m_shaderPath);
       moduleInfo.codeSize = spvObject.binarySize;
       moduleInfo.pCode = (uint32_t*) spvObject.spvData.data();
     }
@@ -2095,9 +2104,9 @@ PipelineHandle DeviceContext::createPipeline(PipelineCreateInfo& pipelineInfo) {
     uint32_t             dataSize = groupHandleCount * perHandleSize;
     std::vector<uint8_t> handles(dataSize);
     //get the binding table data from raytracing pipeline, the order of these handles is similar to the the order in shader group array input when create raytracing pipeline
-    VkResult result = vkGetRayTracingShaderGroupHandlesKHR(
-        m_logicDevice, pipeline->m_pipeline, 0, shaderState->m_shaderGroupInfo.size(), dataSize,
-        shaderState->m_shaderGroupInfo.data());
+    VkResult result = vkGetRayTracingShaderGroupHandlesKHR(m_logicDevice, pipeline->m_pipeline, 0,
+                                                           shaderState->m_shaderGroupInfo.size(),
+                                                           dataSize, handles.data());
     DGASSERT(result == VK_SUCCESS);
 
     //shader binding table GPU buffer with aligned size
@@ -2534,7 +2543,7 @@ void DeviceContext::init(const ContextCreateInfo& contextInfo) {
     TextureCreateInfo gameViewFrameTextureInfo{};
     gameViewFrameTextureInfo.setName("gameViewFrameTextureInfo")
         .setExtent({m_gameViewWidth, m_gameViewHeight, 1})
-        .setFormat(VK_FORMAT_R8G8B8A8_UNORM)
+        .setFormat(VK_FORMAT_R32G32B32A32_SFLOAT)
         .setFlag(TextureFlags::Mask::Default_mask | TextureFlags::Mask::RenderTarget_mask
                  | TextureFlags::Mask::Compute_mask)
         .setMipmapLevel(1)
@@ -2542,6 +2551,13 @@ void DeviceContext::init(const ContextCreateInfo& contextInfo) {
     //create image\imageView\fbo
     for (int i = 0; i < m_gameViewImageCount; ++i) {
       m_gameViewFrameTextures[i] = createTexture(gameViewFrameTextureInfo);
+      // Texture*       tex = accessTexture(m_gameViewFrameTextures[i]);
+      // CommandBuffer* cmd = getInstantCommandBuffer();
+      // cmd->begin();
+      // addImageBarrier(cmd->m_commandBuffer, tex, RESOURCE_STATE_UNDEFINED, RESOURCE_STATE_COMMON, 0,
+      //                 1, false);
+      // cmd->flush(m_graphicsQueue);
+
       DescriptorSetCreateInfo descInfo{};
       descInfo.reset()
           .setName("gameViewFrameDesc")

@@ -365,6 +365,20 @@ void Renderer::drawScene() {
   this->m_context->queueCommandBuffer(cmd);
 }
 
+void Renderer::rayTraceScene() {
+  CommandBuffer* cmd = m_context->getCommandBuffer(QueueType::Enum::Graphics, true);
+  m_pcRay.clearColor = glm::vec4(0.5f, 1.0f, 0.2f, 1.0f);
+  m_pcRay.frameCount = 1;
+  cmd->bindPipeline(m_rtProgram->passes[0].pipeline);
+  cmd->bindDescriptorSet(m_rtDescs, 0, nullptr, 0);
+  //cmd->bindDescriptorSet({m_context->m_gameViewTextureDescs[0]}, 2, nullptr, 0);
+  cmd->bindPushConstants(VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR
+                             | VK_SHADER_STAGE_MISS_BIT_KHR | VK_SHADER_STAGE_CALLABLE_BIT_KHR,
+                         &m_pcRay);
+  cmd->traceRay(m_context->m_gameViewWidth, m_context->m_gameViewHeight, 1);
+  this->m_context->queueCommandBuffer(cmd);
+}
+
 void Renderer::setDefaultMaterial(Material* mat) {
   if (!mat) {
     DG_WARN("You are implementing a invalid material as current material, check again");
@@ -443,6 +457,25 @@ void Renderer::addImageBarrier(VkCommandBuffer cmdBuffer, Texture* texture, Reso
                                bool isDepth) {
   this->m_context->addImageBarrier(cmdBuffer, texture, oldState, newState, baseMipLevel, mipCount,
                                    isDepth);
+}
+
+//For some reason,render not handle the windows managing,so we have to use this function to get resize state.
+//if renderer onResize we can do some thing like resource update whitch is handles by renderer layer
+bool Renderer::isOnResize() { return m_context->m_resized | m_context->gameViewResize; }
+void Renderer::resizeUpdate() {
+  if (m_context->gameViewResize) { updateRToutputImageDesc(); }
+}
+
+void Renderer::updateRToutputImageDesc() {
+  // Texture*       gameViewTex = m_context->accessTexture(m_context->m_gameViewFrameTextures[0]);
+  // DescriptorSet* desc = m_context->accessDescriptorSet(m_rtDescs[0]);
+  // VkWriteDescriptorSet setWrite{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+  // setWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+  // setWrite.descriptorCount = 1;
+  // setWrite.pImageInfo = &gameViewTex->m_imageInfo;
+  // setWrite.dstSet = desc->m_vkdescriptorSet;
+  // setWrite.dstBinding = 1;
+  // vkUpdateDescriptorSets(m_context->m_logicDevice, 1, &setWrite, 0, nullptr);
 }
 
 void Renderer::executeSkyBox() {

@@ -124,6 +124,11 @@ glslang_stage_t getShaderStageFromShaderName(const char* fileName) {
   if (endsWith(fileName, ".tesc")) return GLSLANG_STAGE_TESSCONTROL;
 
   if (endsWith(fileName, ".tese")) return GLSLANG_STAGE_TESSEVALUATION;
+  if (endsWith(fileName, ".rchit")) return GLSLANG_STAGE_CLOSESTHIT;
+  if (endsWith(fileName, ".rahit")) return GLSLANG_STAGE_ANYHIT;
+  if (endsWith(fileName, ".rgen")) return GLSLANG_STAGE_RAYGEN;
+  if (endsWith(fileName, ".rmiss")) return GLSLANG_STAGE_MISS;
+  if (endsWith(fileName, ".rcall")) return GLSLANG_STAGE_CALLABLE;
 
   return GLSLANG_STAGE_VERTEX;
 }
@@ -142,8 +147,8 @@ std::string ShaderCompiler::readShaderFile(const char* path) {
   std::string code = std::string(buffer.data());
   while (code.find("#include") != code.npos) {
     const auto pos = code.find("#include");
-    const auto p1 = code.find('<', pos);
-    const auto p2 = code.find('>', pos);
+    const auto p1 = code.find('<"', pos);
+    const auto p2 = code.find('>"', p1 + 1);
     if (p1 == code.npos || p2 == code.npos || p2 < p1) {
       DG_ERROR("Failed to build shader including");
       return "";

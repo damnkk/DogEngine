@@ -94,7 +94,8 @@ typedef enum ResourceState {
 };
 
 struct RtPushConstant {
-  u32 frameCount;
+  u32       frameCount;
+  glm::vec4 clearColor;
 };
 
 struct Texture {
@@ -151,11 +152,11 @@ struct Sampler {
 
 struct DescriptorBinding {
 
-  VkDescriptorType      type;
-  u16                   start = 0;
-  u16                   count = 0;
-  u16                   set = 0;
-  VkShaderStageFlagBits stageFlags;
+  VkDescriptorType   type;
+  u16                start = 0;
+  u16                count = 0;
+  u16                set = 0;
+  VkShaderStageFlags stageFlags;
 
   std::string name;
 };// struct ResourceBindingVulkan
@@ -453,11 +454,11 @@ struct DescriptorSetCreateInfo {
 };
 struct DescriptorSetLayoutCreateInfo {
   struct Binding {
-    VkDescriptorType      m_type = VK_DESCRIPTOR_TYPE_MAX_ENUM;
-    int                   m_start = -1;
-    u32                   m_count;
-    std::string           name;
-    VkShaderStageFlagBits stageFlags = VK_SHADER_STAGE_ALL;
+    VkDescriptorType   m_type = VK_DESCRIPTOR_TYPE_MAX_ENUM;
+    int                m_start = -1;
+    u32                m_count;
+    std::string        name;
+    VkShaderStageFlags stageFlags = VK_SHADER_STAGE_ALL;
   };
   Binding     m_bindings[k_max_discriptor_nums_per_set];
   u32         m_bindingNum = 0;

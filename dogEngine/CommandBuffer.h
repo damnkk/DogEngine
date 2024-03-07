@@ -39,8 +39,7 @@ struct CommandBuffer {
             u32 instanceNum);
   void drawIndexed(TopologyType::Enum tpType, u32 indexCount, u32 instanctCount, u32 firstIndex,
                    u32 vertexOffset, u32 firstInstance);
-  //void                drawIndirect(BufferHandle handle, u32 offset, u32 stride);
-  //void                drawIndexIndirect(BufferHandle handle, u32 offset, u32 stride);
+  void traceRay(u32 width, u32 height, u32 depth);
 
   void disPatch(u32 groupX, u32 groupY, u32 groupZ);
 

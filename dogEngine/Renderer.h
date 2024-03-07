@@ -64,19 +64,30 @@ struct Renderer {
   RenderResourcePool<Material>&        getMaterials() { return m_materials; }
   RenderResourcePool<SamplerResource>& getSamplers() { return m_samplers; }
   std::shared_ptr<Camera>              getCamera() { return m_camera; }
-  TextureHandle                        getSkyTexture() { return m_skyTexture; }
-  void                                 newFrame();
-  void                                 present();
-  void                                 drawScene();
-  void                                 drawUI();
-  void                                 loadModel(const std::string& path);
-  void                                 executeScene();
-  float                                deltaTime = 0.0f;
+  TextureHandle&                       getSkyTexture() { return m_skyTexture; }
+  RtPushConstant&                      getRtPushConstant() { return m_pcRay; }
+  DescriptorSetHandle&                 getRayTracingDescWithIdx(u32 idx) { return m_rtDescs[idx]; }
+  std::vector<DescriptorSetHandle>&    getRayTracingDescs() { return m_rtDescs; }
+  std::shared_ptr<Program>&            getRayTracingProgram() { return m_rtProgram; }
+  void setRayTracingProgram(std::shared_ptr<Program> program) { m_rtProgram = program; }
+
+  void       newFrame();
+  void       present();
+  void       drawScene();
+  void       rayTraceScene();
+  void       drawUI();
+  void       loadModel(const std::string& path);
+  void       executeScene();
+  bool       isOnResize();
+  void       resizeUpdate();
+  float      deltaTime = 0.0f;
+  RenderMode m_renderMode = eRasterize;
 
  protected:
   void executeSkyBox();
   void destroySkyBox();
   void makeDefaultMaterial();
+  void updateRToutputImageDesc();
 
  private:
   ResourceCache                       m_resourceCache;
@@ -86,7 +97,6 @@ struct Renderer {
   RenderResourcePool<SamplerResource> m_samplers;
   std::vector<RenderObject>           m_renderObjects;
   std::shared_ptr<DeviceContext>      m_context;
-  RenderMode                          m_renderMode = eRasterize;
   std::shared_ptr<ResourceLoader>     m_resourceLoader;
   std::shared_ptr<Camera>             m_camera;
   Material*                           m_defaultMaterial;
@@ -94,6 +104,11 @@ struct Renderer {
  private:
   TextureHandle m_skyTexture;
   bool          have_skybox;
+
+  //raytracing
+  RtPushConstant                   m_pcRay;
+  std::vector<DescriptorSetHandle> m_rtDescs;
+  std::shared_ptr<Program>         m_rtProgram;
 };
 
 template<typename T>

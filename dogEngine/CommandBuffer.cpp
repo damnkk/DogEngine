@@ -272,4 +272,10 @@ void CommandBuffer::barrier(const ExecutionBarrier& barrier) {
                        imageBarriers.data());
 }
 
+void CommandBuffer::traceRay(u32 width, u32 height, u32 depth) {
+  vkCmdTraceRaysKHR(m_commandBuffer, &m_pipeline->m_rayGenTable, &m_pipeline->m_rayMissTable,
+                    &m_pipeline->m_rayHitTable, &m_pipeline->m_rayCallableTable, width, height,
+                    depth);
+}
+
 }//namespace dg

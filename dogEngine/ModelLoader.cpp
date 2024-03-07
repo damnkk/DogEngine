@@ -299,7 +299,7 @@ void ResourceLoader::executeScene(std::shared_ptr<SceneGraph> scene) {
   scene->markAsChanged(0);
   scene->recalculateAllTransforms();
 
-  executeSceneRT(scene);
+  if (m_renderer->getContext()->m_supportRayTracing) { executeSceneRT(scene); }
 }
 
 inline VkTransformMatrixKHR toTransformMatrixKHR(glm::mat4 matrix) {
@@ -419,7 +419,7 @@ void ResourceLoader::executeSceneRT(std::shared_ptr<SceneGraph> scene) {
   //prepare raytracing pipeline's descriptor
   DescriptorSetLayoutCreateInfo setLayout0{};
   setLayout0.reset()
-      .setName("AccStructure&OutputImageBinding")
+      .setName("AccStructure")
       .addBinding({VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 0, 1, "accelerationStructure"})
       .addBinding({VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, 1, "outputImage"});
   DescriptorSetLayoutHandle layoutHandle0 =
@@ -433,14 +433,17 @@ void ResourceLoader::executeSceneRT(std::shared_ptr<SceneGraph> scene) {
   DescriptorSetLayoutHandle layoutHandle1 =
       m_renderer->getContext()->createDescriptorSetLayout(setLayout1);
 
-  //descriptorSet3 is bindless descriptor witch is handled in device context, so we don't do anything here.
+  //the last descriptorSet is bindless descriptor witch is handled in device context, so we don't do anything here.
+
+  //create Descriptor set
   DescriptorSetCreateInfo setInfo0{};
   setInfo0.reset()
       .setName("accStructure&OutputImageBindingDesc")
       .setLayout(layoutHandle0)
       .accelerateStrcture(m_rtBuilder.getAccelerationStructure(), 0)
       .texture(m_renderer->getContext()->m_gameViewFrameTextures[0], 1);
-  DescriptorSetHandle set0 = m_renderer->getContext()->createDescriptorSet(setInfo0);
+  m_renderer->getRayTracingDescs().push_back(
+      m_renderer->getContext()->createDescriptorSet(setInfo0));
 
   DescriptorSetCreateInfo setInfo1{};
   setInfo1.reset()
@@ -448,27 +451,35 @@ void ResourceLoader::executeSceneRT(std::shared_ptr<SceneGraph> scene) {
       .setLayout(layoutHandle1)
       .buffer(m_renderer->getContext()->m_viewProjectUniformBuffer, 0)
       .buffer(meshDescArray, 1);
-  DescriptorSetHandle set1 = m_renderer->getContext()->createDescriptorSet(setInfo1);
+  m_renderer->getRayTracingDescs().push_back(
+      m_renderer->getContext()->createDescriptorSet(setInfo1));
+
+  m_renderer->getRayTracingDescs().push_back(m_renderer->getContext()->m_bindlessDescriptorSet);
 
   //set push constant
   VkPushConstantRange constRange;
   constRange.offset = 0;
   constRange.size = sizeof(RtPushConstant);
-  constRange.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+  constRange.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR
+      | VK_SHADER_STAGE_MISS_BIT_KHR | VK_SHADER_STAGE_CALLABLE_BIT_KHR;
 
   // prepare pipeline
   ShaderStateCreation stateCI{};
   stateCI.reset()
       .setName("ry shader state")
-      .addStage("./shader/rayGen.rgen", VK_SHADER_STAGE_RAYGEN_BIT_KHR)
-      .addStage("./shader/rayClosestHit.rchit", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR)
-      .addStage("./shader/rayMiss.rmiss", VK_SHADER_STAGE_MISS_BIT_KHR);
+      .addStage("./shaders/rayGen.rgen", VK_SHADER_STAGE_RAYGEN_BIT_KHR)
+      .addStage("./shaders/rayClosestHit.rchit", VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR)
+      .addStage("./shaders/rayMiss.rmiss", VK_SHADER_STAGE_MISS_BIT_KHR);
   PipelineCreateInfo rtPipelineInfo{};
   rtPipelineInfo.addDescriptorSetlayout(layoutHandle0)
       .addDescriptorSetlayout(layoutHandle1)
       .addDescriptorSetlayout(m_renderer->getContext()->m_bindlessDescriptorSetLayout)
-      .addPushConstant(constRange);
+      .addPushConstant(constRange)
+      .setRayBoundNum(2);
   rtPipelineInfo.m_shaderState = stateCI;
+  ProgramPassCreateInfo programInfo{};
+  programInfo.pipelineInfo = rtPipelineInfo;
+  m_renderer->setRayTracingProgram(m_renderer->createProgram("rayTracing program", programInfo));
 
   //ming
 }

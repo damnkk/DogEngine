@@ -68,8 +68,20 @@ int main() {
     glfwPollEvents();
     if (isMinimized) continue;
     renderer.newFrame();
-    renderer.drawScene();
+    switch (renderer.m_renderMode) {
+      case (RenderMode::eRasterize): {
+        renderer.drawScene();
+        break;
+      }
+      case (RenderMode::eRayTracing): {
+        renderer.rayTraceScene();
+        break;
+      }
+      default: break;
+    }
+    //renderer.drawScene();
     renderer.drawUI();
+    if (renderer.isOnResize()) { renderer.resizeUpdate(); }
     renderer.present();
   }
 
