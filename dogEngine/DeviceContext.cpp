@@ -1082,12 +1082,12 @@ void DeviceContext::resizeGameViewPass(VkExtent2D extent) {
         .setMipmapLevel(1)
         .setTextureType(TextureType::Texture2D);
     m_gameViewFrameTextures[i] = createTexture(gameViewFrameTextureInfo);
-    // Texture*       tex = accessTexture(m_gameViewFrameTextures[i]);
-    // CommandBuffer* cmd = getInstantCommandBuffer();
-    // cmd->begin();
-    // addImageBarrier(cmd->m_commandBuffer, tex, RESOURCE_STATE_UNDEFINED, RESOURCE_STATE_COMMON, 0,
-    //                 1, false);
-    // cmd->flush(m_graphicsQueue);
+    Texture*       tex = accessTexture(m_gameViewFrameTextures[i]);
+    CommandBuffer* cmd = getInstantCommandBuffer();
+    cmd->begin();
+    addImageBarrier(cmd->m_commandBuffer, tex, RESOURCE_STATE_UNDEFINED, RESOURCE_STATE_COMMON, 0,
+                    1, false);
+    cmd->flush(m_graphicsQueue);
     DescriptorSetCreateInfo descInfo{};
     descInfo.reset()
         .setName("gameViewFrameDesc")
@@ -1626,17 +1626,17 @@ DeviceContext::createDescriptorSetLayout(DescriptorSetLayoutCreateInfo& dcinfo) 
   return handle;
 }
 
+VkWriteDescriptorSetAccelerationStructureKHR asInfo{
+    VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR};
 static void vk_fill_write_descriptor_sets(
     DeviceContext* context, const DescriptorSetLayout* setLayout, DescriptorSet* descriptor_set,
     VkWriteDescriptorSet* descriptorWrite, VkDescriptorBufferInfo* bufferInfo,
     VkDescriptorImageInfo* imageInfo, VkSampler* sampler,
     const u32&
         num_resources) {//, const std::vector<ResourceHandle>& resources, std::vector<SamplerHandle>& samplers, const std::vector<u32>& bindings) {
-  auto                                         bindings = descriptor_set->m_bindings;
-  auto                                         resources = descriptor_set->m_resources;
-  auto                                         samplers = descriptor_set->m_samples;
-  VkWriteDescriptorSetAccelerationStructureKHR asInfo{
-      VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR};
+  auto bindings = descriptor_set->m_bindings;
+  auto resources = descriptor_set->m_resources;
+  auto samplers = descriptor_set->m_samples;
   for (int i = 0; i < num_resources; ++i) {
     u32   layoutBindingIndex = bindings[i];
     auto& binding = setLayout->m_vkBindings[layoutBindingIndex];
@@ -1667,7 +1667,7 @@ static void vk_fill_write_descriptor_sets(
         }
         iinfo.imageLayout = TextureFormat::has_depth_or_stencil(texture->m_format)
             ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
-            : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            : texture->m_imageInfo.imageLayout;
         iinfo.imageView = texture->m_imageInfo.imageView;
         descriptorWrite[i].descriptorType = binding.descriptorType;
         descriptorWrite[i].pImageInfo = &iinfo;
@@ -1677,7 +1677,7 @@ static void vk_fill_write_descriptor_sets(
         descriptorWrite[i].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
         Texture* texture = context->accessTexture({resources[i]});
         imageInfo[i].sampler = *sampler;
-        imageInfo[i].imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        imageInfo[i].imageLayout = texture->m_imageInfo.imageLayout;
         imageInfo[i].imageView = texture->m_imageInfo.imageView;
         descriptorWrite[i].pImageInfo = &imageInfo[i];
         break;
@@ -2113,10 +2113,12 @@ PipelineHandle DeviceContext::createPipeline(PipelineCreateInfo& pipelineInfo) {
     VkDeviceSize SBTSize = pipeline->m_rayGenTable.size + pipeline->m_rayMissTable.size
         + pipeline->m_rayHitTable.size + pipeline->m_rayCallableTable.size;
     BufferCreateInfo sbtBufferInfo;
-    sbtBufferInfo.reset().setDeviceOnly(false).setUsageSize(
-        VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT
-            | VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR,
-        SBTSize);
+    sbtBufferInfo.reset()
+        .setDeviceOnly(false)
+        .setUsageSize(VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT
+                          | VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR,
+                      SBTSize)
+        .setName("我就看是不是这个Buffer");
     pipeline->m_shaderBindingTableBuffer = createBuffer(sbtBufferInfo);
     Buffer* sbtBuffer = accessBuffer(pipeline->m_shaderBindingTableBuffer);
     setResourceName(VK_OBJECT_TYPE_BUFFER, (uint64_t) (sbtBuffer->m_buffer),
@@ -2551,12 +2553,13 @@ void DeviceContext::init(const ContextCreateInfo& contextInfo) {
     //create image\imageView\fbo
     for (int i = 0; i < m_gameViewImageCount; ++i) {
       m_gameViewFrameTextures[i] = createTexture(gameViewFrameTextureInfo);
-      // Texture*       tex = accessTexture(m_gameViewFrameTextures[i]);
-      // CommandBuffer* cmd = getInstantCommandBuffer();
-      // cmd->begin();
-      // addImageBarrier(cmd->m_commandBuffer, tex, RESOURCE_STATE_UNDEFINED, RESOURCE_STATE_COMMON, 0,
-      //                 1, false);
-      // cmd->flush(m_graphicsQueue);
+
+      Texture*       tex = accessTexture(m_gameViewFrameTextures[i]);
+      CommandBuffer* cmd = getInstantCommandBuffer();
+      cmd->begin();
+      addImageBarrier(cmd->m_commandBuffer, tex, RESOURCE_STATE_UNDEFINED, RESOURCE_STATE_COMMON, 0,
+                      1, false);
+      cmd->flush(m_graphicsQueue);
 
       DescriptorSetCreateInfo descInfo{};
       descInfo.reset()
@@ -2579,7 +2582,7 @@ void DeviceContext::init(const ContextCreateInfo& contextInfo) {
         .setType(RenderPassType::Enum::Geometry)
         .setOperations(RenderPassOperation::Enum::Clear, RenderPassOperation::Enum::Clear,
                        RenderPassOperation::Enum::Clear)
-        .setFinalLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+        .setFinalLayout(VK_IMAGE_LAYOUT_GENERAL)
         .setDepthStencilTexture(m_gameViewDepthTexture)
         .addRenderTexture(m_gameViewFrameTextures[0]);
     m_gameViewPass = createRenderPass(gameViewPassInfo);
@@ -2599,7 +2602,6 @@ void DeviceContext::init(const ContextCreateInfo& contextInfo) {
 }
 
 void DeviceContext::newFrame() {
-
   VkFence* renderCompleteFence = &m_render_queue_complete_fence[m_currentFrame];
   vkWaitForFences(m_logicDevice, 1, renderCompleteFence, VK_TRUE, UINT64_MAX);
   VkResult res = vkAcquireNextImageKHR(m_logicDevice, m_swapchain, UINT64_MAX,
@@ -2707,14 +2709,14 @@ void DeviceContext::present() {
   VkResult res = vkQueuePresentKHR(m_graphicsQueue, &presentInfo);
   m_queuedCommandBuffer.clear();
 
-  if (res == VK_ERROR_OUT_OF_DATE_KHR || res == VK_SUBOPTIMAL_KHR || m_resized) {
-    reCreateSwapChain();
-    m_resized = false;
-  }
-  if (gameViewResize) {
-    resizeGameViewPass({m_gameViewWidth, m_gameViewHeight});
-    gameViewResize = false;
-  }
+  // if (res == VK_ERROR_OUT_OF_DATE_KHR || res == VK_SUBOPTIMAL_KHR || m_resized) {
+  //   reCreateSwapChain();
+  //   m_resized = false;
+  // }
+  // if (gameViewResize) {
+  //   resizeGameViewPass({m_gameViewWidth, m_gameViewHeight});
+  //   gameViewResize = false;
+  // }
   m_currentFrame = (m_currentFrame + 1) % m_swapchainImageCount;
 
   if (!m_delectionQueue.empty()) {

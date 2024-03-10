@@ -78,10 +78,10 @@ struct Renderer {
   void       drawUI();
   void       loadModel(const std::string& path);
   void       executeScene();
-  bool       isOnResize();
-  void       resizeUpdate();
+  void       onFrameResize();
+  void       onResize();
   float      deltaTime = 0.0f;
-  RenderMode m_renderMode = eRasterize;
+  RenderMode m_renderMode = eRayTracing;
 
  protected:
   void executeSkyBox();

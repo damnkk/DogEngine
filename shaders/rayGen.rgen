@@ -27,5 +27,5 @@ void main(){
     vec3 origin = cameraTrans.cameraPos;
     vec4 target = inverse(cameraTrans.projMatrix)*vec4(NDCxy.x,NDCxy.y,1,1);
     vec4 rayDir = inverse(cameraTrans.viewMatrix)*vec4(normalize(target.xyz),0);
-    imageStore(outputImage,ivec2(gl_LaunchIDEXT.xy),rayDir);
+    imageStore(outputImage,ivec2(gl_LaunchIDEXT.xy),vec4(rayDir.xyz,1.0f));
 }

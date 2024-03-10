@@ -133,6 +133,7 @@ void Renderer::destroy() {
   GUI::getInstance().Destroy();
   ShaderCompiler::destroy();
   m_resourceCache.destroy(this);
+  m_rtProgram = nullptr;
   m_textures.destroy();
   m_buffers.destroy();
   m_materials.destroy();
@@ -293,6 +294,7 @@ void   Renderer::newFrame() {
   deltaTime = newTimeStamp - oldTimeStamp;
   oldTimeStamp = newTimeStamp;
   GUI::getInstance().eventListen();
+  onFrameResize();
   m_context->newFrame();
   GUI::getInstance().newGUIFrame();
   m_resourceLoader->getSceneGraph()->recalculateAllTransforms();
@@ -366,6 +368,7 @@ void Renderer::drawScene() {
 }
 
 void Renderer::rayTraceScene() {
+
   CommandBuffer* cmd = m_context->getCommandBuffer(QueueType::Enum::Graphics, true);
   m_pcRay.clearColor = glm::vec4(0.5f, 1.0f, 0.2f, 1.0f);
   m_pcRay.frameCount = 1;
@@ -375,6 +378,16 @@ void Renderer::rayTraceScene() {
   cmd->bindPushConstants(VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR
                              | VK_SHADER_STAGE_MISS_BIT_KHR | VK_SHADER_STAGE_CALLABLE_BIT_KHR,
                          &m_pcRay);
+  Buffer* cameraUniformBuffer = m_context->accessBuffer(m_context->m_viewProjectUniformBuffer);
+  void*   data;
+  vmaMapMemory(m_context->m_vma, cameraUniformBuffer->m_allocation, &data);
+  UniformData udata{};
+  udata.cameraPos = m_camera->getPosition();
+  udata.cameraDirectory = m_camera->getDirectVector();
+  udata.projectMatrix = m_camera->getProjectMatrix();
+  udata.viewMatrix = m_camera->getViewMatrix();
+  memcpy(data, &udata, sizeof(UniformData));
+  vmaUnmapMemory(m_context->m_vma, cameraUniformBuffer->m_allocation);
   cmd->traceRay(m_context->m_gameViewWidth, m_context->m_gameViewHeight, 1);
   this->m_context->queueCommandBuffer(cmd);
 }
@@ -461,21 +474,32 @@ void Renderer::addImageBarrier(VkCommandBuffer cmdBuffer, Texture* texture, Reso
 
 //For some reason,render not handle the windows managing,so we have to use this function to get resize state.
 //if renderer onResize we can do some thing like resource update whitch is handles by renderer layer
-bool Renderer::isOnResize() { return m_context->m_resized | m_context->gameViewResize; }
-void Renderer::resizeUpdate() {
-  if (m_context->gameViewResize) { updateRToutputImageDesc(); }
+void Renderer::onResize() { updateRToutputImageDesc(); }
+
+void Renderer::onFrameResize() {
+  //auto windowSize = ImGui::GetWindowSize();
+  if (m_context->m_resized) {
+    m_context->reCreateSwapChain();
+    m_context->m_resized = false;
+  }
+  if (m_context->gameViewResize) {
+    m_context->resizeGameViewPass({m_context->m_gameViewWidth, m_context->m_gameViewHeight});
+    m_context->gameViewResize = false;
+  }
+  onResize();
 }
 
 void Renderer::updateRToutputImageDesc() {
-  // Texture*       gameViewTex = m_context->accessTexture(m_context->m_gameViewFrameTextures[0]);
-  // DescriptorSet* desc = m_context->accessDescriptorSet(m_rtDescs[0]);
-  // VkWriteDescriptorSet setWrite{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-  // setWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-  // setWrite.descriptorCount = 1;
-  // setWrite.pImageInfo = &gameViewTex->m_imageInfo;
-  // setWrite.dstSet = desc->m_vkdescriptorSet;
-  // setWrite.dstBinding = 1;
-  // vkUpdateDescriptorSets(m_context->m_logicDevice, 1, &setWrite, 0, nullptr);
+  vkQueueWaitIdle(m_context->m_graphicsQueue);
+  Texture*       gameViewTex = m_context->accessTexture(m_context->m_gameViewFrameTextures[0]);
+  DescriptorSet* desc = m_context->accessDescriptorSet(m_rtDescs[0]);
+  VkWriteDescriptorSet setWrite{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+  setWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+  setWrite.descriptorCount = 1;
+  setWrite.pImageInfo = &gameViewTex->m_imageInfo;
+  setWrite.dstSet = desc->m_vkdescriptorSet;
+  setWrite.dstBinding = 1;
+  vkUpdateDescriptorSets(m_context->m_logicDevice, 1, &setWrite, 0, nullptr);
 }
 
 void Renderer::executeSkyBox() {

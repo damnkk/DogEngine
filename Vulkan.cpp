@@ -81,7 +81,6 @@ int main() {
     }
     //renderer.drawScene();
     renderer.drawUI();
-    if (renderer.isOnResize()) { renderer.resizeUpdate(); }
     renderer.present();
   }
 
