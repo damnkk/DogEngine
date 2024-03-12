@@ -5,6 +5,8 @@
 
 #include "shaderDataStructure.h"
 
+layout(location = 0) rayPayloadEXT hitPayLoad prd;
+
 layout(set = 0,binding = 0) uniform accelerationStructureEXT topLevelAS;
 layout(set = 0,binding = 1,rgba32f) uniform image2D outputImage;
 layout(set = 1,binding = 0) uniform cameraTransform{
@@ -27,5 +29,15 @@ void main(){
     vec3 origin = cameraTrans.cameraPos;
     vec4 target = inverse(cameraTrans.projMatrix)*vec4(NDCxy.x,NDCxy.y,1,1);
     vec4 rayDir = inverse(cameraTrans.viewMatrix)*vec4(normalize(target.xyz),0);
-    imageStore(outputImage,ivec2(gl_LaunchIDEXT.xy),vec4(rayDir.xyz,1.0f));
+
+    uint rayFlags = gl_RayFlagsOpaqueEXT;
+    float tMin = 0.001;
+    float tMax=  10000.0;
+
+    traceRayEXT(topLevelAS,
+    rayFlags,
+    0xFF,
+    0,0,0,origin.xyz,tMin,rayDir.xyz, tMax,0);
+
+    imageStore(outputImage,ivec2(gl_LaunchIDEXT.xy),vec4(prd.hitValue.xyz,1.0f));
 }

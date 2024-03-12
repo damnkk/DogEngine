@@ -374,7 +374,6 @@ void Renderer::rayTraceScene() {
   m_pcRay.frameCount = 1;
   cmd->bindPipeline(m_rtProgram->passes[0].pipeline);
   cmd->bindDescriptorSet(m_rtDescs, 0, nullptr, 0);
-  //cmd->bindDescriptorSet({m_context->m_gameViewTextureDescs[0]}, 2, nullptr, 0);
   cmd->bindPushConstants(VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR
                              | VK_SHADER_STAGE_MISS_BIT_KHR | VK_SHADER_STAGE_CALLABLE_BIT_KHR,
                          &m_pcRay);

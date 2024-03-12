@@ -980,9 +980,16 @@ BufferHandle DeviceContext::createBuffer(BufferCreateInfo& bufferInfo) {
   vmaInfo.usage = VMA_MEMORY_USAGE_AUTO;
 
   VmaAllocationInfo vmaAllocInfo;
-  DGASSERT(vmaCreateBuffer(m_vma, &bufinf, &vmaInfo, &buffer->m_buffer, &buffer->m_allocation,
-                           &vmaAllocInfo)
-           == VK_SUCCESS);
+  if (bufferInfo.m_alignment) {
+    DGASSERT(vmaCreateBufferWithAlignment(m_vma, &bufinf, &vmaInfo, bufferInfo.m_alignment,
+                                          &buffer->m_buffer, &buffer->m_allocation, &vmaAllocInfo)
+             == VK_SUCCESS)
+  } else {
+
+    DGASSERT(vmaCreateBuffer(m_vma, &bufinf, &vmaInfo, &buffer->m_buffer, &buffer->m_allocation,
+                             &vmaAllocInfo)
+             == VK_SUCCESS);
+  }
   setResourceName(VK_OBJECT_TYPE_BUFFER, (uint64_t) buffer->m_buffer, bufferInfo.name.c_str());
   buffer->m_deviceMemory = vmaAllocInfo.deviceMemory;
   if (bufferInfo.m_sourceData) {

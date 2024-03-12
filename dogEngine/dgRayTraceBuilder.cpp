@@ -59,14 +59,15 @@ void RayTracingBuilder::buildBlas(const std::vector<BlasInput>&        input,
   scratchBufferInfo.reset()
       .setUsageSize(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                     maxScrachSize)
-      .setDeviceOnly(false)
+      .setDeviceOnly(true)
+      .setAlignment(128)
       .setName("blasScratchBufferInfo");
   auto                      scratchBufferHandle = m_context->createBuffer(scratchBufferInfo);
   Buffer*                   scratchBuffer = m_context->accessBuffer(scratchBufferHandle);
   VkBufferDeviceAddressInfo bufferAddInfo{VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO};
   bufferAddInfo.buffer = scratchBuffer->m_buffer;
   VkDeviceAddress scrachAddress =
-      vkGetBufferDeviceAddressKHR(m_context->m_logicDevice, &bufferAddInfo);
+      vkGetBufferDeviceAddress(m_context->m_logicDevice, &bufferAddInfo);
 
   VkQueryPool queryPool{VK_NULL_HANDLE};
   if (nbCompactions > 0) {

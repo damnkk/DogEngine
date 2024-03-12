@@ -34,6 +34,11 @@ BufferCreateInfo& BufferCreateInfo::setDeviceOnly(bool deviceOnly) {
   return *this;
 }
 
+BufferCreateInfo& BufferCreateInfo::setAlignment(int align) {
+  m_alignment = align;
+  return *this;
+}
+
 SamplerCreateInfo& SamplerCreateInfo::set_min_mag_mip(VkFilter min, VkFilter max,
                                                       VkSamplerMipmapMode mipMode) {
   m_minFilter = min;

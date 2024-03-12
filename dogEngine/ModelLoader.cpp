@@ -70,7 +70,8 @@ Mesh ResourceLoader::convertAIMesh(aiMesh* mesh) {
   bufferInfo.reset()
       .setName(uniformName.c_str())
       .setDeviceOnly(false)
-      .setUsageSize(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(Material::UniformMaterial));
+      .setUsageSize(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                    sizeof(Material::UniformMaterial));
   dgMesh.matUniformBuffer = m_renderer->createBuffer(bufferInfo)->handle;
   std::vector<u32> primitiveMaterialIndex(mesh->mNumFaces, mesh->mMaterialIndex);
   std::string      name("primitiveMaterialIndex");

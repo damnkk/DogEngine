@@ -23,3 +23,7 @@ struct ObjDesc {
   uint64_t materialAddress;
   uint64_t primitiveMatIdxAddress;
 };
+
+struct hitPayLoad {
+  vec3 hitValue;
+};

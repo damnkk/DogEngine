@@ -260,12 +260,14 @@ struct BufferCreateInfo {
   std::string        name;
   bool               m_deviceOnly = true;
   bool               m_presistent = false;
+  int                m_alignment = 0;
 
   BufferCreateInfo& reset();
   BufferCreateInfo& setUsageSize(VkBufferUsageFlags usage, VkDeviceSize size);
   BufferCreateInfo& setData(const void* data);
   BufferCreateInfo& setName(const char* name);
   BufferCreateInfo& setDeviceOnly(bool deviceOnly);
+  BufferCreateInfo& setAlignment(int align);
 };
 
 struct SamplerCreateInfo {
