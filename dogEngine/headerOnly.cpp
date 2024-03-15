@@ -3062,13 +3062,13 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetDeviceGroupSurfacePresentModes2EXT(
   return pfn_vkGetDeviceGroupSurfacePresentModes2EXT(device, pSurfaceInfo, pModes);
 }
 #endif /* VK_EXT_full_screen_exclusive && VK_KHR_device_group || VK_EXT_full_screen_exclusive && VK_VERSION_1_1 */
-#if defined(VK_EXT_host_image_copy) || defined(VK_EXT_image_compression_control)
-VKAPI_ATTR void VKAPI_CALL vkGetImageSubresourceLayout2EXT(
-    VkDevice device, VkImage image, const VkImageSubresource2KHR* pSubresource,
-    VkSubresourceLayout2KHR* pLayout) {
-  pfn_vkGetImageSubresourceLayout2EXT(device, image, pSubresource, pLayout);
-}
-#endif /* VK_EXT_host_image_copy || VK_EXT_image_compression_control */
+// #if defined(VK_EXT_host_image_copy) || defined(VK_EXT_image_compression_control)
+// VKAPI_ATTR void VKAPI_CALL vkGetImageSubresourceLayout2EXT(
+//     VkDevice device, VkImage image, const VkImageSubresource2KHR* pSubresource,
+//     VkSubresourceLayout2KHR* pLayout) {
+//   pfn_vkGetImageSubresourceLayout2EXT(device, image, pSubresource, pLayout);
+// }
+// #endif /* VK_EXT_host_image_copy || VK_EXT_image_compression_control */
 #if defined(VK_EXT_shader_object) || defined(VK_EXT_vertex_input_dynamic_state)
 VKAPI_ATTR void VKAPI_CALL
 vkCmdSetVertexInputEXT(VkCommandBuffer commandBuffer, uint32_t vertexBindingDescriptionCount,

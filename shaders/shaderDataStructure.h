@@ -13,7 +13,7 @@ struct Material {
   vec3 envFactor;
   vec3 mrFactor;
   vec4 intensity;
-  int  textureuseSetting[4];
+  int  textureUseSetting[4];
   int  textureIndices[1024];
 };
 
@@ -25,5 +25,10 @@ struct ObjDesc {
 };
 
 struct hitPayLoad {
+  uint maxBound;
+  uint recursiveDepth;
+  vec3 origin;
+  vec3 direction;
+  vec3 history;
   vec3 hitValue;
 };

@@ -371,7 +371,9 @@ void Renderer::rayTraceScene() {
 
   CommandBuffer* cmd = m_context->getCommandBuffer(QueueType::Enum::Graphics, true);
   m_pcRay.clearColor = glm::vec4(0.5f, 1.0f, 0.2f, 1.0f);
-  m_pcRay.frameCount = 1;
+  m_pcRay.frameCount = m_context->m_FrameCount;
+  m_pcRay.maxBound = 4;
+  //std::cout<<m_context->m_FrameCount<<std::endl;
   cmd->bindPipeline(m_rtProgram->passes[0].pipeline);
   cmd->bindDescriptorSet(m_rtDescs, 0, nullptr, 0);
   cmd->bindPushConstants(VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR
@@ -473,7 +475,12 @@ void Renderer::addImageBarrier(VkCommandBuffer cmdBuffer, Texture* texture, Reso
 
 //For some reason,render not handle the windows managing,so we have to use this function to get resize state.
 //if renderer onResize we can do some thing like resource update whitch is handles by renderer layer
-void Renderer::onResize() { updateRToutputImageDesc(); }
+void Renderer::onResize() { 
+  if( m_context->gameViewResize ){
+    updateRToutputImageDesc(); 
+    m_context->gameViewResize = false; 
+  }
+}
 
 void Renderer::onFrameResize() {
   //auto windowSize = ImGui::GetWindowSize();
@@ -483,7 +490,7 @@ void Renderer::onFrameResize() {
   }
   if (m_context->gameViewResize) {
     m_context->resizeGameViewPass({m_context->m_gameViewWidth, m_context->m_gameViewHeight});
-    m_context->gameViewResize = false;
+    m_context->m_FrameCount = 0;
   }
   onResize();
 }

@@ -53,8 +53,8 @@ int main() {
   //renderer.loadModel("./models/Sponza/Sponza.gltf");
   //renderer.loadModel("./models/orrery/scene.gltf");
   //renderer.loadModel("./models/Camera_01_2k/Camera_01_2k.gltf");
-  renderer.loadModel("./models/DamagedHelmet/DamagedHelmet.gltf");
-  //renderer.loadModel("./models/MetalRoughSpheres/MetalRoughSpheres.gltf");
+  //renderer.loadModel("./models/DamagedHelmet/DamagedHelmet.gltf");
+  renderer.loadModel("./models/MetalRoughSpheres/MetalRoughSpheres.gltf");
   //renderer.loadModel("./models/scene/scene.gltf");
   //renderer.loadModel("./models/Bistro_v5_2/Interiorgltf/bistro1.gltf");
   //renderer.loadModel("./models/duck/12248_Bird_v1_L2.obj");

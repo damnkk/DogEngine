@@ -6,17 +6,18 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "memory"
 #include "GLFW/glfw3.h"
 
 namespace dg {
-
+struct DeviceContext;
 class Camera {
  public:
   Camera(){};
   glm::mat4 getViewMatrix(bool useEularAngle = true);
   glm::mat4 getProjectMatrix(bool ortho = false);
-  void      updateDirection(float deltaTime, glm::vec2 currMousePos);
-  void      updatePosition(float deltaTime);
+  void      updateDirection(float deltaTime, glm::vec2 currMousePos,std::shared_ptr<DeviceContext>context);
+  void      updatePosition(float deltaTime,std::shared_ptr<DeviceContext>context);
   bool&     rightButtonPressState() { return rightButtonClick; }
 
  public:

@@ -251,8 +251,10 @@ void RayTracingBuilder::cmdCreateTlas(CommandBuffer* cmd, u32 instanceCount,
   scratchBufferInfo.reset()
       .setDeviceOnly(true)
       .setName("scratchBuffer")
+      .setAlignment(128)
       .setUsageSize(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                     sizeInfo.buildScratchSize);
+
   scratchBufferHandle = m_context->createBuffer(scratchBufferInfo);
   Buffer*                   scratchBuffer = m_context->accessBuffer(scratchBufferHandle);
   VkBufferDeviceAddressInfo scratchAddrInfo{VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO};

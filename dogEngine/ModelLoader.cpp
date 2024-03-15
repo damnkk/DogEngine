@@ -476,7 +476,7 @@ void ResourceLoader::executeSceneRT(std::shared_ptr<SceneGraph> scene) {
       .addDescriptorSetlayout(layoutHandle1)
       .addDescriptorSetlayout(m_renderer->getContext()->m_bindlessDescriptorSetLayout)
       .addPushConstant(constRange)
-      .setRayBoundNum(2);
+      .setRayBoundNum(12);
   rtPipelineInfo.m_shaderState = stateCI;
   ProgramPassCreateInfo programInfo{};
   programInfo.pipelineInfo = rtPipelineInfo;

@@ -77,7 +77,7 @@ struct Material : public Resource {
 
   struct alignas(16) UniformMaterial {
     alignas(16) glm::mat4 modelMatrix = glm::mat4(1.0f);
-    alignas(16) glm::vec4 baseColorFactor = glm::vec4(glm::vec3(0.7f), 1.0f);
+    alignas(16) glm::vec4 baseColorFactor = glm::vec4(glm::vec3(0.3f), 1.0f);
     alignas(16) glm::vec3 emissiveFactor = glm::vec3(0.0f);
 
     //envrotate, envExposure, envGamma

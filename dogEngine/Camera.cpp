@@ -1,11 +1,13 @@
 #include "Camera.h"
 #include "imguiBase/imgui.h"
+#include "DeviceContext.h"
 namespace dg {
 
-void Camera::updateDirection(float deltaTime, glm::vec2 currMousePos) {
+void Camera::updateDirection(float deltaTime, glm::vec2 currMousePos,std::shared_ptr<DeviceContext>context) {
   if (!rightButtonClick) {
     oldMousePos.x = currMousePos.x;
     oldMousePos.y = currMousePos.y;
+    return ;
   }
   float sensitive = 0.35;
   float xDif = currMousePos.x - oldMousePos.x;
@@ -15,9 +17,12 @@ void Camera::updateDirection(float deltaTime, glm::vec2 currMousePos) {
   yaw += sensitive * xDif;
   oldMousePos.x = currMousePos.x;
   oldMousePos.y = currMousePos.y;
+  if(context->m_supportRayTracing){
+    context->m_FrameCount = 0;
+  }
 }
 
-void Camera::updatePosition(float deltaTime) {
+void Camera::updatePosition(float deltaTime,std::shared_ptr<DeviceContext>context) {
   const glm::vec3 forward = direction;
   const glm::vec3 right = glm::normalize(glm::cross(forward, up));
   const glm::vec3 up = glm::normalize(glm::cross(right, forward));
@@ -39,6 +44,9 @@ void Camera::updatePosition(float deltaTime) {
     if (glm::length(moveSpeed) > maxSpeed) moveSpeed = glm::normalize(moveSpeed) * maxSpeed;
   }
   pos += moveSpeed * static_cast<float>(deltaTime);
+  if(glm::length(moveSpeed)>0.01&&context->m_supportRayTracing){
+    context->m_FrameCount = 0;
+  }
 }
 
 glm::mat4 Camera::getViewMatrix(bool useEularAngle) {

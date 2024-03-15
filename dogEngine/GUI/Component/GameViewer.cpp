@@ -17,8 +17,9 @@ void GameViewer::OnGUI() {
     if (ImGui::IsMouseDown(ImGuiMouseButton_Right)) { camera->rightButtonPressState() = true; }
     if (!ImGui::IsMouseDown(ImGuiMouseButton_Right)) camera->rightButtonPressState() = false;
     ImVec2 cursorPos = ImGui::GetMousePos();
-    camera->updateDirection(m_renderer->deltaTime, glm::vec2(cursorPos.x, cursorPos.y));
-    camera->updatePosition(m_renderer->deltaTime);
+    camera->updateDirection(m_renderer->deltaTime, glm::vec2(cursorPos.x, cursorPos.y),m_renderer->getContext());
+    camera->updatePosition(m_renderer->deltaTime,m_renderer->getContext());
+
   }
 
   const ImVec2 currWindowSize = ImGui::GetWindowSize();

@@ -2686,7 +2686,7 @@ void DeviceContext::present() {
     }
   }
   VkSemaphore          waitSmps[] = {m_image_acquired_semaphore[m_currentFrame]};
-  VkPipelineStageFlags wait_stages = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+  VkPipelineStageFlags wait_stages = {VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR};
   VkSubmitInfo         subInfo{VK_STRUCTURE_TYPE_SUBMIT_INFO};
   subInfo.waitSemaphoreCount = 1;
   subInfo.pWaitSemaphores = waitSmps;
@@ -2695,6 +2695,7 @@ void DeviceContext::present() {
   subInfo.commandBufferCount = m_queuedCommandBuffer.size();
   subInfo.pCommandBuffers = enquedCommandBuffers;
   subInfo.pWaitDstStageMask = &wait_stages;
+  //subInfo.pWaitDstStageMask = nullptr;
   vkQueueSubmit(m_graphicsQueue, 1, &subInfo, VK_NULL_HANDLE);
 
   //draw UI
@@ -2725,6 +2726,7 @@ void DeviceContext::present() {
   //   gameViewResize = false;
   // }
   m_currentFrame = (m_currentFrame + 1) % m_swapchainImageCount;
+  ++m_FrameCount;
 
   if (!m_delectionQueue.empty()) {
     for (int i = m_delectionQueue.size() - 1; i >= 0; --i) {
