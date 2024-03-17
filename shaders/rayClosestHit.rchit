@@ -9,6 +9,7 @@
 #extension GL_EXT_buffer_reference :require
 
 #include "shaderDataStructure.h"
+#include "shaderUtil.glsl"
 
 hitAttributeEXT vec2 attribs;
 layout(location = 0) rayPayloadInEXT hitPayLoad prd;
@@ -73,17 +74,22 @@ vec2 hammersley2d(uint i, uint N)
     return vec2(float(i) /float(N), rdi);
 }
 
+vec3 random_pcg3d(uvec3 v) {
+  v = v * 1664525u + 1013904223u;
+  v.x += v.y*v.z; v.y += v.z*v.x; v.z += v.x*v.y;
+  v ^= v >> 16u;
+  v.x += v.y*v.z; v.y += v.z*v.x; v.z += v.x*v.y;
+  return vec3(v) * (1.0/float(0xffffffffu));
+}
+
 
 vec3 diffuseImportanceSample( vec3 N){
-    vec2 sequence = hammersley2d(rtConst.frameCount,100000000);
-    float phi = sequence.y*2.0*PI;
-    float cosTheta = sqrt(1.0-sequence.x);
-    float sinTheta = sqrt(1.0-cosTheta*cosTheta);
-    vec3 unitSampleDir = vec3(cos(phi)*sinTheta,sin(phi)* sinTheta, cosTheta);
-    vec3 helper = vec3(1.0f,0.0f,0.0f);
-    vec3 tagent = normalize(cross(helper,N));
-    vec3 bitTagent = normalize(cross(N,tagent));
-    return normalize(unitSampleDir.x*tagent+unitSampleDir.y*bitTagent+unitSampleDir.z*N);
+    vec3 dir = random_pcg3d(uvec3(rtConst.frameCount+prd.recursiveDepth,gl_LaunchIDEXT.xy));
+    // vec3 help = vec3(1.0f,0.0,0.0);
+    // vec3 tagent = normalize(cross(N,help));
+    // vec3 bitTagent = normalize(cross(tagent,N));
+
+    return dir;
 }
 
 vec3 specularImportanceSample(){
@@ -166,8 +172,6 @@ float pdfEvaluate(vec3 V, vec3 N, vec3 L, MaterialParam mat){
     return max(0.001,pdfDiffuse);
 }
 
-
-
 void main(){
     ObjDesc objResource = objDescs.i[gl_InstanceCustomIndexEXT];
     MatIndices matIndices = MatIndices(objResource.primitiveMatIdxAddress);
@@ -187,7 +191,7 @@ void main(){
     const vec3 hitPos = v0.vPos*barycentrics.x+v1.vPos*barycentrics.y+v2.vPos*barycentrics.z;
     const vec3 hitWorldPos = vec3(gl_ObjectToWorldEXT* vec4(hitPos,1.0f));
     const vec3 hitNormal = v0.vNormal*barycentrics.x+v1.vNormal*barycentrics.y+v2.vNormal*barycentrics.z;
-    const vec3 hitWorldNormal = vec3(gl_ObjectToWorldEXT*vec4(hitNormal,1.0f));
+    const vec3 hitWorldNormal = normalize(vec3(hitNormal*gl_WorldToObjectEXT));
     const vec2 hitTexcoord = v0.vTexcoord*barycentrics.x+v1.vTexcoord*barycentrics.y+v2.vTexcoord*barycentrics.z;
 
     uint matIdx = matIndices.i[gl_PrimitiveID];
@@ -195,7 +199,7 @@ void main(){
     //diffuse
     vec3 diffuse = mat.baseColorFactor.xyz;
     if (mat.textureIndices[0] != k_invalid_index && mat.textureUseSetting[0] > 0) {
-    vec3 diffuse = texture(bindlessTextures[nonuniformEXT(mat.textureIndices[0])],hitTexcoord).xyz;
+        diffuse = texture(bindlessTextures[nonuniformEXT(mat.textureIndices[0])],hitTexcoord).xyz;
     }
     //MRT
     float metallic = mat.mrFactor.x;
@@ -212,7 +216,7 @@ void main(){
     //Normal
     vec3 texNormal  = vec3(0,0,1);
     if (mat.textureIndices[3] != k_invalid_index && mat.textureUseSetting[1] > 0) {
-    texNormal = normalize(texture(bindlessTextures[nonuniformEXT(mat.textureIndices[3])],hitTexcoord).xyz*2.0-1.0f);
+        texNormal = normalize(texture(bindlessTextures[nonuniformEXT(mat.textureIndices[3])],hitTexcoord).xyz*2.0-1.0f);
     }
     //emissive
     vec3 emissive = mat.emissiveFactor;
@@ -228,19 +232,26 @@ void main(){
     matParam.emissive = emissive;
 
     vec3 V = normalize(prd.direction);
-    vec3 N = toHamis(texNormal,hitWorldNormal);
-    vec3 L = diffuseImportanceSample(N);
+    vec3 N = hitWorldNormal;
+    if(mat.textureIndices[3] != k_invalid_index && mat.textureUseSetting[1] > 0){
+        N = toHamis(texNormal,hitWorldNormal);
+    }
+
+    vec3 tangent, bitangent;
+    createCoordinateSystem(N, tangent, bitangent);
+
+    vec3 L = samplingHemisphere(prd.seed, tangent, bitangent, N);
     float consineTheta = dot(N,L);
-    vec3 brdf = brdfEvaluate(V,N,L,matParam);
-    //vec3 brdf = vec3(1.0f);
-    float pdf  = pdfEvaluate(V,N,L,matParam);
-    prd.hitValue +=prd.history*mat.emissiveFactor;
-    prd.history *=consineTheta*brdf/pdf;
+    vec3 brdf = matParam.baseColor/PI;
+    float pdf  = consineTheta /  PI;
+    prd.hitValue = emissive;
+    prd.history =consineTheta*brdf/max(0.001,pdf);
     prd.origin = hitWorldPos;
     prd.direction = L;
+    prd.lastNormal = N;
+    //prd.hitValue =N;
+    //prd.hitValue =emissive;
+    // prd.recursiveDepth = 100;
     return;
-
-    //prd.hitValue = vec3(diffuse);
-    
 }
 

@@ -28,15 +28,13 @@ layout(set = 1,binding = 0) uniform cameraTransform{
 
 
 vec3 lightDir = vec3(1.0f,1.0f,0.0f);
-vec3 lightColor = vec3(0.7137, 0.9137, 1.0);
+vec3 lightColor = vec3(1.0, 1.0, 1.0);
 
 void main(){
-    if(res.recursiveDepth==1){
-        res.hitValue = lightColor;
+    if(res.recursiveDepth<=0){
+        res.hitValue = vec3(1.0,0.0,1.0);
     }else{
-        res.hitValue += res.history*dot(res.direction,lightDir)*lightColor;
+        res.hitValue += res.history*dot(res.lastNormal,lightDir)*lightColor;
     }
-        //res.hitValue = lightColor;
-
-    //res.hitValue= vec3(0.6549, 0.0863, 0.9216);
+res.recursiveDepth = 1000;
 }

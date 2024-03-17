@@ -2192,6 +2192,7 @@ PipelineHandle DeviceContext::createPipeline(PipelineCreateInfo& pipelineInfo) {
 }
 
 void DeviceContext::init(const ContextCreateInfo& contextInfo) {
+  //spdlog::set_default_logger(spdlog::stdout_color_mt("console"));
   DG_INFO("Vulkan Context is initing");
   VkResult          result;
   VkApplicationInfo appInfo = {VK_STRUCTURE_TYPE_APPLICATION_INFO,

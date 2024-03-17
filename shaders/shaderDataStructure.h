@@ -25,8 +25,9 @@ struct ObjDesc {
 };
 
 struct hitPayLoad {
-  uint maxBound;
+  uint seed;
   uint recursiveDepth;
+  vec3 lastNormal;
   vec3 origin;
   vec3 direction;
   vec3 history;

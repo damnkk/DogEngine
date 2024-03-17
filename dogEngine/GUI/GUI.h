@@ -49,7 +49,7 @@ class GUI {
   std::vector<VkSemaphore>& getSemaphores() { return m_uiFinishSemaphore; }
 
   template<typename T>
-  void addViewer(std::shared_ptr<T> pViewer);
+  void addComponent(std::shared_ptr<T> pViewer);
 
   void        setConfigFlag(ImGuiConfigFlags_ flag) { this->m_io->ConfigFlags |= flag; }
   void        setBackEndFlag(ImGuiBackendFlags_ flag) { this->m_io->BackendFlags |= flag; }
@@ -86,7 +86,7 @@ class GUI {
 };
 
 template<typename T>
-void GUI::addViewer(std::shared_ptr<T> pViewer) {
+void GUI::addComponent(std::shared_ptr<T> pViewer) {
   m_compontents.push_back(pViewer);
   pViewer->m_renderer = this->m_renderer;
 }

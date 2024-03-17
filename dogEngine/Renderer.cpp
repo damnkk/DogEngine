@@ -475,10 +475,10 @@ void Renderer::addImageBarrier(VkCommandBuffer cmdBuffer, Texture* texture, Reso
 
 //For some reason,render not handle the windows managing,so we have to use this function to get resize state.
 //if renderer onResize we can do some thing like resource update whitch is handles by renderer layer
-void Renderer::onResize() { 
-  if( m_context->gameViewResize ){
-    updateRToutputImageDesc(); 
-    m_context->gameViewResize = false; 
+void Renderer::onResize() {
+  if (m_context->gameViewResize) {
+    updateRToutputImageDesc();
+    m_context->gameViewResize = false;
   }
 }
 

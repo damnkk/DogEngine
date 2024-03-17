@@ -100,9 +100,9 @@ void GUI::init(Renderer* render) {
   m_LightCol = new glm::vec3(1.0f);
   m_LightIdx = new int(0);
 
-  addViewer(std::make_shared<MaterialViewer>("Material"));
-  addViewer(std::make_shared<GameViewer>("GameViewer"));
-  addViewer(std::make_shared<SceneHierachyViewer>("Scene Hierachy"));
+  addComponent(std::make_shared<MaterialViewer>("Material"));
+  addComponent(std::make_shared<GameViewer>("GameViewer"));
+  addComponent(std::make_shared<SceneHierachyViewer>("Scene Hierachy"));
 }
 
 // void GUI::LoadFontsToGPU(){

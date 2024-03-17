@@ -3,7 +3,6 @@
 #include "dgAssert.h"
 #include "dgpch.h"
 
-
 namespace dg {
 static const u32 INVALID_INDEX = 0xffffffff;
 template<typename T>

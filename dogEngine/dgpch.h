@@ -24,6 +24,7 @@
 
 #include "dgplatform.h"
 
-void load_VK_EXTENSIONS(VkInstance instance, PFN_vkGetInstanceProcAddr getInstanceProcAddr, VkDevice device, PFN_vkGetDeviceProcAddr getDeviceProcAddr);
+void load_VK_EXTENSIONS(VkInstance instance, PFN_vkGetInstanceProcAddr getInstanceProcAddr,
+                        VkDevice device, PFN_vkGetDeviceProcAddr getDeviceProcAddr);
 
 #endif//DGPCH_H

@@ -2523,7 +2523,6 @@ VMA_CALL_PRE void VMA_CALL_POST vmaFreeStatsString(VmaAllocator VMA_NOT_NULL all
 #include <type_traits>
 #include <utility>
 
-
 #ifdef _MSC_VER
 #include <intrin.h>// For functions like __popcnt, _BitScanForward etc.
 #endif
@@ -10964,8 +10963,8 @@ VkResult VmaDeviceMemoryBlock::BindImageMemory(const VmaAllocator  hAllocator,
 
 #ifndef _VMA_ALLOCATION_T_FUNCTIONS
 VmaAllocation_T::VmaAllocation_T(bool mappingAllowed)
-    : m_Alignment{1}, m_Size{0}, m_pUserData{VMA_NULL}, m_pName{VMA_NULL}, m_MemoryTypeIndex{0},
-      m_Type{(uint8_t) ALLOCATION_TYPE_NONE},
+    : m_Alignment{1}, m_Size{0}, m_pUserData{VMA_NULL}, m_pName{VMA_NULL},
+      m_MemoryTypeIndex{0}, m_Type{(uint8_t) ALLOCATION_TYPE_NONE},
       m_SuballocationType{(uint8_t) VMA_SUBALLOCATION_TYPE_UNKNOWN}, m_MapCount{0}, m_Flags{0} {
   if (mappingAllowed) m_Flags |= (uint8_t) FLAG_MAPPING_ALLOWED;
 

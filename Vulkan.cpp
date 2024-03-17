@@ -34,6 +34,8 @@ int main() {
       VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES};
   VkPhysicalDeviceHostQueryResetFeatures hostQueryResetFeatures{
       VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES};
+  VkPhysicalDeviceShaderClockFeaturesKHR shaderClockFeatures{
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CLOCK_FEATURES_KHR};
 
   contextInfo.addInstanceLayer("VK_LAYER_KHRONOS_validation")
       .addDeviceExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME)
@@ -43,7 +45,8 @@ int main() {
       .addDeviceExtension(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME, false,
                           &bufferAddressFeatures)
       .addDeviceExtension(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME, false, &descIndexingFeatures)
-      .addDeviceExtension(VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME, false, &hostQueryResetFeatures);
+      .addDeviceExtension(VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME, false, &hostQueryResetFeatures)
+      .addDeviceExtension(VK_KHR_SHADER_CLOCK_EXTENSION_NAME, false, &shaderClockFeatures);
   std::shared_ptr<DeviceContext> context = std::make_shared<DeviceContext>();
   context->init(contextInfo);
   Renderer renderer;
@@ -55,7 +58,7 @@ int main() {
   //renderer.loadModel("./models/Camera_01_2k/Camera_01_2k.gltf");
   //renderer.loadModel("./models/DamagedHelmet/DamagedHelmet.gltf");
   renderer.loadModel("./models/MetalRoughSpheres/MetalRoughSpheres.gltf");
-  //renderer.loadModel("./models/scene/scene.gltf");
+  //renderer.loadModel("./models/Box/cornellBox.gltf");
   //renderer.loadModel("./models/Bistro_v5_2/Interiorgltf/bistro1.gltf");
   //renderer.loadModel("./models/duck/12248_Bird_v1_L2.obj");
 

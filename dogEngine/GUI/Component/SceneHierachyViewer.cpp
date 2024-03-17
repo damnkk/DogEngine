@@ -86,9 +86,6 @@ void SceneHierachyViewer::OnGUI() {
     glm::quat quatx = glm::angleAxis(rotate.x, glm::vec3(1.0f, 0.0f, 0.0f));
     glm::quat quaty = glm::angleAxis(rotate.y, glm::vec3(0.0f, 1.0f, 0.0f));
     glm::quat quatz = glm::angleAxis(rotate.z, glm::vec3(0.0f, 0.0f, 1.0f));
-    // if (rotate.y > 1.5f) {
-    //   DG_INFO("test");
-    // }
 
     rotateMatrix = glm::rotate(rotateMatrix, glm::radians(rotate.x), glm::vec3(1.0f, 0.0f, 0.0f));
     rotateMatrix = glm::rotate(rotateMatrix, glm::radians(rotate.y), glm::vec3(0.0f, 1.0f, 0.0f));
