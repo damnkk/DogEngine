@@ -54,21 +54,20 @@ void main(){
     prd.direction = rayDir.xyz;
     prd.recursiveDepth = 0;
     prd.hitValue = vec3(0.0f);
-    prd.history = vec3(1.0f);
+    prd.weight = vec3(1.0f);
     prd.seed = seed;
 
     vec3 acculuLight= vec3(0.0f);
     vec3 weight = vec3(1.0f);
 
-    for(;prd.recursiveDepth<5;prd.recursiveDepth++){
+    for(;prd.recursiveDepth<5 ;prd.recursiveDepth++){
         traceRayEXT(topLevelAS,
         rayFlags,
         0xFF,
         0,0,0,prd.origin,tMin,prd.direction, tMax,0);
         acculuLight += weight*prd.hitValue;
-        weight*=prd.history;
+        weight*=prd.weight;
     }
-    //acculuLight = pow(acculuLight,vec3(1.0/2.2));
 
     if(rtConst.frameCount<=1){
         imageStore(outputImage,ivec2(gl_LaunchIDEXT.xy),vec4(acculuLight,1.0f));
@@ -78,9 +77,10 @@ void main(){
         imageStore(outputImage,ivec2(gl_LaunchIDEXT.xy),vec4(mix(oldColor,acculuLight,a),1.0f));
     }
 
+
     // traceRayEXT(topLevelAS,
     //     rayFlags,
     //     0xFF,
     //     0,0,0,prd.origin,tMin,prd.direction, tMax,0);
-    //  imageStore(outputImage,ivec2(gl_LaunchIDEXT.xy),vec4(prd.hitValue.xyz,1.0f));
+    // imageStore(outputImage,ivec2(gl_LaunchIDEXT.xy),vec4(prd.hitValue.xyz,1.0f));
 }

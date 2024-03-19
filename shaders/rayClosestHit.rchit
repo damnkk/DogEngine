@@ -55,11 +55,77 @@ struct MaterialParam{
     vec3 emissive;
 };
 
+ vec2 pixelCenter = vec2(gl_LaunchIDEXT.xy)+vec2(0.5);
+ vec2 pix = pixelCenter/vec2(gl_LaunchSizeEXT.xy);
+
+uint seed = uint(
+    uint((pix.x * 0.5 + 0.5) * gl_LaunchSizeEXT.x)  * uint(1973) + 
+    uint((pix.y * 0.5 + 0.5) * gl_LaunchSizeEXT.y) * uint(9277) + 
+    uint(rtConst.frameCount) * uint(26699)) | uint(1);
+
+uint wang_hash(inout uint seed) {
+    seed = uint(seed ^ uint(61)) ^ uint(seed >> uint(16));
+    seed *= uint(9);
+    seed = seed ^ (seed >> 4);
+    seed *= uint(0x27d4eb2d);
+    seed = seed ^ (seed >> 15);
+    return seed;
+}
+ 
+float rand() {
+    return float(wang_hash(seed)) / 4294967296.0;
+}
+
+int grayCode(int i)
+{
+    return i^(i>>1);
+}
+// 生成第 d 维度的第 i 个 sobol 数
+float sobol(int d,int i)
+{
+    uint result = 0u;
+    int offset = 32*d;
+    for(int j = 0;i!=0;i>>=1,j++)
+    {
+        if((i&1)!=0)
+        {
+            result^=sobolMatrix[offset+j];
+        }
+    }
+    return float(result)*(1.0f/float(0xFFFFFFFFU));
+}
+
+vec2 sobolVec2(int i,int b)
+{
+    float u = sobol(b*2,grayCode(i));
+    float v = sobol(b*2+1,grayCode(i));
+    return vec2(u,v);
+}
+
+vec2 CranleyPattersonRotation(vec2 p)
+{
+    uint pseed = uint(
+    uint((pix.x*0.5+0.5)*gl_LaunchSizeEXT.x) *uint(1973)+
+    uint((pix.y*0.5+0.5)*gl_LaunchSizeEXT.y)*uint(9277)+
+    uint(114514/1919)*uint(26699))|uint(1);
+    float u  =float(wang_hash(pseed))/4294967296.0;
+    float v = float(wang_hash(pseed))/4294967296.0;
+    p.x +=u ;
+    if(p.x>1) p.x-=1;
+    if(p.x<0) p.x+=1;
+    p.y +=v;
+    if(p.y>1) p.y-=1;
+    if(p.y<0) p.y+=1;
+
+    return p;
+}
+
 vec3 toHamis(vec3 dir, vec3 N){
     vec3 helper = vec3(1.0f,0.0f,0.0f);
+    if(abs(N.x)>0.999) helper = vec3(0, 0, 1);
     vec3 tagent = normalize(cross(helper,N));
-    vec3 bitTagent = normalize(cross(N,tagent));
-    return normalize(dir.x*tagent+dir.y*bitTagent+dir.z*N);
+    vec3 bitTagent = normalize(cross(tagent,N));
+    return dir.x*tagent+dir.y*bitTagent+dir.z*N;
 }
 
 vec2 hammersley2d(uint i, uint N)
@@ -83,17 +149,30 @@ vec3 random_pcg3d(uvec3 v) {
 }
 
 
-vec3 diffuseImportanceSample( vec3 N){
-    vec3 dir = random_pcg3d(uvec3(rtConst.frameCount+prd.recursiveDepth,gl_LaunchIDEXT.xy));
-    // vec3 help = vec3(1.0f,0.0,0.0);
-    // vec3 tagent = normalize(cross(N,help));
-    // vec3 bitTagent = normalize(cross(tagent,N));
+vec3 diffuseImportanceSample(float xi_1,float xi_2,vec3 N){
+    float r = sqrt(xi_1);
+    float theta = xi_2*2.0*PI;
+    float x = r*cos(theta);
+    float y = r*sin(theta);
+    float z = sqrt(1.0-x*x-y*y);
 
-    return dir;
+    //从z半球投影到法相半球
+    vec3 L = toHamis(vec3(x,y,z),N);
+    return L;
 }
 
-vec3 specularImportanceSample(){
-    return vec3(0.0f,0.0f,1.0f);
+vec3 specularImportanceSample(float xi_i,float xi_2,vec3 V,vec3 N,float alpha){
+    float phi_h = 2.0*PI*xi_i;
+    float sin_phi_h = sin(phi_h);
+    float cos_phi_h = cos(phi_h);
+
+    float cos_theta_h = sqrt((1.0-xi_2)/(1.0+(alpha*alpha-1.0)*xi_2));
+    float sin_theta_h = sqrt(max(0.0,1.0-cos_theta_h*cos_theta_h));
+
+    vec3 H = normalize(vec3(sin_theta_h*cos_phi_h,sin_theta_h*sin_phi_h,cos_theta_h));
+    H = toHamis(H,N);
+    vec3 L = reflect(-V,H);
+    return L;
 }
 
 float sqr(float x){
@@ -128,8 +207,6 @@ float smithG_GGX(float NdotV,float alphaG)
     return 1/(NdotV+sqrt(a+b-a*b));
 }
 
-
-
 vec3 brdfEvaluate(vec3 V, vec3 N, vec3 L, MaterialParam mat){
     float NdotL = dot(N,L);
     float NdotV = dot(N,V);
@@ -151,25 +228,57 @@ vec3 brdfEvaluate(vec3 V, vec3 N, vec3 L, MaterialParam mat){
     float Ds = GTR2(NdotH,alpha);
     vec3 F0 = mix(vec3(0.04),mat.baseColor,mat.metallic);
     float  FH = SchlickFresnel(LdotH);
-    vec3 Fs = mix(vec3(0.0),F0,FH);
+    vec3 Fs = mix(F0,vec3(1),FH);
     float Gs = smithG_GGX(NdotL,mat.roughness);
     Gs*=smithG_GGX(NdotL,mat.roughness);
 
     vec3 diffuse = (1.0/PI)*Fd*mat.baseColor;
     vec3 specular = Gs*Fs*Ds;
     return diffuse*(1.0-mat.metallic)+specular;
+}
 
+vec3 SampleBrdf(float xi_1,float xi_2,float xi_3,vec3 V,vec3 N, MaterialParam mat){
+    float alpha_GTR2 = max(0.001,sqr(mat.roughness));
+    float r_diffuse = (1.0-mat.metallic);
+    float r_specular = 1.0;
+    float r_sum = r_diffuse+r_specular;
+
+    float p_diffuse = r_diffuse/r_sum;
+    float p_specular = r_specular/r_sum;
+    float rd = xi_3;
+    if(rd<=p_diffuse){
+        return diffuseImportanceSample(xi_1,xi_2,N);
+    }else if(rd>p_diffuse&&rd<=p_diffuse+p_specular){
+        return specularImportanceSample(xi_1,xi_2,V,N,alpha_GTR2);
+    }
+    //return specularImportanceSample(xi_1,xi_2,V,N,alpha_GTR2);
+    return vec3(0,1,0);
 }
 
 float pdfEvaluate(vec3 V, vec3 N, vec3 L, MaterialParam mat){
     float NdotL = dot(N,L);
     float NdotV = dot(N,V);
-    if(NdotL<0||NdotV<0) return 0;
+    if(NdotL<0||NdotV<0) return 0.0001;
     vec3 H = normalize(L+V);
     float NdotH = dot(N,H);
     float LdotH = dot(L,H);
+
+    float alpha_Ds = max(0.001,sqr(mat.roughness));
+    float Ds = GTR2(NdotH,alpha_Ds);
+    
     float pdfDiffuse = NdotL/PI;
-    return max(0.001,pdfDiffuse);
+    float pdfSpecular = Ds*NdotH/(4.0*dot(L,H));
+
+    float rDiffuse = (1.0-mat.metallic);
+    float rSpecular = 1.0;
+    float rSum = rDiffuse+rSpecular;
+
+    float pDiffuse = rDiffuse/rSum;
+    float pSpecular = rSpecular/rSum;
+
+    float pdf = pDiffuse*pdfDiffuse+pSpecular*pdfSpecular;
+     //pdf = pdfSpecular;
+    return max(0.00001,pdf);
 }
 
 void main(){
@@ -231,7 +340,7 @@ void main(){
     matParam.ao = ao;
     matParam.emissive = emissive;
 
-    vec3 V = normalize(prd.direction);
+    vec3 V = -normalize(prd.direction);
     vec3 N = hitWorldNormal;
     if(mat.textureIndices[3] != k_invalid_index && mat.textureUseSetting[1] > 0){
         N = toHamis(texNormal,hitWorldNormal);
@@ -239,18 +348,23 @@ void main(){
 
     vec3 tangent, bitangent;
     createCoordinateSystem(N, tangent, bitangent);
-
-    vec3 L = samplingHemisphere(prd.seed, tangent, bitangent, N);
+    vec2 uv = sobolVec2(rtConst.frameCount+1,prd.recursiveDepth);
+    uv = CranleyPattersonRotation(uv);
+    //vec3 L = samplingHemisphere(prd.seed, tangent, bitangent, N);
+    vec3 L = SampleBrdf(rnd(prd.seed),rnd(prd.seed),rnd(prd.seed),V,N,matParam);
+    //vec3 L = SampleBrdf(uv.x,uv.y,rnd(prd.seed),V,N,matParam);
     float consineTheta = dot(N,L);
-    vec3 brdf = matParam.baseColor/PI;
-    float pdf  = consineTheta /  PI;
+    vec3 brdf = brdfEvaluate(V,N,L,matParam);
+     //brdf = matParam.baseColor/PI;
+    float pdf = pdfEvaluate(V,N,L,matParam);
+    //pdf  = consineTheta/PI;
     prd.hitValue = emissive;
-    prd.history =consineTheta*brdf/max(0.001,pdf);
+    prd.weight =consineTheta*brdf/max(0.0000001,pdf);
     prd.origin = hitWorldPos;
     prd.direction = L;
     prd.lastNormal = N;
-    //prd.hitValue =N;
-    //prd.hitValue =emissive;
+
+    // prd.hitValue = vec3( L*0.5+0.5);
     // prd.recursiveDepth = 100;
     return;
 }

@@ -34,7 +34,8 @@ void main(){
     if(res.recursiveDepth<=0){
         res.hitValue = vec3(1.0,0.0,1.0);
     }else{
-        res.hitValue += res.history*dot(res.lastNormal,lightDir)*lightColor;
+        //res.hitValue = dot(res.lastNormal,lightDir)*lightColor;
+        res.hitValue = vec3(0.001);
     }
 res.recursiveDepth = 1000;
 }
