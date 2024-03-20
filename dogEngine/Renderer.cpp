@@ -373,6 +373,7 @@ void Renderer::rayTraceScene() {
   m_pcRay.clearColor = glm::vec4(0.5f, 1.0f, 0.2f, 1.0f);
   m_pcRay.frameCount = m_context->m_FrameCount;
   m_pcRay.maxBound = 4;
+  m_pcRay.skyTextureBindlessIdx = m_skyTexture.index;
   //std::cout<<m_context->m_FrameCount<<std::endl;
   cmd->bindPipeline(m_rtProgram->passes[0].pipeline);
   cmd->bindDescriptorSet(m_rtDescs, 0, nullptr, 0);

@@ -20,6 +20,7 @@ layout(set = 1,binding = 0) uniform cameraTransform{
 layout(push_constant,scalar) uniform RtPushConstant{
     int frameCount;
     int maxBound;
+    int skyTextureBindlessIdx;
     vec4 clearColor;
 }rtConst;
 

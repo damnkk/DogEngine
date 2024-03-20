@@ -96,6 +96,7 @@ typedef enum ResourceState {
 struct RtPushConstant {
   u32       frameCount;
   u32       maxBound;
+  u32       skyTextureBindlessIdx;
   glm::vec4 clearColor;
 };
 

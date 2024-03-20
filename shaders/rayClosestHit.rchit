@@ -33,6 +33,7 @@ layout(set = 1,binding = 0) uniform cameraTransform{
 layout(push_constant,scalar) uniform RtPushConstant{
     int frameCount;
     int maxBound;
+    int       skyTextureBindlessIdx;
     vec4 clearColor;
 }rtConst;
 
@@ -336,7 +337,7 @@ void main(){
     MaterialParam matParam;
     matParam.baseColor = diffuse;
     matParam.metallic = metallic;
-    matParam.roughness = roughness;
+    matParam.roughness = 0.1;
     matParam.ao = ao;
     matParam.emissive = emissive;
 
@@ -364,7 +365,7 @@ void main(){
     prd.direction = L;
     prd.lastNormal = N;
 
-    // prd.hitValue = vec3( L*0.5+0.5);
+    // prd.hitValue = vec3(roughness);
     // prd.recursiveDepth = 100;
     return;
 }
