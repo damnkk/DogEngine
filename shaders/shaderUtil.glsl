@@ -1,3 +1,4 @@
+#define PI 3.14159265358979
 void createCoordinateSystem(in vec3 N, out vec3 Nt, out vec3 Nb)
 {
   if(abs(N.x) > abs(N.y))
@@ -41,16 +42,24 @@ float rnd(inout uint prev)
 
 vec3 samplingHemisphere(inout uint seed, in vec3 x, in vec3 y, in vec3 z)
 {
-#define M_PI 3.14159265
+
 
   float r1 = rnd(seed);
   float r2 = rnd(seed);
   float sq = sqrt(r1);
 
-  vec3 direction = vec3(cos(2 * M_PI * r2) * sq, sin(2 * M_PI * r2) * sq, sqrt(1. - r1));
+  vec3 direction = vec3(cos(2 * PI * r2) * sq, sin(2 * PI * r2) * sq, sqrt(1. - r1));
   direction      = direction.x * x + direction.y * y + direction.z * z;
 
   return direction;
+}
+
+vec2 toSphericalCoord(vec3 v){
+  vec2 uv = vec2(atan(v.z,v.x),asin(v.y));
+  uv/=vec2(2.0f*PI,PI);
+  uv+=0.5;
+  uv.y = 1.0-uv.y;
+  return uv;
 }
 
 vec3 F(vec3 x)

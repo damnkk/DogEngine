@@ -52,18 +52,18 @@ int main() {
   Renderer renderer;
   renderer.init(context);
 
-  //renderer.loadModel("./models/BoomBoxWithAxes/BoomBoxWithAxes.gltf");
-  //renderer.loadModel("./models/Sponza/Sponza.gltf");
-  //renderer.loadModel("./models/orrery/scene.gltf");
-  //renderer.loadModel("./models/Camera_01_2k/Camera_01_2k.gltf");
-  //renderer.loadModel("./models/DamagedHelmet/DamagedHelmet.gltf");
-  //renderer.loadModel("./models/MetalRoughSpheres/MetalRoughSpheres.gltf");
-  renderer.loadModel("./models/Box/cornellBox.gltf");
-  //renderer.loadModel("./models/Bistro_v5_2/Interiorgltf/bistro1.gltf");
-  //renderer.loadModel("./models/duck/12248_Bird_v1_L2.obj");
+  // renderer.loadModel("./models/BoomBoxWithAxes/BoomBoxWithAxes.gltf");
+  // renderer.loadModel("./models/Sponza/Sponza.gltf");
+  // renderer.loadModel("./models/orrery/scene.gltf");
+  // renderer.loadModel("./models/Camera_01_2k/Camera_01_2k.gltf");
+  // renderer.loadModel("./models/DamagedHelmet/DamagedHelmet.gltf");
+  renderer.loadModel("./models/MetalRoughSpheres/MetalRoughSpheres.gltf");
+  // renderer.loadModel("./models/Box/cornellBox.gltf");
+  // renderer.loadModel("./models/Bistro_v5_2/Interiorgltf/bistro1.gltf");
+  // renderer.loadModel("./models/duck/12248_Bird_v1_L2.obj");
 
-  //renderer.addSkyBox("./models/skybox/small_empty_room_4_2k.hdr");
-  //renderer.addSkyBox("./models/skybox/small_empty_room_1_2k.hdr");
+  // renderer.addSkyBox("./models/skybox/small_empty_room_4_2k.hdr");
+  // renderer.addSkyBox("./models/skybox/small_empty_room_1_2k.hdr");
   renderer.addSkyBox("./models/skybox/graveyard_pathways_2k.hdr");
   renderer.executeScene();
 
@@ -82,7 +82,7 @@ int main() {
       }
       default: break;
     }
-    //renderer.drawScene();
+    // renderer.drawScene();
     renderer.drawUI();
     renderer.present();
   }

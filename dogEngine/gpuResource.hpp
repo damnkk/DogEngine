@@ -633,6 +633,31 @@ static VkImageViewType to_vk_image_view_type(TextureType::Enum e) {
   return imageViewTypes[e];
 }
 
+static u32 format_to_pixel_buffer_size(VkFormat format) {
+  u32 pixelSize = 0;
+  switch (format) {
+    case (VK_FORMAT_R8G8B8A8_SRGB): {
+      pixelSize = 4;
+      break;
+    }
+    case (VK_FORMAT_R8G8B8A8_UNORM): {
+      pixelSize = 4;
+      break;
+    }
+    case (VK_FORMAT_R32G32B32A32_SFLOAT): {
+      pixelSize = 4 * 4;
+      break;
+    }
+    default: {
+      DG_INFO("This is a not many used image format{}, will use the largest pixel size to ensure "
+              "the memory is big enough.",
+              format)
+      pixelSize = 4 * 4;
+    }
+  }
+  return pixelSize;
+}
+
 static VkFormat to_vk_vertex_format(VertexComponentFormat::Enum value) {
   // Float, Float2, Float3, Float4, Mat4, Byte, Byte4N, UByte, UByte4N, Short2, Short2N, Short4, Short4N, Uint, Uint2, Uint4, Count
   static VkFormat s_vk_vertex_formats[VertexComponentFormat::Count] = {

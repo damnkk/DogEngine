@@ -25,11 +25,14 @@ struct ObjDesc {
 };
 
 struct hitPayLoad {
-  uint seed;
-  int  recursiveDepth;
-  vec3 lastNormal;
-  vec3 origin;
-  vec3 direction;
-  vec3 weight;
-  vec3 hitValue;
+  uint  seed;
+  int   envSample;
+  int   recursiveDepth;
+  vec3  lastNormal;
+  vec3  origin;
+  vec3  direction;
+  vec3  weight;
+  vec3  hitValue;
+  vec3  brdf;
+  float pdf;
 };

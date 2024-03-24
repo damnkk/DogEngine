@@ -1289,7 +1289,8 @@ static void vulkanCreateCubeTexture(DeviceContext* context, TextureCreateInfo& t
 void uploadTextureData(Texture* texture, void* uploadData, DeviceContext* context) {
   VkBufferCreateInfo stagingBufferInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
   stagingBufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-  VkDeviceSize imageSize = texture->m_extent.width * texture->m_extent.height * 4;
+  VkDeviceSize imageSize = texture->m_extent.width * texture->m_extent.height
+      * format_to_pixel_buffer_size(texture->m_format);
   stagingBufferInfo.size = imageSize;
 
   VmaAllocationCreateInfo allocCreateInfo{};

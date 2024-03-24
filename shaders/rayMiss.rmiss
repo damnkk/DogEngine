@@ -7,7 +7,9 @@
 #extension GL_EXT_buffer_reference2 : require
 #extension GL_EXT_buffer_reference :require
 #include "shaderDataStructure.h"
+#include "shaderUtil.glsl"
 layout(location = 0) rayPayloadInEXT hitPayLoad res;
+layout(location = 1) rayPayloadInEXT hitPayLoad envRes;
 
 layout(buffer_reference, scalar) buffer Vertices{Vertex v[];};
 layout(buffer_reference, std430,buffer_reference_align = 4) buffer Indices{uint i[];};
@@ -33,7 +35,7 @@ layout(push_constant,scalar) uniform RtPushConstant{
 }rtConst;
 
 
-const float PI = 3.14159265358979;
+//const float PI = 3.14159265358979;
 
 vec3 lightDir = vec3(1.0f,1.0f,0.0f);
 vec3 lightColor = vec3(1.0, 1.0, 1.0);
@@ -47,15 +49,47 @@ vec2 directoryToUV(in vec3 cameraDirect) {
   return uv;
 }
 
+vec3 SampleHdr(float x1,float x2,int HDRTexIdx){
+    vec2 xy = texture(bindlessTextures[nonuniformEXT(HDRTexIdx)],vec2(x1,x2)).xy;
+    xy.y = 1.0-xy.y;
+    float phi = 2.0*PI*(xy.x-0.5);
+    float theta = PI*(xy.y-0.5);
+    vec3 L = vec3(cos(theta)*cos(phi),sin(theta),cos(theta)*sin(phi));
+    return L;
+}
+
+float hdrPdf(vec3 L,int hdrResolution,int HDRTexIdx){
+    vec2 uv = toSphericalCoord(normalize(L));
+    float pdf =texture(bindlessTextures[nonuniformEXT(HDRTexIdx)],uv).z;
+    float theta = PI*(0.5-uv.y);
+    float sin_theta = max(sin(theta),1e-10);
+    float p_convert = float(hdrResolution*hdrResolution/2)/(2.0*PI*PI*sin_theta);
+    return pdf*p_convert;
+}
+
+float misMixWeight(float a ,float b){
+    float t = a*a;
+    return t/(b*b+t);
+}
+
+
 void main(){
-        vec2 uv = directoryToUV(res.direction);
-        vec3 gamma = vec3(1.0/2.2);
+    vec2 uv = directoryToUV(res.direction);
+    vec3 gamma = vec3(1.0/2.2);
+    //envRes.hitValue = texture(bindlessTextures[nonuniformEXT(rtConst.skyTextureBindlessIdx)],uv).xyz;
+
     if(res.recursiveDepth<=0){
         res.hitValue = pow(texture(bindlessTextures[nonuniformEXT(rtConst.skyTextureBindlessIdx)],uv).xyz,vec3(1.0/1.6));
     }else{
         
         //res.hitValue = dot(res.lastNormal,lightDir)*lightColor;
-        res.hitValue = pow(texture(bindlessTextures[nonuniformEXT(rtConst.skyTextureBindlessIdx)],uv).xyz,gamma);
+        vec3 color=  min(vec3(1000.0),pow(texture(bindlessTextures[nonuniformEXT(rtConst.skyTextureBindlessIdx)],uv).xyz,gamma));
+        float pdfLight = hdrPdf(res.direction,2048,rtConst.skyTextureBindlessIdx);
+        float mis_weight = misMixWeight(pdfLight,res.pdf);
+        res.hitValue= mis_weight*color;
+        //res.hitValue= vec3(mis_weight);
+        //res.hitValue = min(vec3(1000.0),pow(texture(bindlessTextures[nonuniformEXT(rtConst.skyTextureBindlessIdx)],uv).xyz,gamma));
+    
     }
-res.recursiveDepth = 1000;
+    res.recursiveDepth = 1000;
 }

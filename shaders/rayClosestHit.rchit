@@ -13,6 +13,7 @@
 
 hitAttributeEXT vec2 attribs;
 layout(location = 0) rayPayloadInEXT hitPayLoad prd;
+layout(location = 1) rayPayloadEXT hitPayLoad envSamplePrd;
 
 layout(buffer_reference, scalar) buffer Vertices{Vertex v[];};
 layout(buffer_reference, std430,buffer_reference_align = 4) buffer Indices{uint i[];};
@@ -33,11 +34,10 @@ layout(set = 1,binding = 0) uniform cameraTransform{
 layout(push_constant,scalar) uniform RtPushConstant{
     int frameCount;
     int maxBound;
-    int       skyTextureBindlessIdx;
+    int skyTextureBindlessIdx;
     vec4 clearColor;
 }rtConst;
 
- const float PI = 3.14159265358979;
  const int k_invalid_index = -1;
 
 /*
@@ -259,7 +259,7 @@ vec3 SampleBrdf(float xi_1,float xi_2,float xi_3,vec3 V,vec3 N, MaterialParam ma
 float pdfEvaluate(vec3 V, vec3 N, vec3 L, MaterialParam mat){
     float NdotL = dot(N,L);
     float NdotV = dot(N,V);
-    if(NdotL<0||NdotV<0) return 0.0001;
+    if(NdotL<0||NdotV<0) return 100000;
     vec3 H = normalize(L+V);
     float NdotH = dot(N,H);
     float LdotH = dot(L,H);
@@ -280,6 +280,29 @@ float pdfEvaluate(vec3 V, vec3 N, vec3 L, MaterialParam mat){
     float pdf = pDiffuse*pdfDiffuse+pSpecular*pdfSpecular;
      //pdf = pdfSpecular;
     return max(0.00001,pdf);
+}
+
+vec3 SampleHdr(float x1,float x2,int HDRTexIdx){
+    vec2 xy = texture(bindlessTextures[nonuniformEXT(HDRTexIdx)],vec2(x1,x2)).xy;
+    xy.y = 1.0-xy.y;
+    float phi = 2.0*PI*(xy.x-0.5);
+    float theta = PI*(xy.y-0.5);
+    vec3 L = vec3(cos(theta)*cos(phi),sin(theta),cos(theta)*sin(phi));
+    return L;
+}
+
+float hdrPdf(vec3 L,int hdrResolution,int HDRTexIdx){
+    vec2 uv = toSphericalCoord(normalize(L));
+    float pdf =texture(bindlessTextures[nonuniformEXT(HDRTexIdx)],uv).z;
+    float theta = PI*(0.5-uv.y);
+    float sin_theta = max(sin(theta),1e-10);
+    float p_convert = float(hdrResolution*hdrResolution/2)/(2.0*PI*PI*sin_theta);
+    return pdf*p_convert;
+}
+
+float misMixWeight(float a ,float b){
+    float t = a*a;
+    return t/(b*b+t);
 }
 
 void main(){
@@ -337,7 +360,7 @@ void main(){
     MaterialParam matParam;
     matParam.baseColor = diffuse;
     matParam.metallic = metallic;
-    matParam.roughness = 0.1;
+    matParam.roughness = roughness;
     matParam.ao = ao;
     matParam.emissive = emissive;
 
@@ -347,23 +370,48 @@ void main(){
         N = toHamis(texNormal,hitWorldNormal);
     }
 
-    vec3 tangent, bitangent;
-    createCoordinateSystem(N, tangent, bitangent);
+     N *=(1.-2.*step(0.0f,dot(prd.direction,N)));
     vec2 uv = sobolVec2(rtConst.frameCount+1,prd.recursiveDepth);
     uv = CranleyPattersonRotation(uv);
-    //vec3 L = samplingHemisphere(prd.seed, tangent, bitangent, N);
-    vec3 L = SampleBrdf(rnd(prd.seed),rnd(prd.seed),rnd(prd.seed),V,N,matParam);
-    //vec3 L = SampleBrdf(uv.x,uv.y,rnd(prd.seed),V,N,matParam);
+    vec3 L = SampleBrdf(uv.x,uv.y,rnd(prd.seed),V,N,matParam);
     float consineTheta = dot(N,L);
     vec3 brdf = brdfEvaluate(V,N,L,matParam);
-     //brdf = matParam.baseColor/PI;
     float pdf = pdfEvaluate(V,N,L,matParam);
-    //pdf  = consineTheta/PI;
+
+    // env sample
+    vec3 envL = SampleHdr(rand(),rand(),rtConst.skyTextureBindlessIdx);
+    vec3 test = vec3(1.0f,0.0f,0.0f);
+    if(dot(N,envL)>0.0){
+        test = vec3(0.0f,1.0f,0.0f);
+        envSamplePrd.recursiveDepth = 0;
+        envSamplePrd.envSample = 1;
+        envSamplePrd.origin = hitWorldPos;
+        envSamplePrd.direction = envL;
+        envSamplePrd.hitValue = vec3(0.0f,0.0f,0.0);
+        float tMin = 0.0001;
+        float tMax = 10000000.0;
+        uint rayFlags = gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT;
+
+        traceRayEXT(topLevelAS,
+            rayFlags,
+            0xFF,
+            0,0,1,envSamplePrd.origin,tMin,envSamplePrd.direction, tMax,1);
+        float envPdf = hdrPdf(envL,2048,rtConst.skyTextureBindlessIdx);
+        vec3 envBrdf = brdfEvaluate(V,N,envL,matParam);
+
+        float misWeight = misMixWeight(envPdf,pdf);
+        prd.hitValue = misWeight*envSamplePrd.hitValue*envBrdf*dot(N,envL)/envPdf;
+    }
+
+//material sample
+    prd.hitValue += emissive;
     prd.hitValue = emissive;
     prd.weight =consineTheta*brdf/max(0.0000001,pdf);
     prd.origin = hitWorldPos;
     prd.direction = L;
     prd.lastNormal = N;
+    prd.brdf = brdf;
+    prd.pdf = pdf;
 
     // prd.hitValue = vec3(roughness);
     // prd.recursiveDepth = 100;
