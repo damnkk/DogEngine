@@ -86,9 +86,9 @@ void main(){
         vec3 color=  min(vec3(1000.0),pow(texture(bindlessTextures[nonuniformEXT(rtConst.skyTextureBindlessIdx)],uv).xyz,gamma));
         float pdfLight = hdrPdf(res.direction,2048,rtConst.skyTextureBindlessIdx);
         float mis_weight = misMixWeight(pdfLight,res.pdf);
-        res.hitValue= mis_weight*color;
+        //res.hitValue= mis_weight*color;
         //res.hitValue= vec3(mis_weight);
-        //res.hitValue = min(vec3(1000.0),pow(texture(bindlessTextures[nonuniformEXT(rtConst.skyTextureBindlessIdx)],uv).xyz,gamma));
+        res.hitValue = min(vec3(1000.0),pow(texture(bindlessTextures[nonuniformEXT(rtConst.skyTextureBindlessIdx)],uv).xyz,gamma));
     
     }
     res.recursiveDepth = 1000;

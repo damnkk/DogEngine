@@ -332,7 +332,7 @@ void main(){
     //diffuse
     vec3 diffuse = mat.baseColorFactor.xyz;
     if (mat.textureIndices[0] != k_invalid_index && mat.textureUseSetting[0] > 0) {
-        diffuse = texture(bindlessTextures[nonuniformEXT(mat.textureIndices[0])],hitTexcoord).xyz;
+        diffuse = encode_srgb(texture(bindlessTextures[nonuniformEXT(mat.textureIndices[0])],hitTexcoord).xyz);
     }
     //MRT
     float metallic = mat.mrFactor.x;
@@ -354,7 +354,7 @@ void main(){
     //emissive
     vec3 emissive = mat.emissiveFactor;
     if (mat.textureIndices[4] != k_invalid_index && mat.textureUseSetting[3] > 0) {
-        emissive *= texture(bindlessTextures[nonuniformEXT(mat.textureIndices[4])],hitTexcoord).xyz;
+        emissive *= decode_srgb(texture(bindlessTextures[nonuniformEXT(mat.textureIndices[4])],hitTexcoord).xyz);
     }
 
     MaterialParam matParam;
@@ -381,30 +381,30 @@ void main(){
     // env sample
     vec3 envL = SampleHdr(rand(),rand(),rtConst.skyTextureBindlessIdx);
     vec3 test = vec3(1.0f,0.0f,0.0f);
-    if(dot(N,envL)>0.0){
-        test = vec3(0.0f,1.0f,0.0f);
-        envSamplePrd.recursiveDepth = 0;
-        envSamplePrd.envSample = 1;
-        envSamplePrd.origin = hitWorldPos;
-        envSamplePrd.direction = envL;
-        envSamplePrd.hitValue = vec3(0.0f,0.0f,0.0);
-        float tMin = 0.0001;
-        float tMax = 10000000.0;
-        uint rayFlags = gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT;
+    // if(dot(N,envL)>0.0){
+    //     test = vec3(0.0f,1.0f,0.0f);
+    //     envSamplePrd.recursiveDepth = 0;
+    //     envSamplePrd.envSample = 1;
+    //     envSamplePrd.origin = hitWorldPos;
+    //     envSamplePrd.direction = envL;
+    //     envSamplePrd.hitValue = vec3(0.0f,0.0f,0.0);
+    //     float tMin = 0.0001;
+    //     float tMax = 10000000.0;
+    //     uint rayFlags = gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT;
 
-        traceRayEXT(topLevelAS,
-            rayFlags,
-            0xFF,
-            0,0,1,envSamplePrd.origin,tMin,envSamplePrd.direction, tMax,1);
-        float envPdf = hdrPdf(envL,2048,rtConst.skyTextureBindlessIdx);
-        vec3 envBrdf = brdfEvaluate(V,N,envL,matParam);
+    //     traceRayEXT(topLevelAS,
+    //         rayFlags,
+    //         0xFF,
+    //         0,0,1,envSamplePrd.origin,tMin,envSamplePrd.direction, tMax,1);
+    //     float envPdf = hdrPdf(envL,2048,rtConst.skyTextureBindlessIdx);
+    //     vec3 envBrdf = brdfEvaluate(V,N,envL,matParam);
 
-        float misWeight = misMixWeight(envPdf,pdf);
-        prd.hitValue = misWeight*envSamplePrd.hitValue*envBrdf*dot(N,envL)/envPdf;
-    }
+    //     float misWeight = misMixWeight(envPdf,pdf);
+    //     prd.hitValue = misWeight*envSamplePrd.hitValue*envBrdf*dot(N,envL)/envPdf;
+    // }
 
 //material sample
-    prd.hitValue += emissive;
+    prd.hitValue = emissive;
     prd.hitValue = emissive;
     prd.weight =consineTheta*brdf/max(0.0000001,pdf);
     prd.origin = hitWorldPos;

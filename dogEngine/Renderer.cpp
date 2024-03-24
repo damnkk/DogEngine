@@ -572,6 +572,87 @@ void Renderer::addSkyBox(std::string skyTexPath) {
       .setBindLess(true);
   m_skyTexture = upLoadTextureToGPU(skyTexPath, texInfo);
   have_skybox = true;
+  if (m_context->m_supportRayTracing) {
+    unsigned char* img = nullptr;
+    int            width, height, channel;
+    img = stbi_load(skyTexPath.c_str(), &width, &height, &channel, 4);
+    std::vector<std::vector<float>> illum(width, std::vector<float>(height));
+    float                           sumIllu = 0.0f;
+    for (int i = 0; i < height; ++i) {
+      for (int j = 0; j < width; ++j) {
+        u32   offset = i * width + j;
+        float r = img[offset * 4 + 0];
+        float g = img[offset * 4 + 1];
+        float b = img[offset * 4 + 2];
+        float a = img[offset * 4 + 3];
+        illum[j][i] = 0.2 * r + 0.7 * g + 0.1 * b;
+        sumIllu += illum[j][i];
+      }
+    }
+    std::vector<std::vector<float>> envPdf = illum;
+    for (int i = 0; i < width; ++i) {
+      for (int j = 0; j < height; ++j) { envPdf[i][j] = envPdf[i][j] / sumIllu; }
+    }
+    std::vector<float> rollAccuPdf(width);
+    for (int i = 0; i < width; ++i) {
+      float sum = 0;
+      for (int j = 0; j < height; ++j) { sum += envPdf[i][j]; }
+      rollAccuPdf[i] = sum;
+    }
+    std::vector<float> rollcdf = rollAccuPdf;
+    for (int i = 1; i < width; ++i) { rollcdf[i] += rollcdf[i - 1]; }
+
+    //这个不对
+    std::vector<std::vector<float>> colAccuCdf = envPdf;
+    for (int i = 0; i < width; ++i) {
+      float accu = 0.0f;
+      for (int j = 1; j < height; ++j) {
+        accu += colAccuCdf[i][j];
+        colAccuCdf[i][j] = accu / rollAccuPdf[i];
+      }
+    }
+
+    std::vector<std::vector<float>> reCalcuMapX(width, std::vector<float>(height));
+    std::vector<std::vector<float>> reCalcuMapY(width, std::vector<float>(height));
+    std::vector<std::vector<float>> recalcuMapP(width, std::vector<float>(height));
+    for (int i = 0; i < width; ++i) {
+      for (int j = 0; j < height; ++j) {
+        float uvx = float(i) / width;
+        float uvy = float(j) / height;
+        float sampleX = std::lower_bound(rollcdf.begin(), rollcdf.end(), uvx) - rollcdf.begin();
+        float sampleY = std::lower_bound(colAccuCdf[std::min(2047.0f, sampleX)].begin(),
+                                         colAccuCdf[std::min(2047.0f, sampleX)].end(), uvy)
+            - colAccuCdf[std::min(2047.0f, sampleX)].begin();
+        reCalcuMapX[i][j] = sampleX / width;
+        reCalcuMapY[i][j] = sampleY / height;
+        recalcuMapP[i][j] = envPdf[i][j];
+      }
+    }
+
+    float* data = new float[width * height * 4];
+    for (int i = 0; i < width; ++i) {
+      for (int j = 0; j < height; ++j) {
+        u32 offset = j * width + i;
+        data[4 * offset + 0] = reCalcuMapX[i][j];
+        data[4 * offset + 1] = reCalcuMapY[i][j];
+        data[4 * offset + 2] = recalcuMapP[i][j];
+        data[4 * offset + 3] = 0.278;
+      }
+    }
+
+    TextureCreateInfo texInfo{};
+    texInfo.setTextureType(TextureType::Enum::Texture2D)
+        .setBindLess(true)
+        .setData(data)
+        .setFormat(VK_FORMAT_R32G32B32A32_SFLOAT)
+        .setMipmapLevel(1)
+        .setName("preCalcuMap")
+        .setExtent({(u32) width, (u32) height, 1})
+        .setFlag(TextureFlags::Mask::Default_mask);
+    m_envPreCalcuMap = createTexture(texInfo)->handle;
+    delete[] data;
+    stbi_image_free(img);
+  }
 }
 
 void Renderer::destroySkyBox() {

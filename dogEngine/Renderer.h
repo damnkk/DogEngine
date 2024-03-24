@@ -107,6 +107,7 @@ struct Renderer {
 
   //raytracing
   RtPushConstant                   m_pcRay;
+  TextureHandle                    m_envPreCalcuMap;
   std::vector<DescriptorSetHandle> m_rtDescs;
   std::shared_ptr<Program>         m_rtProgram;
 };
