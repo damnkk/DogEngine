@@ -37,8 +37,7 @@ layout(push_constant,scalar) uniform RtPushConstant{
 
 //const float PI = 3.14159265358979;
 
-vec3 lightDir = vec3(1.0f,1.0f,0.0f);
-vec3 lightColor = vec3(1.0, 1.0, 1.0);
+
 
 vec2 directoryToUV(in vec3 cameraDirect) {
   vec3 direct = normalize(cameraDirect);
@@ -73,6 +72,9 @@ float misMixWeight(float a ,float b){
 }
 
 
+vec3 lightDir = vec3(1.0f,1.0f,0.0f);
+vec3 lightColor = vec3(0.0, 0.0, 0.0);
+
 void main(){
     vec2 uv = directoryToUV(res.direction);
     vec3 gamma = vec3(1.0/2.2);
@@ -81,14 +83,12 @@ void main(){
     if(res.recursiveDepth<=0){
         res.hitValue = pow(texture(bindlessTextures[nonuniformEXT(rtConst.skyTextureBindlessIdx)],uv).xyz,vec3(1.0/1.6));
     }else{
-        
-        //res.hitValue = dot(res.lastNormal,lightDir)*lightColor;
         vec3 color=  min(vec3(1000.0),pow(texture(bindlessTextures[nonuniformEXT(rtConst.skyTextureBindlessIdx)],uv).xyz,gamma));
         float pdfLight = hdrPdf(res.direction,2048,rtConst.skyTextureBindlessIdx);
         float mis_weight = misMixWeight(pdfLight,res.pdf);
-        //res.hitValue= mis_weight*color;
-        //res.hitValue= vec3(mis_weight);
+        res.hitValue= vec3(0);
         res.hitValue = min(vec3(1000.0),pow(texture(bindlessTextures[nonuniformEXT(rtConst.skyTextureBindlessIdx)],uv).xyz,gamma));
+        res.hitValue +=max(0.0f,dot(res.lastNormal,lightDir))*lightColor;
     
     }
     res.recursiveDepth = 1000;

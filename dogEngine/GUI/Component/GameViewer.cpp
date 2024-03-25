@@ -7,7 +7,7 @@ GameViewer::GameViewer(std::string name) { m_name = name; }
 
 void GameViewer::OnGUI() {
   std::shared_ptr<Camera> camera = m_renderer->getCamera();
-  ImGui::Begin("GameView");
+  ImGui::Begin(m_name.c_str());
   auto desc = m_renderer->getContext()->accessDescriptorSet(
       m_renderer->getContext()->m_gameViewTextureDescs[0]);
   Texture* text =
@@ -17,9 +17,9 @@ void GameViewer::OnGUI() {
     if (ImGui::IsMouseDown(ImGuiMouseButton_Right)) { camera->rightButtonPressState() = true; }
     if (!ImGui::IsMouseDown(ImGuiMouseButton_Right)) camera->rightButtonPressState() = false;
     ImVec2 cursorPos = ImGui::GetMousePos();
-    camera->updateDirection(m_renderer->deltaTime, glm::vec2(cursorPos.x, cursorPos.y),m_renderer->getContext());
-    camera->updatePosition(m_renderer->deltaTime,m_renderer->getContext());
-
+    camera->updateDirection(m_renderer->deltaTime, glm::vec2(cursorPos.x, cursorPos.y),
+                            m_renderer->getContext());
+    camera->updatePosition(m_renderer->deltaTime, m_renderer->getContext());
   }
 
   const ImVec2 currWindowSize = ImGui::GetWindowSize();

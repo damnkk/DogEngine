@@ -1,5 +1,6 @@
 #include "GUI.h"
 #include "Component/GameViewer.h"
+#include "Component/MainBar.h"
 #include "Component/MaterialViewer.h"
 #include "Component/SceneHierachyViewer.h"
 #include "Renderer.h"
@@ -103,6 +104,7 @@ void GUI::init(Renderer* render) {
   addComponent(std::make_shared<MaterialViewer>("Material"));
   addComponent(std::make_shared<GameViewer>("GameViewer"));
   addComponent(std::make_shared<SceneHierachyViewer>("Scene Hierachy"));
+  addComponent(std::make_shared<MainBar>("MainBar"));
 }
 
 // void GUI::LoadFontsToGPU(){
@@ -134,11 +136,11 @@ void GUI::newGUIFrame() {
 
 void GUI::OnGUI() {
   ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
-  ImGui::BeginMainMenuBar();
+  // ImGui::BeginMainMenuBar();
 
-  ImGui::EndMainMenuBar();
+  // ImGui::EndMainMenuBar();
   for (int i = 0; i < m_compontents.size(); ++i) {
-    auto currComponent = m_compontents[i];
+    auto& currComponent = m_compontents[i];
     currComponent->OnGUI();
   }
   std::cout << ImGui::GetIO().Framerate << '\r';
