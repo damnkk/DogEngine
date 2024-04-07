@@ -390,7 +390,7 @@ void Renderer::rayTraceScene() {
   udata.viewMatrix = m_camera->getViewMatrix();
   memcpy(data, &udata, sizeof(UniformData));
   vmaUnmapMemory(m_context->m_vma, cameraUniformBuffer->m_allocation);
-  cmd->traceRay(m_context->m_gameViewWidth, m_context->m_gameViewHeight, 10);
+  cmd->traceRay(m_context->m_gameViewWidth, m_context->m_gameViewHeight, 1);
   this->m_context->queueCommandBuffer(cmd);
 }
 
